@@ -3,12 +3,6 @@
 Provides a consistent API around some existing scanning tools to integrate them
 with the rest of the tool kit.
 
-## Status
-
-Just getting started.
-
-## Overview
-
 This scanner is meant to either be ran as a single instance listening on stdin
 for easy scripting or ran as a cluster behind a HTTP load balencer as a part of
 a larger scanning pipeline.
@@ -18,6 +12,10 @@ The scanner leverages
 internally because gitleaks is an awesome tool, and we already have quite a few
 [patterns built up](https://github.com/leaktk/patterns)
 for it.
+
+## Status
+
+Just getting started.
 
 ## Usage (Pending Implementation)
 
