@@ -1,24 +1,25 @@
 use serde::Deserialize;
+use std::path::Path;
 
 pub const SCANNER: &str = "gitleaks";
-pub const VERSION: &str = "7.6.1";
+pub const VERSION: &str = "8.12.0";
 pub const PATTERNS_FILE: &str = "patterns.toml";
 
 #[derive(Debug, Deserialize)]
-pub struct Patterns {
+pub struct PatternsConfig {
     pub server_url: String,
     pub refresh_interval: u32,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Scanner {
-    pub workdir: String,
-    pub patterns: Patterns,
+pub struct ScannerConfig {
+    pub workdir: Box<Path>,
+    pub patterns: PatternsConfig,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub scanner: Scanner
+    pub scanner: ScannerConfig,
 }
 
 impl Config {

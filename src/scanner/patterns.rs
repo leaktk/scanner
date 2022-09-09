@@ -1,17 +1,15 @@
-use crate::config::{Scanner, SCANNER, VERSION, PATTERNS_FILE};
+use crate::config::{ScannerConfig, PATTERNS_FILE, SCANNER, VERSION};
 use std::fs::{self, File};
 use std::io::Write;
+use std::path::Path;
 
+// TODO: clean this up after learning more about rust matching
 
-// TODO: clean this up after I learn more about rust matching
+fn write_patterns_file(workdir: &Path, patterns: &str) {
+    let patterns_dir = workdir.join("patterns").join(VERSION);
+    fs::create_dir_all(&patterns_dir).expect("Could not create patterns file directory!");
 
-fn write_patterns_file(path: &str, patterns: &str) {
-    fs::create_dir_all(path).expect("Could not create patterns file directory!");
-
-    // TODO: make this portable
-    let patterns_path = format!("{}/{}", path, PATTERNS_FILE);
-
-    match File::create(patterns_path) {
+    match File::create(&patterns_dir.join(PATTERNS_FILE)) {
         Ok(mut patterns_file) => {
             match patterns_file.write_all(patterns.as_bytes()) {
                 // TODO: replace with log function
@@ -19,7 +17,7 @@ fn write_patterns_file(path: &str, patterns: &str) {
                 // TODO: replace with log function
                 Err(e) => println!("{:#?}", e),
             }
-        },
+        }
         // TODO: replace with log function
         Err(e) => println!("{:#?}", e),
     }
@@ -28,17 +26,17 @@ fn write_patterns_file(path: &str, patterns: &str) {
 // Block and refresh the patterns file
 // If there is an error and a patterns file already exists: just log it
 // If there is an error and a patterns file does not exist: panic
-pub fn refresh(scanner: &Scanner) {
-    let url = format!("{}/{}/{}", scanner.patterns.server_url, SCANNER, VERSION);
+pub fn refresh(config: &ScannerConfig) {
+    let url = format!("{}/{}/{}", config.patterns.server_url, SCANNER, VERSION);
 
     match reqwest::blocking::get(url) {
         Ok(resp) => {
             match resp.text() {
-                Ok(body) => write_patterns_file(&scanner.workdir, &body),
+                Ok(body) => write_patterns_file(&config.workdir, &body),
                 // TODO: replace with log function
                 Err(e) => println!("{:#?}", e),
             }
-        },
+        }
         // TODO: replace with log function
         Err(_) => println!("There was an error updating the patterns file!"),
     }
