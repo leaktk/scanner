@@ -2,13 +2,16 @@ use serde::{self, Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Kind {
-    Git,
+    GitRepoURL,
+    // Some future ideas:
+    // * EmailAddress
+    // * JiraTicketURL
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Request<'r> {
     pub kind: Kind,
-    pub url: &'r str,
+    pub artifact: &'r str,
 }
 
 #[derive(Debug)]

@@ -23,12 +23,12 @@ fn main() {
     // TODO: wrap this in an io handler for different methods
     let reqs = vec![
         Request {
-            kind: Kind::Git,
-            url: "https://github.com/leaktk/fake-leaks.git",
+            kind: Kind::GitRepoURL,
+            artifact: "https://github.com/leaktk/fake-leaks.git",
         },
         Request {
-            kind: Kind::Git,
-            url: "https://github.com/leaktk/fake-leaks.git",
+            kind: Kind::GitRepoURL,
+            artifact: "https://github.com/leaktk/fake-leaks.git",
         },
     ];
 

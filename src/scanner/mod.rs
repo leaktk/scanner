@@ -42,7 +42,7 @@ impl<'s> Scanner<'s> {
     fn fetch_files(&mut self, req: &Request, scan_dir: &Path) {
         match req.kind {
             // TODO: figure out how to turn this into a trait
-            Kind::Git => providers::git::clone(req.url, scan_dir),
+            Kind::GitRepoURL => providers::git::clone(req.artifact, scan_dir),
         }
     }
 
