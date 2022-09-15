@@ -43,9 +43,11 @@ impl<'s> Scanner<'s> {
 
     fn reset_scans_dir(&self) {
         // TODO: Audit log statement
-        fs::remove_dir_all(self.scans_dir())
-            // If the scan dir can't be removed. The code shouldn't run
-            .expect("Could not clear scans dir!");
+        if Path::exists(&self.scans_dir()) {
+            fs::remove_dir_all(self.scans_dir())
+                // If the scan dir can't be removed. The code shouldn't run
+                .expect("Could not clear scans dir!");
+        }
     }
 
     fn scans_dir(&self) -> PathBuf {
