@@ -1,39 +1,19 @@
 pub mod config;
 pub mod scanner;
 
+use std::fs;
 use crate::config::Config;
-use crate::scanner::{proto::Kind, proto::Request, Scanner};
+use crate::scanner::Scanner;
 
 fn main() {
     // TODO: move this code out of here
     // this is just stubbed out as things are getting set up
-    let config = Config::load(
-        r#"
-        [scanner]
-        workdir = "/tmp/leaktk"
-
-        [scanner.patterns]
-        server_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target/patterns"
-        refresh_interval = 43200
-    "#,
-    );
+    let config = Config::load(&fs::read_to_string("./config.toml").unwrap());
+    let raw_requests = fs::read_to_string("./reqs.jsonl").unwrap();
 
     let mut scanner = Scanner::new(&config.scanner);
-
-    // TODO: wrap this in an io handler for different methods
-    let reqs = vec![
-        Request {
-            kind: Kind::GitRepoURL,
-            artifact: "https://github.com/leaktk/fake-leaks.git",
-        },
-        Request {
-            kind: Kind::GitRepoURL,
-            artifact: "https://github.com/leaktk/fake-leaks.git",
-        },
-    ];
-
-    for req in &reqs {
-        for resp in &scanner.scan(&req) {
+    for line in raw_requests.lines() {
+        for resp in &scanner.scan(&serde_json::from_str(line).unwrap()) {
             // TODO: wrap this in an io handler for different methods
             println!("{:#?}", resp);
         }

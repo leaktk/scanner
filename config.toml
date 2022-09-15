@@ -1,0 +1,6 @@
+[scanner]
+workdir = "/tmp/leaktk"
+
+[scanner.patterns]
+server_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target/patterns"
+refresh_interval = 43200
