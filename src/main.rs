@@ -1,9 +1,9 @@
 pub mod config;
 pub mod scanner;
 
-use std::fs;
 use crate::config::Config;
 use crate::scanner::Scanner;
+use std::fs;
 
 fn main() {
     // TODO: move this code out of here

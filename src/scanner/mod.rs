@@ -3,11 +3,11 @@ pub mod proto;
 mod patterns;
 mod providers;
 
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::time::{Instant,Duration};
 use crate::config::ScannerConfig;
 use proto::{Kind, Request, Response};
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 pub struct Scanner<'s> {
     config: &'s ScannerConfig,

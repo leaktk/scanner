@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::{self, Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Kind {
@@ -14,10 +14,10 @@ pub enum Kind {
 pub struct Request {
     pub kind: Kind,
     pub artifact: String,
-    pub options: Option<HashMap<String,String>>,
+    pub options: Option<HashMap<String, String>>,
 }
 
-#[derive(Debug,Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Response<'r> {
     pub request: &'r Request,
     // TODO: add scan results section

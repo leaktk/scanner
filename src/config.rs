@@ -1,5 +1,5 @@
-use std::path::Path;
 use serde::Deserialize;
+use std::path::Path;
 
 pub const SCANNER: &str = "gitleaks";
 pub const VERSION: &str = "8.12.0";

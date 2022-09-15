@@ -1,6 +1,6 @@
+use crate::scanner::proto::Request;
 use std::path::Path;
 use std::process::Command;
-use crate::scanner::proto::Request;
 
 pub fn clone(req: &Request, clone_dir: &Path) {
     // TODO: logging
@@ -18,7 +18,10 @@ pub fn clone(req: &Request, clone_dir: &Path) {
 
             // TODO: Add additional options here
 
-            git.arg("clone").args(args).arg(&req.artifact).arg(clone_dir)
+            git.arg("clone")
+                .args(args)
+                .arg(&req.artifact)
+                .arg(clone_dir)
         }
     };
 

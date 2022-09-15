@@ -1,7 +1,7 @@
+use crate::config::{ScannerConfig, PATTERNS_FILE, SCANNER, VERSION};
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
-use crate::config::{ScannerConfig, PATTERNS_FILE, SCANNER, VERSION};
 
 // TODO: clean this up after learning more about rust matching
 
