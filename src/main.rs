@@ -15,7 +15,7 @@ fn main() {
     for line in raw_requests.lines() {
         for resp in &scanner.scan(&serde_json::from_str(line).unwrap()) {
             // TODO: wrap this in an io handler for different methods
-            println!("{:#?}", resp);
+            println!("{}", serde_json::to_string(&resp).unwrap());
         }
     }
 }

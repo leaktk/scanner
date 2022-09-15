@@ -17,9 +17,10 @@ pub struct Request {
     pub options: Option<HashMap<String,String>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Serialize)]
 pub struct Response<'r> {
     pub request: &'r Request,
+    // TODO: add scan results section
 }
 
 impl<'r> Response<'r> {
