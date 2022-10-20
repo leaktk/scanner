@@ -1,4 +1,5 @@
 use crate::config::{ListnerConfig, ListnerMethod};
+use crate::scanner::proto::Request;
 use std::io::Lines;
 use std::io::{self, StdinLock};
 use std::iter::Iterator;
@@ -8,9 +9,14 @@ enum Requests {
 }
 
 impl Requests {
-    fn next(&mut self) -> Option<String> {
+    fn next(&mut self) -> Option<Request> {
         match self {
-            Self::Stdin(lines) => lines.next().map(Result::ok).flatten(),
+            Self::Stdin(lines) => lines
+                .next()
+                .map(Result::ok)
+                .flatten()
+                .map(|s| serde_json::from_str(&s).ok())
+                .flatten(),
         }
     }
 }
@@ -30,7 +36,7 @@ impl Listner {
 }
 
 impl Iterator for Listner {
-    type Item = String;
+    type Item = Request;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.requests.next()
