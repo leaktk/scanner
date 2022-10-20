@@ -1,19 +1,23 @@
 pub mod config;
+pub mod listner;
 pub mod scanner;
 
 use crate::config::Config;
+use crate::listner::Listner;
 use crate::scanner::Scanner;
+use std::env;
 use std::fs;
 
 fn main() {
-    // TODO: move this code out of here
-    // this is just stubbed out as things are getting set up
-    let config = Config::load(&fs::read_to_string("./config.toml").unwrap());
-    let raw_requests = fs::read_to_string("./reqs.jsonl").unwrap();
+    let config_path = env::args()
+        .nth(1)
+        .expect("First argument must be the config path");
 
+    let config = Config::load(&fs::read_to_string(config_path).expect("Unable to load config"));
     let mut scanner = Scanner::new(&config.scanner);
-    for line in raw_requests.lines() {
-        for resp in &scanner.scan(&serde_json::from_str(line).unwrap()) {
+
+    for line in Listner::new(&config.listner) {
+        for resp in &scanner.scan(&serde_json::from_str(&line).unwrap()) {
             // TODO: wrap this in an io handler for different methods
             println!("{}", serde_json::to_string(&resp).unwrap());
         }

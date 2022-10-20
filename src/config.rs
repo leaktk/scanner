@@ -12,6 +12,17 @@ pub struct PatternsConfig {
 }
 
 #[derive(Debug, Deserialize)]
+pub enum ListnerMethod {
+    #[serde(rename = "stdin")]
+    Stdin,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListnerConfig {
+    pub method: ListnerMethod,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct ScannerConfig {
     pub workdir: Box<Path>,
     pub patterns: PatternsConfig,
@@ -19,6 +30,7 @@ pub struct ScannerConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    pub listner: ListnerConfig,
     pub scanner: ScannerConfig,
 }
 

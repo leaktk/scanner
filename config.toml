@@ -1,3 +1,6 @@
+[listner]
+method = "stdin"
+
 [scanner]
 workdir = "/tmp/leaktk"
 
