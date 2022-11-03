@@ -63,3 +63,12 @@ Schema WIP, but likely jsonl.
 ## Scan Results Format
 
 Schema WIP, but likely jsonl.
+
+## TODO
+
+* Fix/cleanup the error handling
+* Group gitleaks code into a single object as the source of truth
+* Create a Workspace object to manage the workspace folders (creating, clearing, etc)
+* Collect gitleaks results and turn them into scan results
+* Unittest and refactor whats currently there
+* Encapsulate some of the linux specific bits
