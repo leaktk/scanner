@@ -1,5 +1,6 @@
 pub mod proto;
 
+mod gitleaks;
 mod patterns;
 mod providers;
 
@@ -72,9 +73,7 @@ impl<'s> Scanner<'s> {
 
     // TODO: Might implement this as a GitLeaks trait
     fn start_scan<'r>(&self, req: &'r Request, files_dir: &Path) -> Vec<Response<'r>> {
-        // TODO: audit log statment
-        println!("TODO: start gitleaks scan on {}!", files_dir.display());
-        // gitleaks::scan(self.config, req, files_dir) -> vec![Response::new(req)]
+        gitleaks::scan(&self.config, &req, &files_dir);
         vec![Response::new(req)]
     }
 
