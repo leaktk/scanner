@@ -1,17 +1,9 @@
 use serde::{self, Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Kind {
-    #[serde(rename = "git")]
-    Git,
-    // Some future ideas:
-    // * EmailAddress - for pattern matches + HIBP breach checks
-    // * JiraTicketURL
-    // * String or some kind of raw content to be scanned directly
-}
-
+// Options for a git scan
 #[derive(Debug, Deserialize)]
 pub struct GitOptions {
+    // Set --depth for the git clone
     pub clone_depth: Option<u32>,
 }
 
@@ -21,49 +13,52 @@ pub struct GitOptions {
 pub enum Request {
     #[serde(rename = "git")]
     Git {
-        // A way to identify the response to the request
+        // A way to tie the response to the request
         id: String,
-        // What kind of thing is being scanned
-        // The thing that should be scanned
+        // The URL of the repo to scan
         url: String,
-        // Scanner options for the specific kind of url being scanned
+        // Optional options for how the git scan
         options: Option<GitOptions>,
     },
 }
 
-// The fields from a request that should be returned in the response
-// See Request for the meaning of the fields
+// The fields from the Request that should be included in response.request
 #[derive(Debug, Serialize)]
 pub struct ResponseRequest {
+    // A way to tie the response to the request
     pub id: String,
 }
 
+// GitleaksRule details
 #[derive(Debug, Serialize)]
 pub struct Rule {
     // The unique rule id
     pub id: String,
-    // A description of the rule and what it finds
+    // A description of what the rule finds
     pub description: String,
-    // A set of standardized tags
+    // A set of tags that tells the scanner what to do with the result
     pub tags: Vec<String>,
 }
 
+// The section of a file where a scan result was found
 #[derive(Debug, Serialize)]
 pub struct Lines {
-    // The start a section of a source
+    // The start line
     pub start: u32,
-    // The end a section of a source
+    // The end line
     pub end: u32,
 }
 
+// The comitter's details
 #[derive(Debug, Serialize)]
 pub struct GitCommitAuthor {
-    // The author's name from a git commit
+    // The author's name
     pub name: String,
-    // The author's email from a git commit
+    // The author's email
     pub email: String,
 }
 
+// The commit's details
 #[derive(Debug, Serialize)]
 pub struct GitCommit {
     // The sha1 to identify a commit
@@ -76,6 +71,7 @@ pub struct GitCommit {
     pub message: String,
 }
 
+// Details about the source where the result was found
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum Source {
@@ -84,29 +80,31 @@ pub enum Source {
     Git {
         // The URL to the remote or local git repo
         url: String,
-        // The path to the leak relative to the repo
+        // The path to the result relative to the repo
         path: String,
-        // The line range for the leak
+        // The line range for the result
         lines: Lines,
-        // Info about the commit containing the leak
+        // Info about the commit containing the result
         commit: GitCommit,
     },
 }
 
 #[derive(Debug, Serialize)]
 pub struct Result {
-    // The context around the target that the rule triggered on
+    // The match that triggered the rule
     pub context: String,
     // The specific thing the rule was meant to find
     pub target: String,
-    // The entropy associated with the match
+    // The entropy associated result
     pub entropy: f32,
-    // Which rule triggered the match
+    // Which rule triggered the result
     pub rule: Rule,
     // Where the result was found
     pub source: Source,
 }
 
+// Something meant to hold data from a gitleaks scan to map it to a Result
+// see the gitleaks docs for the meaning of each field
 #[derive(Debug, Deserialize)]
 pub struct GitLeaksResult {
     #[serde(rename = "Match")]
@@ -139,9 +137,14 @@ pub struct GitLeaksResult {
     pub source_commit_author_email: String,
 }
 
+// The full response that includes all of the meta data and results
 #[derive(Debug, Serialize)]
 pub struct Response {
+    // A unique id generated for each scan
     pub id: String,
+    // Details from the request so the response can be tied back to the
+    // original request
     pub request: ResponseRequest,
+    // The individual results of the scan
     pub results: Vec<Result>,
 }
