@@ -1,10 +1,10 @@
 use super::patterns;
-use super::proto::Request;
+use super::proto::{GitLeaksResult, GitOptions};
 use crate::config::{
     ScannerConfig, GITLEAKS_LINUX_X64_CHECKSUM, GITLEAKS_LINUX_X64_URL, GITLEAKS_VERSION,
 };
 use std::fs::{self, File};
-use std::io::{self, Write};
+use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -55,7 +55,11 @@ fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
     return binpath;
 }
 
-pub fn scan(config: &ScannerConfig, req: &Request, files_dir: &Path) {
+pub fn scan(
+    config: &ScannerConfig,
+    files_dir: &Path,
+    options: &Option<GitOptions>,
+) -> Vec<GitLeaksResult> {
     let binpath = gitleaks_path(config);
     println!("{}", binpath.display());
 
@@ -71,5 +75,7 @@ pub fn scan(config: &ScannerConfig, req: &Request, files_dir: &Path) {
         .expect("Could not run scan");
 
     // TODO: parse these results and turn them into result objects
-    io::stdout().write_all(&results.stdout).unwrap();
+    let raw_results = String::from_utf8(results.stdout).unwrap();
+
+    serde_json::from_str(&raw_results).unwrap()
 }

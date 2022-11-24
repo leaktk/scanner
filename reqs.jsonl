@@ -1,2 +1,2 @@
-{"kind":"GitRepoURL","artifact":"https://github.com/leaktk/fake-leaks.git","options":{"clone_depth":"5"}}
-{"kind":"GitRepoURL","artifact":"https://github.com/leaktk/fake-leaks.git"}
+{"id":"4ce9070","type":"git","url":"https://github.com/leaktk/fake-leaks.git","options":{"clone_depth":5}}
+{"id":"2adbb95","type":"git","url":"https://github.com/leaktk/fake-leaks.git"}

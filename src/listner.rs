@@ -1,23 +1,20 @@
-use crate::config::{ListnerConfig, ListnerMethod};
 use crate::scanner::proto::Request;
 use std::io::Lines;
 use std::io::{self, StdinLock};
 use std::iter::Iterator;
 
-enum Requests {
-    Stdin(Lines<StdinLock<'static>>),
+struct Requests {
+    lines: Lines<StdinLock<'static>>,
 }
 
 impl Requests {
     fn next(&mut self) -> Option<Request> {
-        match self {
-            Self::Stdin(lines) => lines
-                .next()
-                .map(Result::ok)
-                .flatten()
-                .map(|s| serde_json::from_str(&s).ok())
-                .flatten(),
-        }
+        self.lines
+            .next()
+            .map(Result::ok)
+            .flatten()
+            .map(|s| serde_json::from_str(&s).ok())
+            .flatten()
     }
 }
 
@@ -26,10 +23,10 @@ pub struct Listner {
 }
 
 impl Listner {
-    pub fn new(config: &ListnerConfig) -> Listner {
+    pub fn new() -> Listner {
         Listner {
-            requests: match config.method {
-                ListnerMethod::Stdin => Requests::Stdin(io::stdin().lines()),
+            requests: Requests {
+                lines: io::stdin().lines(),
             },
         }
     }

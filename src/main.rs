@@ -16,10 +16,10 @@ fn main() {
     let config = Config::load(&fs::read_to_string(config_path).expect("Unable to load config"));
     let mut scanner = Scanner::new(&config.scanner);
 
-    for request in Listner::new(&config.listner) {
-        for resp in &scanner.scan(&request) {
-            // TODO: wrap this in an io handler for different methods
-            println!("{}", serde_json::to_string(&resp).unwrap());
-        }
+    for request in Listner::new() {
+        println!(
+            "{}",
+            serde_json::to_string(&scanner.scan(&request)).unwrap()
+        );
     }
 }
