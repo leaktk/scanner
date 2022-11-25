@@ -1,11 +1,13 @@
 pub mod config;
 pub mod errors;
 pub mod listner;
+pub mod logging;
 pub mod scanner;
 
 use crate::config::Config;
 use crate::errors::Error;
 use crate::listner::Listner;
+use crate::logging::Logger;
 use crate::scanner::Scanner;
 use clap::Parser;
 
@@ -16,6 +18,8 @@ struct Args {
 }
 
 fn main() -> Result<(), Error> {
+    Logger::init()?;
+
     let config = Config::load(&Args::parse().config)?;
     let mut scanner = Scanner::new(&config.scanner);
 

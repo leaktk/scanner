@@ -37,7 +37,8 @@ impl Config {
 
     // Load the config from a file path
     pub fn load(path: &str) -> Result<Config, Error> {
-        let content = fs::read_to_string(path).map_err(|err| Error::new(format!("Could not read {}: {}", path, err)))?;
+        let content = fs::read_to_string(path)
+            .map_err(|err| Error::new(format!("Could not read {}: {}", path, err)))?;
 
         Config::from_str(&content)
     }

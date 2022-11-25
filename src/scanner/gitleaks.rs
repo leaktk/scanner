@@ -9,6 +9,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use log::info;
 use ring::digest::{Context, SHA256};
 
 fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
@@ -49,8 +50,7 @@ fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
     perms.set_mode(0o770);
     fs::set_permissions(&binpath, perms).unwrap();
 
-    // TODO: replace with login statments
-    println!("{} downloaded!", &binname);
+    info!("{} downloaded!", &binname);
 
     return binpath;
 }
@@ -60,10 +60,7 @@ pub fn scan(
     files_dir: &Path,
     options: &Option<GitOptions>,
 ) -> Vec<GitLeaksResult> {
-    let binpath = gitleaks_path(config);
-    println!("{}", binpath.display());
-
-    let results = Command::new(binpath)
+    let results = Command::new(gitleaks_path(config))
         .arg("detect")
         .arg("--report-path=/dev/stdout")
         .arg("--report-format=json")
