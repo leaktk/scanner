@@ -1,25 +1,28 @@
 pub mod config;
+pub mod errors;
 pub mod listner;
 pub mod scanner;
 
 use crate::config::Config;
+use crate::errors::Error;
 use crate::listner::Listner;
 use crate::scanner::Scanner;
-use std::env;
-use std::fs;
+use clap::Parser;
 
-fn main() {
-    let config_path = env::args()
-        .nth(1)
-        .expect("First argument must be the config path");
+#[derive(Parser)]
+struct Args {
+    #[arg(short, long)]
+    config: String,
+}
 
-    let config = Config::load(&fs::read_to_string(config_path).expect("Unable to load config"));
+fn main() -> Result<(), Error> {
+    let config = Config::load(&Args::parse().config)?;
     let mut scanner = Scanner::new(&config.scanner);
 
     for request in Listner::new() {
-        println!(
-            "{}",
-            serde_json::to_string(&scanner.scan(&request)).unwrap()
-        );
+        let result = scanner.scan(&request);
+        println!("{}", serde_json::to_string(&result).unwrap());
     }
+
+    Ok(())
 }

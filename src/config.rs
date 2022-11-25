@@ -1,4 +1,6 @@
+use crate::errors::Error;
 use serde::Deserialize;
+use std::fs;
 use std::path::Path;
 
 pub const SCANNER: &str = "gitleaks";
@@ -29,7 +31,14 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(raw: &str) -> Config {
-        toml::from_str(raw).expect("Could not load config file")
+    pub fn from_str(raw: &str) -> Result<Config, Error> {
+        toml::from_str(raw).map_err(|err| Error::new(err.to_string()))
+    }
+
+    // Load the config from a file path
+    pub fn load(path: &str) -> Result<Config, Error> {
+        let content = fs::read_to_string(path).map_err(|err| Error::new(format!("Could not read {}: {}", path, err)))?;
+
+        Config::from_str(&content)
     }
 }

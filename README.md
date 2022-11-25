@@ -22,7 +22,7 @@ Just getting started.
 To start the scanner and have it listen for requests run:
 
 ```sh
-leaktk-scanner /path/to/config.toml
+leaktk-scanner --config /path/to/config.toml
 ```
 
 The scanner listens on stdin, responds on stdout, and logs to stderr or a file
