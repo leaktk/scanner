@@ -4,6 +4,7 @@ mod gitleaks;
 mod patterns;
 mod providers;
 
+use uuid::Uuid;
 use crate::config::ScannerConfig;
 use proto::{
     GitCommit, GitCommitAuthor, GitOptions, Lines, Request, Response, ResponseRequest,
@@ -76,7 +77,7 @@ impl<'s> Scanner<'s> {
         let gitleaks_results = gitleaks::scan(&self.config, files_dir, options);
 
         Response {
-            id: "TODO".to_string(),
+            id: Uuid::new_v4().to_string(),
             request: ResponseRequest { id: id.clone() },
             results: gitleaks_results
                 .iter()

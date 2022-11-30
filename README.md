@@ -61,7 +61,7 @@ line by type
 
 ```json
 {
-  "id": "<some-unique-id-to-tie-the-resp-to-the-req>",
+  "id": "<uuid>",
   "type": "git",
   "url": "https://github.com/leaktk/fake-leaks.git",
   "options": {
@@ -79,9 +79,9 @@ line by type
 
 ```json
 {
-  "id": "<some generated id unique to this specific scan>",
+  "id": "<uuid>",
   "request": {
-    "id": "<the id provided in the request>"
+    "id": "<uuid>"
   },
   "results": [
     {
