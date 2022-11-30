@@ -123,7 +123,7 @@ line by type
 
 * Fix/cleanup the error handling
 * Proper logging
-* Unittest and refactor whats currently there
+* Unittest and refactor what's currently there
 * Group gitleaks code into a single object as the source of truth
 * Create a Workspace object to manage the workspace folders (creating, clearing, etc)
 * Encapsulate some of the linux specific bits
