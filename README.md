@@ -3,9 +3,9 @@
 Provides a consistent API around some existing scanning tools to integrate them
 with the rest of the tool kit.
 
-This scanner is meant to either be ran as a single instance listening on stdin
-for easy scripting or ran as a cluster behind a HTTP load balencer as a part of
-a larger scanning pipeline.
+This scanner is meant to be ran as a single instance listening on stdin
+for easy scripting. There will be a server to wrap the scanner to be able to
+turn it into a service
 
 The scanner leverages
 [gitleaks](https://github.com/zricethezav/gitleaks)
@@ -22,14 +22,16 @@ Just getting started.
 To start the scanner and have it listen for requests run:
 
 ```sh
-leaktk-scanner /path/to/config.toml
+leaktk-scanner --config /path/to/config.toml
 ```
 
-The contents of the config file will determine how messages are sent/received,
-where logs go, and other scanning behavior.
+The scanner listens on stdin, responds on stdout, and logs to stderr or a file
+if it is defined in the config.
 
-The "Scan Request Format" and "Scan Results Format" sections describe what you
-should expect to see as input and output.
+The scanner reads one request per line and sends a response per line in jsonl.
+
+The "Scan Request Format" and "Scan Results Format" sections describe the
+format for requests and responses.
 
 ## Config File Format (WIP)
 
@@ -37,10 +39,6 @@ should expect to see as input and output.
 [logger]
 level = "INFO"
 filepath = "/var/log/leaktk/leaktk.log"
-
-[listner]
-# TODO: define method https settings (auth, tls, etc)
-method = "stdin"
 
 [scanner]
 # This is the directory where the scanner will store files
@@ -50,25 +48,82 @@ workdir = "/tmp/leaktk"
 # TODO: define auth settings for servers that require auth
 server_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
 refresh_interval = 43200
-
-[reporter] # This might get a better name soon. Still thinking on it.
-# TODO: define method https settings (auth, tls, etc)
-method = "stdout"
 ```
 
 ## Scan Request Format
 
-Schema WIP, but likely jsonl.
+The scan request format is in jsonl here are formatted examples of a single
+line by type
+
+### Git
+
+(TODO: support `file://` for local scans that skip the clone)
+
+```json
+{
+  "id": "<some-unique-id-to-tie-the-resp-to-the-req>",
+  "type": "git",
+  "url": "https://github.com/leaktk/fake-leaks.git",
+  "options": {
+    "clone_depth": 5,
+  }
+}
+```
 
 ## Scan Results Format
 
-Schema WIP, but likely jsonl.
+The scan result format is in jsonl here are formatted examples of a single
+line by type
+
+### Git
+
+```json
+{
+  "id": "<some generated id unique to this specific scan>",
+  "request": {
+    "id": "<the id provided in the request>"
+  },
+  "results": [
+    {
+      "context": "<the match>",
+      "target": "<the part of the match the rule was trying to find>",
+      "entropy": 3.2002888,
+      "rule": {
+        "id": "some-rule-id",
+        "description": "A human readable description of the rule",
+        "tags": [
+          "alert:repo-owner",
+          "type:secret",
+        ]
+      },
+      "source": {
+        "type": "git",
+        "url": "https://github.com/leaktk/fake-leaks.git",
+        "path": "relative/path/to/the/file",
+        "lines": {
+          "start": 1,
+          "end": 1
+        },
+        "commit": {
+          "id": "<commit-sha>",
+          "author": {
+            "name": "John Smith",
+            "email": "jsmith@example.com"
+          },
+          "date": "2022-08-29T15:32:48Z",
+          "message": "<commit message>"
+        }
+      }
+    }
+  ]
+}
+```
 
 ## TODO
 
 * Fix/cleanup the error handling
+* Proper logging
+* Unittest and refactor whats currently there
 * Group gitleaks code into a single object as the source of truth
 * Create a Workspace object to manage the workspace folders (creating, clearing, etc)
-* Collect gitleaks results and turn them into scan results
-* Unittest and refactor whats currently there
 * Encapsulate some of the linux specific bits

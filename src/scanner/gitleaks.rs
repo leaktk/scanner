@@ -1,14 +1,15 @@
 use super::patterns;
-use super::proto::Request;
+use super::proto::{GitLeaksResult, GitOptions};
 use crate::config::{
     ScannerConfig, GITLEAKS_LINUX_X64_CHECKSUM, GITLEAKS_LINUX_X64_URL, GITLEAKS_VERSION,
 };
 use std::fs::{self, File};
-use std::io::{self, Write};
+use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use log::info;
 use ring::digest::{Context, SHA256};
 
 fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
@@ -49,17 +50,17 @@ fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
     perms.set_mode(0o770);
     fs::set_permissions(&binpath, perms).unwrap();
 
-    // TODO: replace with login statments
-    println!("{} downloaded!", &binname);
+    info!("{} downloaded!", &binname);
 
     return binpath;
 }
 
-pub fn scan(config: &ScannerConfig, req: &Request, files_dir: &Path) {
-    let binpath = gitleaks_path(config);
-    println!("{}", binpath.display());
-
-    let results = Command::new(binpath)
+pub fn scan(
+    config: &ScannerConfig,
+    files_dir: &Path,
+    options: &Option<GitOptions>,
+) -> Vec<GitLeaksResult> {
+    let results = Command::new(gitleaks_path(config))
         .arg("detect")
         .arg("--report-path=/dev/stdout")
         .arg("--report-format=json")
@@ -71,5 +72,7 @@ pub fn scan(config: &ScannerConfig, req: &Request, files_dir: &Path) {
         .expect("Could not run scan");
 
     // TODO: parse these results and turn them into result objects
-    io::stdout().write_all(&results.stdout).unwrap();
+    let raw_results = String::from_utf8(results.stdout).unwrap();
+
+    serde_json::from_str(&raw_results).unwrap()
 }
