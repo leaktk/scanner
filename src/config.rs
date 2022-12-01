@@ -20,6 +20,12 @@ pub struct PatternsConfig {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct LoggerConfig {
+    #[serde(default = "LoggerConfig::default_level")]
+    pub level: log::Level,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct ScannerConfig {
     pub workdir: Box<Path>,
     pub patterns: PatternsConfig,
@@ -27,7 +33,26 @@ pub struct ScannerConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    #[serde(default)]
+    pub logger: LoggerConfig,
     pub scanner: ScannerConfig,
+}
+
+impl LoggerConfig {
+    // Define the default level for the LoggerConfig if the section
+    // is specified but the level attr isn't
+    fn default_level() -> log::Level {
+        log::Level::Info
+    }
+}
+
+// Define what a default LoggerConfig should be if the section isn't specified
+impl Default for LoggerConfig {
+    fn default() -> Self {
+        LoggerConfig {
+            level: log::Level::Info,
+        }
+    }
 }
 
 impl Config {

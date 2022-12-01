@@ -1,3 +1,6 @@
+[logger]
+level = "TRACE"
+
 [scanner]
 workdir = "/tmp/leaktk"
 

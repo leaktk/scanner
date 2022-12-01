@@ -1,14 +1,18 @@
 use log::{Level, LevelFilter, Metadata, Record};
 
+use crate::config::LoggerConfig;
 use crate::errors::Error;
 use serde_json::json;
 use time::OffsetDateTime;
 
-pub struct Logger;
+pub struct Logger {
+    level: Level,
+}
+
 
 impl log::Log for Logger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Info
+        metadata.level() <= self.level
     }
 
     fn log(&self, record: &Record) {
@@ -28,10 +32,13 @@ impl log::Log for Logger {
 }
 
 impl Logger {
-    // TODO: Have this configured from the logging config
-    pub fn init() -> Result<(), Error> {
-        log::set_boxed_logger(Box::new(Logger))
-            .map(|()| log::set_max_level(LevelFilter::Info))
+    pub fn init(config: &LoggerConfig) -> Result<(), Error> {
+        let logger = Logger {
+            level: config.level,
+        };
+
+        log::set_boxed_logger(Box::new(logger))
+            .map(|()| log::set_max_level(LevelFilter::Trace))
             .map_err(|err| Error::new(err.to_string()))
     }
 }

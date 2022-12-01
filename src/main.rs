@@ -18,9 +18,10 @@ struct Args {
 }
 
 fn main() -> Result<(), Error> {
-    Logger::init()?;
-
     let config = Config::load(&Args::parse().config)?;
+
+    Logger::init(&config.logger)?;
+
     let mut scanner = Scanner::new(&config.scanner);
 
     for request in Listner::new() {

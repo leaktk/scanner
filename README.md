@@ -37,8 +37,9 @@ format for requests and responses.
 
 ```toml
 [logger]
+# Can be one of "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
+# Defaults to "INFO"
 level = "INFO"
-filepath = "/var/log/leaktk/leaktk.log"
 
 [scanner]
 # This is the directory where the scanner will store files
