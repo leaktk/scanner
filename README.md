@@ -36,19 +36,37 @@ format for requests and responses.
 ## Config File Format (WIP)
 
 ```toml
+# The logger section configures, you guessed it, the logger. This section and
+# its attributes are optional.
 [logger]
-# Can be one of "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
-# Defaults to "INFO"
+# Default: "INFO"
+# Valid Values: "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
 level = "INFO"
 
+# The scanner section is required and configures scanning.
+# TODO: Make optional
 [scanner]
-# This is the directory where the scanner will store files
+# The full path to where the scanner should store files, clone repos, etc
+# TODO: Default: "${XDG_CACHE_HOME}/leaktk"
 workdir = "/tmp/leaktk"
 
+# Pattern Distribution Server settings for the scanner.
+# TODO: Make optional
 [scanner.patterns]
-# TODO: define auth settings for servers that require auth
+# The base URL for where the scanner should look for patterns
+# The path "/patterns/{scanner}/{version}" will be appended to this base URL
 server_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
+# How old the patterns can be before they're refreshed during the next scan.
 refresh_interval = 43200
+
+# TODO: Optional headers passed to the pattern server if it requires
+# authentication
+# server_request_headers = {Authorization = "Bearer <token>"}
+
+# TODO: change the server setting into something like:
+# [scanner.patterns.server]
+# base_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
+# request_headers = {Authorization = "Bearer <token>"}
 ```
 
 ## Scan Request Format
@@ -127,4 +145,4 @@ line by type
 * Unittest and refactor what's currently there
 * Group gitleaks code into a single object as the source of truth
 * Create a Workspace object to manage the workspace folders (creating, clearing, etc)
-* Encapsulate some of the linux specific bits
+* Encapsulate some of the Linux specific bits
