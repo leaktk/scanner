@@ -40,8 +40,11 @@ comments explaining what each option does.
 
 ## Scan Request Format
 
-The scan request format is in jsonl here are formatted examples of a single
-line by type. Only the values in the `"options"` sections are optional.
+Notes about the formats below:
+
+* Scan requests should be sent as JSON Lines.
+* The requests below are pretty printed to make them easier to read.
+* Only the values in the `"options"` sections are optional.
 
 **WARNING**: Certain request types (e.g. `"type": "git", "url": "file://..."`)
 can access files outside of the scanner's workdir. Make sure you trust or
