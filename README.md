@@ -74,15 +74,25 @@ refresh_interval = 43200
 The scan request format is in jsonl here are formatted examples of a single
 line by type
 
-### Git
-
-(TODO: support `file://` for local scans that skip the clone)
+### Git (Remote)
 
 ```json
 {
   "id": "<uuid>",
   "type": "git",
   "url": "https://github.com/leaktk/fake-leaks.git",
+  "options": {
+    "clone_depth": 5,
+  }
+}
+```
+### Git (Local) (TODO)
+
+```json
+{
+  "id": "<uuid>",
+  "type": "git",
+  "url": "file:///home/user/workspace/leaktk/fake-leaks.git",
   "options": {
     "clone_depth": 5,
   }
