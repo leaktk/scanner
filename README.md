@@ -35,8 +35,8 @@ format for requests and responses.
 
 ## Config File Format
 
-The [example config](./examples/config.toml) provides a commented version with
-all of the default values set.
+The [example config](./examples/config.toml) has the default values set and
+comments explaining what each option does.
 
 ## Scan Request Format
 
