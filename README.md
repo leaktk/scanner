@@ -72,9 +72,15 @@ refresh_interval = 43200
 ## Scan Request Format
 
 The scan request format is in jsonl here are formatted examples of a single
-line by type
+line by type. Only the values in the `"options"` sections are optional.
+
+**WARNING**: Certain request types (e.g. `"type": "git", "url": "file://..."`)
+can access files outside of the scanner's workdir. Make sure you trust or
+sanitize the input to the scanner.
 
 ### Git (Remote)
+
+Clone a remote repo and scan it.
 
 ```json
 {
@@ -82,19 +88,24 @@ line by type
   "type": "git",
   "url": "https://github.com/leaktk/fake-leaks.git",
   "options": {
-    "clone_depth": 5,
+    "depth": 5,
   }
 }
 ```
+
 ### Git (Local) (TODO)
+
+Scan a local repo. Instead of cloning the repo, the scanner will simply
+scan the contents of the existing repo. This can be useful for implementing
+pre-commit hooks or tool-chains that already take care of cloning the repo.
 
 ```json
 {
   "id": "<uuid>",
   "type": "git",
-  "url": "file:///home/user/workspace/leaktk/fake-leaks.git",
+  "url": "file:///home/user/workspace/leaktk/fake-leaks",
   "options": {
-    "clone_depth": 5,
+    "depth": 5,
   }
 }
 ```

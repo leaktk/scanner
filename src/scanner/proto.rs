@@ -4,7 +4,7 @@ use serde::{self, Deserialize, Serialize};
 #[derive(Debug, Deserialize)]
 pub struct GitOptions {
     // Set --depth for the git clone
-    pub clone_depth: Option<u32>,
+    pub depth: Option<u32>,
 }
 
 // The incoming request

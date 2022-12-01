@@ -11,9 +11,9 @@ pub fn clone(id: &String, clone_url: &String, options: &Option<GitOptions>, clon
         Some(opts) => {
             let mut args = Vec::new();
 
-            if let Some(clone_depth) = opts.clone_depth {
+            if let Some(depth) = opts.depth {
                 // TODO: sanitize input
-                args.push(format!("--depth={clone_depth}"));
+                args.push(format!("--depth={depth}"));
             }
 
             // TODO: Add additional options here
