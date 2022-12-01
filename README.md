@@ -93,7 +93,7 @@ Clone a remote repo and scan it.
 }
 ```
 
-### Git (Local) (TODO)
+### TODO: Git (Local)
 
 Scan a local repo. Instead of cloning the repo, the scanner will simply
 scan the contents of the existing repo. This can be useful for implementing
@@ -163,6 +163,7 @@ line by type
 
 * Fix/cleanup the error handling
 * Proper logging
+* All the TODOs called out in the README
 * Unittest and refactor what's currently there
 * Group gitleaks code into a single object as the source of truth
 * Create a Workspace object to manage the workspace folders (creating, clearing, etc)
