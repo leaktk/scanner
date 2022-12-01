@@ -24,7 +24,7 @@ fn write_patterns_file(config: &ScannerConfig, patterns: &str) {
 // If there is an error and a patterns file does not exist: panic
 pub fn refresh(config: &ScannerConfig) {
     let url = format!(
-        "{}/{}/{}",
+        "{}/patterns/{}/{}",
         config.patterns.server_url, SCANNER, GITLEAKS_VERSION
     );
 
