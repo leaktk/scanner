@@ -17,57 +17,26 @@ for it.
 
 Just getting started.
 
-## Usage (Pending Implementation)
-
-To start the scanner and have it listen for requests run:
+## Usage
 
 ```sh
-leaktk-scanner --config /path/to/config.toml
+# TODO: make --config optional and if config isn't set:
+# 1) then try ${XDG_CONFIG_HOME}/leatktk/config.toml
+# 2) else try /etc/leaktk/config.toml
+# 3) else fall back on default config
+leaktk-scanner --config ./examples/config.toml < ./examples/requests.jsonl
 ```
 
-The scanner listens on stdin, responds on stdout, and logs to stderr or a file
-if it is defined in the config.
-
-The scanner reads one request per line and sends a response per line in jsonl.
+The scanner listens on stdin, responds on stdout, and logs to stderr.
+It reads one request per line and sends a response per line in jsonl.
 
 The "Scan Request Format" and "Scan Results Format" sections describe the
 format for requests and responses.
 
-## Config File Format (WIP)
+## Config File Format
 
-```toml
-# The logger section configures, you guessed it, the logger. This section and
-# its attributes are optional.
-[logger]
-# Default: "INFO"
-# Valid Values: "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
-level = "INFO"
-
-# The scanner section is required and configures scanning.
-# TODO: Make optional
-[scanner]
-# The full path to where the scanner should store files, clone repos, etc
-# TODO: Default: "${XDG_CACHE_HOME}/leaktk"
-workdir = "/tmp/leaktk"
-
-# Pattern Distribution Server settings for the scanner.
-# TODO: Make optional
-[scanner.patterns]
-# The base URL for where the scanner should look for patterns
-# The path "/patterns/{scanner}/{version}" will be appended to this base URL
-server_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
-# How old the patterns can be before they're refreshed during the next scan.
-refresh_interval = 43200
-
-# TODO: Optional headers passed to the pattern server if it requires
-# authentication
-# server_request_headers = {Authorization = "Bearer <token>"}
-
-# TODO: change the server setting into something like:
-# [scanner.patterns.server]
-# base_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
-# request_headers = {Authorization = "Bearer <token>"}
-```
+The [example config](./examples/config.toml) provides a commented version with
+all of the default values set.
 
 ## Scan Request Format
 
