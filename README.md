@@ -56,11 +56,17 @@ Clone a remote repo and scan it.
 
 ```json
 {
-  "id": "<uuid>",
+  "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c",
   "type": "git",
   "url": "https://github.com/leaktk/fake-leaks.git",
   "options": {
-    "depth": 5,
+      "branch":"main",
+      "depth": 5,
+      "shallow_since": "2020-01-01",
+      "single_branch": true,
+      "config": [
+        "http.sslVerify=true"
+      ]
   }
 }
 ```
@@ -84,7 +90,7 @@ pre-commit hooks or tool-chains that already take care of cloning the repo.
 
 ```json
 {
-  "id": "<uuid>",
+  "id": "a57dbbb5-42ff-4a7d-b580-eda9d01ce10c",
   "type": "git",
   "url": "file:///home/user/workspace/leaktk/fake-leaks",
   "options": {
@@ -104,9 +110,9 @@ Success
 
 ```json
 {
-  "id": "<uuid>",
+  "id": "dd4f7ac3-134f-489a-b0a9-0830ab98e271",
   "request": {
-    "id": "<uuid>"
+    "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c"
   },
   "results": [
     {
@@ -148,9 +154,9 @@ Error (if "error" is present, the scan failed)
 
 ```json
 {
-  "id": "<uuid>",
+  "id": "57920e78-b89d-4dbd-ac59-8d9750eb0515",
   "request": {
-    "id": "<uuid>"
+    "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c"
   },
   "error": "<some error message>",
   "results": []
