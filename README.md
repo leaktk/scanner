@@ -74,9 +74,9 @@ Clone a remote repo and scan it.
 Supported options:
 
 * `config:Vec<String>` -> `[--config String ...]`
-* `shallow_since:String` -> `--shallow-since String`
+* `shallow_since:String` -> `--shallow-since String` (TODO: handle shallow clone overscan issue)
 * `single_branch:bool` -> `--[no-]single-branch`
-* `depth:u32` -> `--depth u32`
+* `depth:u32` -> `--depth u32` (TODO: handle shallow clone overscan issue)
 * `branch:String` -> `--branch String`
 
 Note: These will be passed to the git command, even if the combination of
