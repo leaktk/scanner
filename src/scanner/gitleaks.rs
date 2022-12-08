@@ -1,5 +1,5 @@
 use super::patterns;
-use super::proto::{GitLeaksResult, GitOptions};
+use super::proto::GitLeaksResult;
 use crate::config::{
     ScannerConfig, GITLEAKS_LINUX_X64_CHECKSUM, GITLEAKS_LINUX_X64_URL, GITLEAKS_VERSION,
 };
@@ -55,11 +55,7 @@ fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
     return binpath;
 }
 
-pub fn scan(
-    config: &ScannerConfig,
-    files_dir: &Path,
-    options: &Option<GitOptions>,
-) -> Vec<GitLeaksResult> {
+pub fn scan(config: &ScannerConfig, files_dir: &Path) -> Vec<GitLeaksResult> {
     let results = Command::new(gitleaks_path(config))
         .arg("detect")
         .arg("--report-path=/dev/stdout")

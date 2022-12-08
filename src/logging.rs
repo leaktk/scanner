@@ -9,7 +9,6 @@ pub struct Logger {
     level: Level,
 }
 
-
 impl log::Log for Logger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= self.level

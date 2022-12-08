@@ -4,19 +4,18 @@ mod gitleaks;
 mod patterns;
 mod providers;
 
-use uuid::Uuid;
 use crate::config::ScannerConfig;
 use proto::{
-    GitCommit, GitCommitAuthor, GitOptions, Lines, Request, Response, ResponseRequest,
-    Result as ScanResult, Rule, Source,
+    GitCommit, GitCommitAuthor, Lines, Request, Response, ResponseRequest, Result as ScanResult,
+    Rule, Source,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
+use uuid::Uuid;
 
 pub struct Scanner<'s> {
     config: &'s ScannerConfig,
-    scan_count: u32,
     last_patterns_refresh: Option<Instant>,
     refresh_interval: Duration,
 }
@@ -25,7 +24,6 @@ impl<'s> Scanner<'s> {
     pub fn new(config: &'s ScannerConfig) -> Scanner<'s> {
         let mut scanner = Scanner {
             config: config,
-            scan_count: 0,
             // TODO: look this up from the file timestamp and make this not optional
             last_patterns_refresh: None,
             refresh_interval: Duration::from_secs(config.patterns.refresh_interval),
@@ -59,22 +57,14 @@ impl<'s> Scanner<'s> {
         self.config.workdir.join("scans")
     }
 
-    fn scan_job_dir(&self, scan_id: u32) -> PathBuf {
-        self.scans_dir().join(scan_id.to_string())
+    fn scan_job_files_dir(&self) -> PathBuf {
+        self.scans_dir()
+            .join(Uuid::new_v4().to_string())
+            .join("files")
     }
 
-    fn scan_job_files_dir(&self, scan_id: u32) -> PathBuf {
-        self.scan_job_dir(scan_id).join("files")
-    }
-
-    fn start_git_scan(
-        &self,
-        id: &String,
-        url: &String,
-        options: &Option<GitOptions>,
-        files_dir: &Path,
-    ) -> Response {
-        let gitleaks_results = gitleaks::scan(&self.config, files_dir, options);
+    fn start_git_scan(&self, id: &String, url: &String, files_dir: &Path) -> Response {
+        let gitleaks_results = gitleaks::scan(&self.config, files_dir);
 
         Response {
             id: Uuid::new_v4().to_string(),
@@ -113,15 +103,14 @@ impl<'s> Scanner<'s> {
     }
 
     pub fn scan(&mut self, req: &Request) -> Response {
-        self.scan_count += 1;
-        let files_dir = self.scan_job_files_dir(self.scan_count);
+        let files_dir = self.scan_job_files_dir();
 
         self.refresh_stale_patterns();
 
         match req {
             Request::Git { id, url, options } => {
-                providers::git::clone(&id, &url, &options, files_dir.as_path());
-                self.start_git_scan(&id, &url, &options, files_dir.as_path())
+                providers::git::clone(&url, &options, files_dir.as_path());
+                self.start_git_scan(&id, &url, files_dir.as_path())
             }
         }
     }

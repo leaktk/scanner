@@ -65,6 +65,17 @@ Clone a remote repo and scan it.
 }
 ```
 
+Supported options:
+
+* `config:Vec<String>` -> `[--config String ...]`
+* `shallow_since:String` -> `--shallow-since String`
+* `single_branch:bool` -> `--[no-]single-branch`
+* `depth:u32` -> `--depth u32`
+* `branch:String` -> `--branch String`
+
+Note: These will be passed to the git command, even if the combination of
+options doesn't make sense.
+
 ### TODO: Git (Local)
 
 Scan a local repo. Instead of cloning the repo, the scanner will simply

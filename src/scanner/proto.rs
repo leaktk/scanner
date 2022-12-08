@@ -5,6 +5,14 @@ use serde::{self, Deserialize, Serialize};
 pub struct GitOptions {
     // Set --depth for the git clone
     pub depth: Option<u32>,
+    // Set config values
+    pub config: Option<Vec<String>>,
+    // Set --shallow-since for the git clone
+    pub shallow_since: Option<String>,
+    // Set --branch for the git clone
+    pub branch: Option<String>,
+    // Set --single-branch or -no-single-branch if present for the git clone
+    pub single_branch: Option<bool>,
 }
 
 // The incoming request

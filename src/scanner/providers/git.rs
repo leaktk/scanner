@@ -2,7 +2,7 @@ use crate::scanner::proto::GitOptions;
 use std::path::Path;
 use std::process::Command;
 
-pub fn clone(id: &String, clone_url: &String, options: &Option<GitOptions>, clone_dir: &Path) {
+pub fn clone(clone_url: &String, options: &Option<GitOptions>, clone_dir: &Path) {
     // TODO: logging
     let mut git = Command::new("git");
 
@@ -11,12 +11,31 @@ pub fn clone(id: &String, clone_url: &String, options: &Option<GitOptions>, clon
         Some(opts) => {
             let mut args = Vec::new();
 
+            if let Some(configs) = &opts.config {
+                for config in configs {
+                    args.push(format!("--config={config}"));
+                }
+            }
+
+            if let Some(branch) = &opts.branch {
+                args.push(format!("--branch={branch}"));
+            }
+
+            if let Some(single_branch) = opts.single_branch {
+                if single_branch {
+                    args.push("--single-branch".to_string());
+                } else {
+                    args.push("--no-single-branch".to_string());
+                }
+            }
+
             if let Some(depth) = opts.depth {
-                // TODO: sanitize input
                 args.push(format!("--depth={depth}"));
             }
 
-            // TODO: Add additional options here
+            if let Some(shallow_since) = &opts.shallow_since {
+                args.push(format!("--shallow-since={shallow_since}"));
+            }
 
             git.arg("clone").args(args).arg(&clone_url).arg(clone_dir)
         }
