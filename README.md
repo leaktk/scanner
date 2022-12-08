@@ -144,7 +144,7 @@ Success
 }
 ```
 
-Error (if "error" is present, the scan failed).
+Error (if "error" is present, the scan failed)
 
 ```json
 {
