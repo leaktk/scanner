@@ -100,6 +100,8 @@ line by type
 
 ### Git
 
+Success
+
 ```json
 {
   "id": "<uuid>",
@@ -139,6 +141,19 @@ line by type
       }
     }
   ]
+}
+```
+
+Error (if "error" is present, the scan failed).
+
+```json
+{
+  "id": "<uuid>",
+  "request": {
+    "id": "<uuid>"
+  },
+  "error": "<some error message>",
+  "results": []
 }
 ```
 

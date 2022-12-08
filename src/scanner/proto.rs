@@ -153,6 +153,9 @@ pub struct Response {
     // Details from the request so the response can be tied back to the
     // original request
     pub request: ResponseRequest,
+    // An optional error message. If this is present, assume the scan wasn't
+    // success.
+    pub error: Option<String>,
     // The individual results of the scan
     pub results: Vec<Result>,
 }

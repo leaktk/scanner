@@ -5,6 +5,7 @@ mod patterns;
 mod providers;
 
 use crate::config::ScannerConfig;
+use log::info;
 use proto::{
     GitCommit, GitCommitAuthor, Lines, Request, Response, ResponseRequest, Result as ScanResult,
     Rule, Source,
@@ -45,7 +46,7 @@ impl<'s> Scanner<'s> {
     }
 
     fn reset_scans_dir(&self) {
-        // TODO: Audit log statement
+        info!("Resetting scan dir");
         if Path::exists(&self.scans_dir()) {
             fs::remove_dir_all(self.scans_dir())
                 // If the scan dir can't be removed. The code shouldn't run
@@ -57,18 +58,17 @@ impl<'s> Scanner<'s> {
         self.config.workdir.join("scans")
     }
 
-    fn scan_job_files_dir(&self) -> PathBuf {
-        self.scans_dir()
-            .join(Uuid::new_v4().to_string())
-            .join("files")
+    fn scan_dir(&self) -> PathBuf {
+        self.scans_dir().join(Uuid::new_v4().to_string())
     }
 
-    fn start_git_scan(&self, id: &String, url: &String, files_dir: &Path) -> Response {
-        let gitleaks_results = gitleaks::scan(&self.config, files_dir);
+    fn start_git_scan(&self, id: &str, url: &str, scan_dir: &Path) -> Response {
+        let gitleaks_results = gitleaks::scan(&self.config, scan_dir);
 
         Response {
             id: Uuid::new_v4().to_string(),
-            request: ResponseRequest { id: id.clone() },
+            request: ResponseRequest { id: id.to_string() },
+            error: None,
             results: gitleaks_results
                 .iter()
                 .map(|r| ScanResult {
@@ -81,7 +81,7 @@ impl<'s> Scanner<'s> {
                         tags: r.rule_tags.clone(),
                     },
                     source: Source::Git {
-                        url: url.clone(),
+                        url: url.to_string(),
                         path: r.source_path.clone(),
                         lines: Lines {
                             start: r.source_lines_start.clone(),
@@ -102,15 +102,34 @@ impl<'s> Scanner<'s> {
         }
     }
 
-    pub fn scan(&mut self, req: &Request) -> Response {
-        let files_dir = self.scan_job_files_dir();
+    fn error_response(&self, id: &str, error: &str) -> Response {
+        Response {
+            id: Uuid::new_v4().to_string(),
+            request: ResponseRequest { id: id.to_string() },
+            results: Vec::new(),
+            error: Some(error.to_string()),
+        }
+    }
 
+    pub fn scan(&mut self, req: &Request) -> Response {
         self.refresh_stale_patterns();
 
         match req {
             Request::Git { id, url, options } => {
-                providers::git::clone(&url, &options, files_dir.as_path());
-                self.start_git_scan(&id, &url, files_dir.as_path())
+                let scan_dir = self.scan_dir();
+                let result = providers::git::clone(&url, &options, scan_dir.as_path());
+
+                match result {
+                    Err(err) => self.error_response(&id, &err.to_string()),
+                    Ok(output) => {
+                        if output.status.success() {
+                            self.start_git_scan(&id, &url, scan_dir.as_path())
+                        } else {
+                            let error = String::from_utf8_lossy(&output.stderr);
+                            self.error_response(&id, &error)
+                        }
+                    }
+                }
             }
         }
     }

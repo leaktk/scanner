@@ -55,20 +55,19 @@ fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
     return binpath;
 }
 
-pub fn scan(config: &ScannerConfig, files_dir: &Path) -> Vec<GitLeaksResult> {
+pub fn scan(config: &ScannerConfig, scan_dir: &Path) -> Vec<GitLeaksResult> {
     let results = Command::new(gitleaks_path(config))
         .arg("detect")
         .arg("--report-path=/dev/stdout")
         .arg("--report-format=json")
         .arg("--config")
-        .arg(patterns::patterns_path(config).to_str().unwrap())
+        .arg(patterns::patterns_path(config))
         .arg("--source")
-        .arg(files_dir.to_str().unwrap())
+        .arg(scan_dir)
         .output()
         .expect("Could not run scan");
 
-    // TODO: parse these results and turn them into result objects
+    // TODO: Better error handling
     let raw_results = String::from_utf8(results.stdout).unwrap();
-
     serde_json::from_str(&raw_results).unwrap()
 }
