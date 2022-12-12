@@ -2,6 +2,12 @@
 name = "leaktk-scanner"
 version = "0.0.0"
 edition = "2021"
+license = "MIT" 
+description = "A secrets scanner"
+documentation = "https://github.com/leaktk/scanner"
+homepage = "https://github.com/leaktk/scanner"
+repository = "https://github.com/leaktk/scanner"
+readme = "README.md"
 
 [dependencies]
 reqwest = { version = "0.11", features = ["blocking"] }
