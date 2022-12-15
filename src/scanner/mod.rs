@@ -5,7 +5,7 @@ mod patterns;
 mod providers;
 
 use crate::config::ScannerConfig;
-use log::info;
+use log::{error, info, warn};
 use proto::{
     GitCommit, GitCommitAuthor, Lines, Request, Response, ResponseRequest, Result as ScanResult,
     Rule, Source,
@@ -35,19 +35,32 @@ impl<'s> Scanner<'s> {
         scanner
     }
 
+    fn should_refresh_patterns(&self) -> bool {
+        self.last_patterns_refresh.map_or(true, |last| {
+            last.duration_since(Instant::now()) > self.refresh_interval
+        })
+    }
+
     fn refresh_stale_patterns(&mut self) {
-        if match self.last_patterns_refresh {
-            None => true,
-            Some(last) => last.duration_since(Instant::now()) > self.refresh_interval,
-        } {
-            patterns::refresh(&self.config);
-            self.last_patterns_refresh = Some(Instant::now());
+        if self.should_refresh_patterns() {
+            if let Err(err) = patterns::refresh(&self.config) {
+                error!("{}", err);
+
+                if !patterns::patterns_path(&self.config).as_path().exists() {
+                    panic!("Could not load patterns file!");
+                } else {
+                    warn!("Falling back on stale patterns!");
+                }
+            } else {
+                self.last_patterns_refresh = Some(Instant::now());
+            }
         }
     }
 
     fn reset_scans_dir(&self) {
         info!("Resetting scan dir");
-        if Path::exists(&self.scans_dir()) {
+
+        if self.scans_dir().as_path().exists() {
             fs::remove_dir_all(self.scans_dir())
                 // If the scan dir can't be removed. The code shouldn't run
                 .expect("Could not clear scans dir!");
