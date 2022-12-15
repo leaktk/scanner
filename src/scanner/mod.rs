@@ -35,6 +35,7 @@ impl<'s> Scanner<'s> {
         scanner
     }
 
+    #[inline]
     fn should_refresh_patterns(&self) -> bool {
         self.last_patterns_refresh.map_or(true, |last| {
             last.duration_since(Instant::now()) > self.refresh_interval
