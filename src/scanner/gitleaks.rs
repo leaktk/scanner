@@ -1,8 +1,6 @@
 use super::patterns;
 use super::proto::GitLeaksResult;
-use crate::config::{
-    ScannerConfig, GITLEAKS_LINUX_X64_CHECKSUM, GITLEAKS_LINUX_X64_URL, GITLEAKS_VERSION,
-};
+use crate::config::ScannerConfig;
 use std::fs::{self, File};
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
@@ -15,8 +13,7 @@ use ring::digest::{Context, SHA256};
 fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
     // TODO: better error handling for this
     let bindir = config.workdir.join("bin");
-    let binname = format!("gitleaks-{}", GITLEAKS_VERSION);
-    let binpath = bindir.join(&binname);
+    let binpath = bindir.join(&config.gitleaks.filename);
 
     if binpath.exists() {
         return binpath;
@@ -24,9 +21,9 @@ fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
 
     fs::create_dir_all(&bindir).expect("Could not create bin file directory!");
 
-    let req = reqwest::blocking::get(GITLEAKS_LINUX_X64_URL).unwrap();
+    let req = reqwest::blocking::get(&config.gitleaks.download_url).unwrap();
     let data = req.bytes().unwrap();
-    let mut bin = File::create(bindir.join(&binname)).unwrap();
+    let mut bin = File::create(bindir.join(&config.gitleaks.filename)).unwrap();
 
     bin.write_all(&data).unwrap();
 
@@ -41,7 +38,7 @@ fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
         .collect::<Vec<String>>()
         .join("");
 
-    if hex_digest != GITLEAKS_LINUX_X64_CHECKSUM {
+    if hex_digest != config.gitleaks.checksum {
         fs::remove_file(binpath).unwrap();
         panic!("Invalid gitleaks digest!");
     }
@@ -50,7 +47,7 @@ fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
     perms.set_mode(0o770);
     fs::set_permissions(&binpath, perms).unwrap();
 
-    info!("{} downloaded!", &binname);
+    info!("{} downloaded!", &config.gitleaks.filename);
 
     return binpath;
 }

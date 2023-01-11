@@ -1,4 +1,4 @@
-use crate::config::{ScannerConfig, GITLEAKS_VERSION, PATTERNS_FILE, SCANNER};
+use crate::config::ScannerConfig;
 use crate::errors::Error;
 use log::info;
 use std::fs::{self, File};
@@ -10,8 +10,8 @@ pub fn refresh(config: &ScannerConfig) -> Result<(), Error> {
     info!("Refreshing patterns");
 
     let url = format!(
-        "{}/patterns/{}/{}",
-        config.patterns.server_url, SCANNER, GITLEAKS_VERSION
+        "{}/patterns/gitleaks/{}",
+        config.patterns.server_url, config.gitleaks.version,
     );
 
     fs::create_dir_all(&patterns_dir(&config))?;
@@ -26,9 +26,15 @@ pub fn refresh(config: &ScannerConfig) -> Result<(), Error> {
 }
 
 fn patterns_dir(config: &ScannerConfig) -> PathBuf {
-    config.workdir.join("patterns").join(GITLEAKS_VERSION)
+    config
+        .workdir
+        .join("patterns")
+        .join(&config.gitleaks.version)
 }
 
 pub fn patterns_path(config: &ScannerConfig) -> PathBuf {
-    patterns_dir(config).join(PATTERNS_FILE)
+    patterns_dir(config).join(format!(
+        "gitleaks-{}-patterns.toml",
+        config.gitleaks.version
+    ))
 }
