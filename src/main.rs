@@ -9,20 +9,16 @@ use crate::errors::Error;
 use crate::listner::Listner;
 use crate::logging::Logger;
 use crate::scanner::Scanner;
-use clap::Parser;
-
-#[derive(Parser)]
-struct Args {
-    #[arg(short, long)]
-    config: String,
-}
+use std::env;
 
 fn main() -> Result<(), Error> {
-    let config = Config::load(&Args::parse().config)?;
+    // TODO write a simple parser for this
+    assert_eq!(&env::args().nth(1).expect("--config present"), "--config");
+    let config = Config::load(&env::args().nth(2).expect("config path present"))?;
 
     Logger::init(&config.logger)?;
 
-    let mut scanner = Scanner::new(&config.scanner);
+    let scanner = Scanner::new(&config.scanner);
 
     for request in Listner::new() {
         let result = scanner.scan(&request);

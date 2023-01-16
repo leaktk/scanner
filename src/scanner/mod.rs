@@ -6,28 +6,25 @@ mod providers;
 
 use crate::config::ScannerConfig;
 use log::{error, info, warn};
+use patterns::Patterns;
 use proto::{
     GitCommit, GitCommitAuthor, Lines, Request, Response, ResponseRequest, Result as ScanResult,
     Rule, Source,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 pub struct Scanner<'s> {
     config: &'s ScannerConfig,
-    last_patterns_refresh: Option<Instant>,
-    refresh_interval: Duration,
+    patterns: Patterns,
 }
 
 impl<'s> Scanner<'s> {
     pub fn new(config: &'s ScannerConfig) -> Scanner<'s> {
-        let mut scanner = Scanner {
+        let scanner = Scanner {
             config: config,
-            // TODO: look this up from the file timestamp and make this not optional
-            last_patterns_refresh: None,
-            refresh_interval: Duration::from_secs(config.patterns.refresh_interval),
+            patterns: Patterns::new(&config),
         };
 
         scanner.reset_scans_dir();
@@ -35,25 +32,16 @@ impl<'s> Scanner<'s> {
         scanner
     }
 
-    #[inline]
-    fn should_refresh_patterns(&self) -> bool {
-        self.last_patterns_refresh.map_or(true, |last| {
-            last.duration_since(Instant::now()) > self.refresh_interval
-        })
-    }
-
-    fn refresh_stale_patterns(&mut self) {
-        if self.should_refresh_patterns() {
-            if let Err(err) = patterns::refresh(&self.config) {
-                error!("{}", err);
-
-                if !patterns::patterns_path(&self.config).as_path().exists() {
-                    panic!("Could not load patterns file!");
-                } else {
-                    warn!("Falling back on stale patterns!");
-                }
+    fn refresh_stale_patterns(&self) {
+        if let Err(err) = self.patterns.refresh_if_stale() {
+            error!("{}", err);
+            if !self.patterns.path.exists() {
+                // There's really nothing we can do here. If there aren't any
+                // patterns then this error isn't recoverable at this point
+                // in time.
+                panic!("Could not load patterns file!");
             } else {
-                self.last_patterns_refresh = Some(Instant::now());
+                warn!("Falling back on stale patterns!");
             }
         }
     }
@@ -77,7 +65,7 @@ impl<'s> Scanner<'s> {
     }
 
     fn start_git_scan(&self, id: &str, url: &str, scan_dir: &Path) -> Response {
-        let gitleaks_results = gitleaks::scan(&self.config, scan_dir);
+        let gitleaks_results = gitleaks::scan(&self.config, &self.patterns, scan_dir);
 
         Response {
             id: Uuid::new_v4().to_string(),
@@ -125,7 +113,7 @@ impl<'s> Scanner<'s> {
         }
     }
 
-    pub fn scan(&mut self, req: &Request) -> Response {
+    pub fn scan(&self, req: &Request) -> Response {
         self.refresh_stale_patterns();
 
         match req {
