@@ -2,7 +2,7 @@ use crate::errors::Error;
 use serde::Deserialize;
 use std::env;
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
 pub struct GitleaksConfig {
@@ -12,53 +12,12 @@ pub struct GitleaksConfig {
     pub checksum: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct PatternsConfig {
-    pub server_url: String,
-    pub refresh_interval: u64,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct LoggerConfig {
-    #[serde(default = "LoggerConfig::default_level")]
-    pub level: log::Level,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ScannerConfig {
-    #[serde(default)]
-    pub gitleaks: GitleaksConfig,
-    pub workdir: Box<Path>,
-    pub patterns: PatternsConfig,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Config {
-    #[serde(default)]
-    pub logger: LoggerConfig,
-    pub scanner: ScannerConfig,
-}
-
-impl LoggerConfig {
-    // Define the default level for the LoggerConfig if the section
-    // is specified but the level attr isn't
-    fn default_level() -> log::Level {
-        log::Level::Info
-    }
-}
-
-// Define what a default LoggerConfig should be if the section isn't specified
-impl Default for LoggerConfig {
-    fn default() -> Self {
-        LoggerConfig {
-            level: log::Level::Info,
-        }
-    }
-}
-
 // Generally you shouldn't override the gitleaks config but this provides some flexibility and
 // provides a consistent way to access the details in an OS agnoistic way. Just make sure it's
 // compatible with the version defined in the source.
+//
+// It also doesn't make a whole lot of sense to set the default for one value
+// and not change the others, hence no field level defaults.
 impl Default for GitleaksConfig {
     fn default() -> Self {
         let version = "8.12.0";
@@ -83,6 +42,88 @@ impl Default for GitleaksConfig {
         }
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct PatternsConfig {
+    #[serde(default = "PatternsConfig::default_server_url")]
+    pub server_url: String,
+    #[serde(default = "PatternsConfig::default_refresh_interval")]
+    pub refresh_interval: u64,
+}
+
+impl PatternsConfig {
+    fn default_server_url() -> String {
+        "https://raw.githubusercontent.com/leaktk/patterns/main/target".to_string()
+    }
+
+    fn default_refresh_interval() -> u64 {
+        43200
+    }
+}
+
+impl Default for PatternsConfig {
+    fn default() -> Self {
+        PatternsConfig {
+            server_url: PatternsConfig::default_server_url(),
+            refresh_interval: PatternsConfig::default_refresh_interval(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoggerConfig {
+    #[serde(default = "LoggerConfig::default_level")]
+    pub level: log::Level,
+}
+
+impl LoggerConfig {
+    fn default_level() -> log::Level {
+        log::Level::Info
+    }
+}
+
+impl Default for LoggerConfig {
+    fn default() -> Self {
+        LoggerConfig {
+            level: LoggerConfig::default_level(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ScannerConfig {
+    #[serde(default)]
+    pub gitleaks: GitleaksConfig,
+    #[serde(default = "ScannerConfig::default_workdir")]
+    pub workdir: PathBuf,
+    #[serde(default)]
+    pub patterns: PatternsConfig,
+}
+
+impl ScannerConfig {
+    fn default_workdir() -> PathBuf {
+        env::temp_dir().join("leaktk")
+    }
+}
+
+impl Default for ScannerConfig {
+    fn default() -> Self {
+        ScannerConfig {
+            gitleaks: Default::default(),
+            workdir: ScannerConfig::default_workdir(),
+            patterns: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub struct Config {
+    #[serde(default)]
+    pub logger: LoggerConfig,
+    #[serde(default)]
+    pub scanner: ScannerConfig,
+}
+
 
 impl Config {
     pub fn from_str(raw: &str) -> Result<Config, Error> {

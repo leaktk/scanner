@@ -2,35 +2,36 @@
 # NOTE: This config file format is still in the draft stages and will likely
 # change.
 #
+# All items in the config should have sane defaults and the 
+# config is optional
 
-# The logger section configures, you guessed it, the logger. This section and
-# its attributes are optional.
-[logger]
-# Default: "INFO"
-# Valid Values: "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
-level = "INFO"
+# [logger]
+# # Valid Values: "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
+# level = "INFO"
 
-# The scanner section is required and configures scanning.
-# TODO: Make optional
-[scanner]
-# The full path to where the scanner should store files, clone repos, etc
-# TODO: Default: "${XDG_CACHE_HOME}/leaktk"
-workdir = "/tmp/leaktk"
+# [scanner]
 
-# Pattern Distribution Server settings for the scanner.
-# TODO: Make optional
-[scanner.patterns]
+# # The full path to where the scanner should store files, clone repos, etc
+# # TODO: change default to "${XDG_CACHE_HOME}/leaktk"
+# workdir = "/tmp/leaktk"
+
+# [scanner.patterns]
+
 # The base URL for where the scanner should look for patterns
 # The path "/patterns/{scanner}/{version}" will be appended to this base URL
-server_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
+#
+# server_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
+#
 # How old the patterns can be before they're refreshed during the next scan.
-refresh_interval = 43200
+#
+# refresh_interval = 43200
 
 # TODO: Optional headers passed to the pattern server if it requires
 # authentication
+#
 # server_request_headers = {Authorization = "Bearer <token>"}
 
 # TODO: change the server setting into something like:
 # [scanner.patterns.server]
-# base_url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
+# url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
 # request_headers = {Authorization = "Bearer <token>"}

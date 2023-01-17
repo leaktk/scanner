@@ -3,7 +3,7 @@ use std::env;
 use std::process;
 
 pub struct Args {
-    pub config: String,
+    pub config: Option<String>,
 }
 
 fn parse<I: Iterator<Item = String>>(
@@ -17,6 +17,8 @@ fn parse<I: Iterator<Item = String>>(
                     map.insert(arg[2..].to_string(), value);
                 } else {
                     eprintln!("The option \"{}\" was missing a value.\n", arg);
+                    eprintln!("USAGE\n\n    leaktk-scanner --config CONFIG_PATH");
+                    process::exit(1);
                 }
             }
         } else {
@@ -28,12 +30,7 @@ fn parse<I: Iterator<Item = String>>(
 pub fn args() -> Args {
     let raw_args = parse(env::args(), HashMap::new());
 
-    if !raw_args.contains_key("config") {
-        eprintln!("USAGE\n\n    leaktk-scanner --config CONFIG_PATH");
-        process::exit(1);
-    }
-
     Args {
-        config: raw_args.get("config").unwrap().to_string(),
+        config: raw_args.get("config").map(|s| s.to_string()),
     }
 }

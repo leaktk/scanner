@@ -20,10 +20,10 @@ Just getting started.
 ## Usage
 
 ```sh
-# TODO: make --config optional and if config isn't set:
-# 1) then try ${XDG_CONFIG_HOME}/leatktk/config.toml
-# 2) else try /etc/leaktk/config.toml
-# 3) else fall back on default config
+# TODO: if --config isn't set:
+# 1) then try ${XDG_CONFIG_HOME}/leatktk/config.toml (TODO)
+# 2) else try /etc/leaktk/config.toml (TODO)
+# 3) else fall back on default config (DONE)
 leaktk-scanner --config ./examples/config.toml < ./examples/requests.jsonl
 ```
 
@@ -166,7 +166,6 @@ Error (if "error" is present, the scan failed)
 ## TODO
 
 * Fix/cleanup the error handling
-* Proper logging
 * All the TODOs called out in the README
 * Unittest and refactor what's currently there
 * Group gitleaks code into a single object as the source of truth
