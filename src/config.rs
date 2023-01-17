@@ -124,7 +124,6 @@ pub struct Config {
     pub scanner: ScannerConfig,
 }
 
-
 impl Config {
     pub fn from_str(raw: &str) -> Result<Config, Error> {
         toml::from_str(raw).map_err(|err| Error::new(err.to_string()))
