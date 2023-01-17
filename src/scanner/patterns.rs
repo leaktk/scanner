@@ -6,19 +6,31 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::time::{self, Duration, SystemTime};
 
+struct PatternServer {
+    url: String,
+    gitleaks_version: String,
+}
+
+impl PatternServer {
+    fn gitleaks_patterns_url(&self) -> String {
+        format!("{}/patterns/gitleaks/{}", self.url, self.gitleaks_version)
+    }
+}
+
 pub struct Patterns {
     pub path: PathBuf,
     refresh_interval: Duration,
-    server_url: String,
-    gitleaks_version: String,
+    server: PatternServer,
 }
 
 impl Patterns {
     pub fn new(config: &ScannerConfig) -> Patterns {
         Patterns {
             refresh_interval: Duration::from_secs(config.patterns.refresh_interval),
-            server_url: config.patterns.server_url.clone(),
-            gitleaks_version: config.gitleaks.version.clone(),
+            server: PatternServer {
+                url: config.patterns.server.url.clone(),
+                gitleaks_version: config.gitleaks.version.clone(),
+            },
             path: config.workdir.join("patterns").join(format!(
                 "gitleaks-{}-patterns.toml",
                 config.gitleaks.version
@@ -34,13 +46,9 @@ impl Patterns {
         } else {
             info!("Refreshing patterns");
 
-            let url = format!(
-                "{}/patterns/gitleaks/{}",
-                self.server_url, self.gitleaks_version,
-            );
-
             fs::create_dir_all(self.path.parent().expect("patterns in a directory"))?;
 
+            let url = self.server.gitleaks_patterns_url();
             let content = reqwest::blocking::get(url)?.bytes()?;
             let mut file = File::create(&self.path)?;
 

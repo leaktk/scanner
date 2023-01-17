@@ -44,18 +44,34 @@ impl Default for GitleaksConfig {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct PatternServerConfig {
+    #[serde(default = "PatternServerConfig::default_url")]
+    pub url: String,
+}
+
+impl PatternServerConfig {
+    fn default_url() -> String {
+        "https://raw.githubusercontent.com/leaktk/patterns/main/target".to_string()
+    }
+}
+
+impl Default for PatternServerConfig {
+    fn default() -> Self {
+        PatternServerConfig {
+            url: PatternServerConfig::default_url(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
 pub struct PatternsConfig {
-    #[serde(default = "PatternsConfig::default_server_url")]
-    pub server_url: String,
+    #[serde(default)]
+    pub server: PatternServerConfig,
     #[serde(default = "PatternsConfig::default_refresh_interval")]
     pub refresh_interval: u64,
 }
 
 impl PatternsConfig {
-    fn default_server_url() -> String {
-        "https://raw.githubusercontent.com/leaktk/patterns/main/target".to_string()
-    }
-
     fn default_refresh_interval() -> u64 {
         43200
     }
@@ -64,7 +80,7 @@ impl PatternsConfig {
 impl Default for PatternsConfig {
     fn default() -> Self {
         PatternsConfig {
-            server_url: PatternsConfig::default_server_url(),
+            server: Default::default(),
             refresh_interval: PatternsConfig::default_refresh_interval(),
         }
     }
