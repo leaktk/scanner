@@ -1,7 +1,7 @@
 # NOTE: This config file format is still in the draft stages and will likely
 # change.
 #
-# All items in the config should have sane defaults and the 
+# All items in the config should have sane defaults and the
 # config is optional.
 
 # [logger]
@@ -10,7 +10,6 @@
 #
 # [scanner]
 # # The full path to where the scanner should store files, clone repos, etc
-# # TODO: change default to "${XDG_CACHE_HOME}/leaktk"
 # workdir = "/tmp/leaktk"
 #
 # [scanner.patterns]
@@ -21,7 +20,3 @@
 # # The URL to a pattern server
 # # The path "/patterns/{scanner}/{version}" will be appended to this URL
 # url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
-#
-# # TODO: Optional headers passed to the pattern server if it requires
-# # authentication
-# request_headers = {Authorization = "Bearer <token>"}

@@ -11,7 +11,6 @@ use log::info;
 use ring::digest::{Context, SHA256};
 
 fn gitleaks_path(config: &ScannerConfig) -> PathBuf {
-    // TODO: better error handling for this
     let bindir = config.workdir.join("bin");
     let binpath = bindir.join(&config.gitleaks.filename);
 
@@ -64,7 +63,6 @@ pub fn scan(config: &ScannerConfig, patterns: &Patterns, scan_dir: &Path) -> Vec
         .output()
         .expect("Could not run scan");
 
-    // TODO: Better error handling
     let raw_results = String::from_utf8(results.stdout).unwrap();
     serde_json::from_str(&raw_results).unwrap()
 }

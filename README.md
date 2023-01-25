@@ -20,10 +20,6 @@ Just getting started.
 ## Usage
 
 ```sh
-# TODO: if --config isn't set:
-# 1) then try ${XDG_CONFIG_HOME}/leatktk/config.toml (TODO)
-# 2) else try /etc/leaktk/config.toml (TODO)
-# 3) else fall back on default config (DONE)
 leaktk-scanner --config ./examples/config.toml < ./examples/requests.jsonl
 ```
 
@@ -74,15 +70,15 @@ Clone a remote repo and scan it.
 Supported options:
 
 * `config:Vec<String>` -> `[--config String ...]`
-* `shallow_since:String` -> `--shallow-since String` (TODO: handle shallow clone overscan issue)
+* `shallow_since:String` -> `--shallow-since String`
 * `single_branch:bool` -> `--[no-]single-branch`
-* `depth:u32` -> `--depth u32` (TODO: handle shallow clone overscan issue)
+* `depth:u32` -> `--depth u32`
 * `branch:String` -> `--branch String`
 
 Note: These will be passed to the git command, even if the combination of
 options doesn't make sense.
 
-### TODO: Git (Local)
+### [WIP] Git (Local)
 
 Scan a local repo. Instead of cloning the repo, the scanner will simply
 scan the contents of the existing repo. This can be useful for implementing
@@ -165,9 +161,18 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-* Fix/cleanup the error handling
-* All the TODOs called out in the README
-* Unittest and refactor what's currently there
-* Group gitleaks code into a single object as the source of truth
-* Create a Workspace object to manage the workspace folders (creating, clearing, etc)
-* Encapsulate some of the Linux specific bits
+1. Handle shallow clone overscan issue
+1. Local git scans without a clone
+1. Better error handling in the code to avoid panics
+1. Change workdir default to `${XDG_CACHE_HOME}/leaktk`
+1. if --config isn't set:
+    * then try `${XDG_CONFIG_HOME}/leatktk/config.toml`
+    * else try /etc/leaktk/config.toml
+    * else fall back on default config
+1. Allow optional config headers passed to the pattern server requests
+1. Finalize the request/response format
+1. Make sure it fully supports Linux and Mac
+1. Unittest and refactor what's currently here
+1. Proper error handling in the code to keep things clean, consistent and scalable
+1. Group gitleaks code into a single object as the source of truth
+1. Create a Workspace object to manage the workspace folders (creating, clearing, etc)
