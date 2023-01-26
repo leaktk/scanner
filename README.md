@@ -176,3 +176,4 @@ Error (if "error" is present, the scan failed)
 1. Proper error handling in the code to keep things clean, consistent and scalable
 1. Group gitleaks code into a single object as the source of truth
 1. Create a Workspace object to manage the workspace folders (creating, clearing, etc)
+1. Figure out what to do with shallow commits on shallow-since type scans

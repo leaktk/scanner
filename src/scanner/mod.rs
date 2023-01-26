@@ -5,12 +5,14 @@ mod patterns;
 mod providers;
 
 use crate::config::ScannerConfig;
+use gitleaks::Gitleaks;
 use log::{error, info, warn};
 use patterns::Patterns;
 use proto::{
     GitCommit, GitCommitAuthor, Lines, Request, Response, ResponseRequest, Result as ScanResult,
     Rule, Source,
 };
+use providers::git::Git;
 use std::fs;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
@@ -18,6 +20,8 @@ use uuid::Uuid;
 pub struct Scanner<'s> {
     config: &'s ScannerConfig,
     patterns: Patterns,
+    git: Git,
+    gitleaks: Gitleaks,
 }
 
 impl<'s> Scanner<'s> {
@@ -25,6 +29,8 @@ impl<'s> Scanner<'s> {
         let scanner = Scanner {
             config: config,
             patterns: Patterns::new(&config),
+            git: Git::new(),
+            gitleaks: Gitleaks::new(),
         };
 
         scanner.reset_scans_dir();
@@ -65,7 +71,9 @@ impl<'s> Scanner<'s> {
     }
 
     fn start_git_scan(&self, id: &str, url: &str, scan_dir: &Path) -> Response {
-        let gitleaks_results = gitleaks::scan(&self.config, &self.patterns, scan_dir);
+        let gitleaks_results =
+            self.gitleaks
+                .git_scan(&self.config, &self.git, &self.patterns, scan_dir);
 
         Response {
             id: Uuid::new_v4().to_string(),
@@ -119,7 +127,7 @@ impl<'s> Scanner<'s> {
         match req {
             Request::Git { id, url, options } => {
                 let scan_dir = self.scan_dir();
-                let result = providers::git::clone(&url, &options, scan_dir.as_path());
+                let result = self.git.clone(&url, &options, scan_dir.as_path());
 
                 match result {
                     Err(err) => self.error_response(&id, &err.to_string()),
