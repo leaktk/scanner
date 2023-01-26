@@ -9,9 +9,9 @@ use crate::config::Config;
 use crate::errors::Error;
 use crate::listner::Listner;
 use crate::logging::Logger;
-use crate::scanner::Scanner;
 use crate::scanner::patterns::Patterns;
 use crate::scanner::providers::Providers;
+use crate::scanner::Scanner;
 
 fn main() -> Result<(), Error> {
     let config = match parser::args().config {

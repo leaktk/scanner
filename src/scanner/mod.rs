@@ -127,24 +127,26 @@ impl<'s> Scanner<'s> {
 
     pub fn scan(&self, req: &Request) -> Response {
         self.refresh_stale_patterns();
+        let scan_dir = self.scan_dir();
 
-        match req {
-            Request::Git { id, url, options } => {
-                let scan_dir = self.scan_dir();
-                let result = self.providers.git.clone(&url, &options, &scan_dir);
-
-                match result {
-                    Err(err) => self.error_response(&id, &err.to_string()),
-                    Ok(output) => {
-                        if output.status.success() {
-                            self.start_git_scan(&id, &url, &scan_dir)
-                        } else {
-                            let error = String::from_utf8_lossy(&output.stderr);
-                            self.error_response(&id, &error)
-                        }
+        let resp = match req {
+            Request::Git { id, url, .. } => match self.providers.clone(&req, &scan_dir) {
+                Err(err) => self.error_response(&id, &err.to_string()),
+                Ok(output) => {
+                    if output.status.success() {
+                        self.start_git_scan(&id, &url, &scan_dir)
+                    } else {
+                        let error = String::from_utf8_lossy(&output.stderr);
+                        self.error_response(&id, &error)
                     }
                 }
-            }
+            },
+        };
+
+        if scan_dir.exists() {
+            fs::remove_dir_all(scan_dir).expect("Could not remove scan dir!");
         }
+
+        resp
     }
 }

@@ -162,7 +162,6 @@ Error (if "error" is present, the scan failed)
 ## TODO
 
 1. Local git scans without a clone
-1. Remove clone dir for when done with remote scans
 1. Better error handling in the code to avoid panics
 1. Change workdir default to `${XDG_CACHE_HOME}/leaktk`
 1. if --config isn't set:
