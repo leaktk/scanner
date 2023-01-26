@@ -18,7 +18,7 @@ impl PatternServer {
 }
 
 pub struct Patterns {
-    pub path: PathBuf,
+    pub gitleaks_patterns_path: PathBuf,
     refresh_interval: Duration,
     server: PatternServer,
 }
@@ -31,11 +31,16 @@ impl Patterns {
                 url: config.patterns.server.url.clone(),
                 gitleaks_version: config.gitleaks.version.clone(),
             },
-            path: config.workdir.join("patterns").join(format!(
+            gitleaks_patterns_path: config.workdir.join("patterns").join(format!(
                 "gitleaks-{}-patterns.toml",
                 config.gitleaks.version
             )),
         }
+    }
+
+    #[inline]
+    pub fn exists(&self) -> bool {
+        self.gitleaks_patterns_path.exists()
     }
 
     // Block and refresh the patterns file if it needs to be refreshed
@@ -46,11 +51,15 @@ impl Patterns {
         } else {
             info!("Refreshing patterns");
 
-            fs::create_dir_all(self.path.parent().expect("patterns in a directory"))?;
+            fs::create_dir_all(
+                self.gitleaks_patterns_path
+                    .parent()
+                    .expect("patterns in a directory"),
+            )?;
 
             let url = self.server.gitleaks_patterns_url();
             let content = reqwest::blocking::get(url)?.bytes()?;
-            let mut file = File::create(&self.path)?;
+            let mut file = File::create(&self.gitleaks_patterns_path)?;
 
             file.write_all(&content)?;
 
@@ -68,7 +77,7 @@ impl Patterns {
 
     #[inline]
     fn modified(&self) -> SystemTime {
-        self.path
+        self.gitleaks_patterns_path
             .metadata()
             .and_then(|m| m.modified())
             .unwrap_or(time::UNIX_EPOCH)

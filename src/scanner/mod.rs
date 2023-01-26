@@ -1,8 +1,8 @@
+pub mod patterns;
 pub mod proto;
+pub mod providers;
 
 mod gitleaks;
-mod patterns;
-mod providers;
 
 use crate::config::ScannerConfig;
 use gitleaks::Gitleaks;
@@ -12,25 +12,29 @@ use proto::{
     GitCommit, GitCommitAuthor, Lines, Request, Response, ResponseRequest, Result as ScanResult,
     Rule, Source,
 };
-use providers::git::Git;
+use providers::Providers;
 use std::fs;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 pub struct Scanner<'s> {
     config: &'s ScannerConfig,
-    patterns: Patterns,
-    git: Git,
-    gitleaks: Gitleaks,
+    patterns: &'s Patterns,
+    providers: &'s Providers,
+    gitleaks: Gitleaks<'s>,
 }
 
 impl<'s> Scanner<'s> {
-    pub fn new(config: &'s ScannerConfig) -> Scanner<'s> {
+    pub fn new(
+        config: &'s ScannerConfig,
+        providers: &'s Providers,
+        patterns: &'s Patterns,
+    ) -> Scanner<'s> {
         let scanner = Scanner {
             config: config,
-            patterns: Patterns::new(&config),
-            git: Git::new(),
-            gitleaks: Gitleaks::new(),
+            patterns: patterns,
+            providers: providers,
+            gitleaks: Gitleaks::new(&config, &providers, &patterns),
         };
 
         scanner.reset_scans_dir();
@@ -41,11 +45,11 @@ impl<'s> Scanner<'s> {
     fn refresh_stale_patterns(&self) {
         if let Err(err) = self.patterns.refresh_if_stale() {
             error!("{}", err);
-            if !self.patterns.path.exists() {
+            if !self.patterns.exists() {
                 // There's really nothing we can do here. If there aren't any
                 // patterns then this error isn't recoverable at this point
                 // in time.
-                panic!("Could not load patterns file!");
+                panic!("Could not find patterns!");
             } else {
                 warn!("Falling back on stale patterns!");
             }
@@ -62,18 +66,18 @@ impl<'s> Scanner<'s> {
         }
     }
 
+    // The dir for scan folders
     fn scans_dir(&self) -> PathBuf {
         self.config.workdir.join("scans")
     }
 
+    // The dir for a specific scan folder
     fn scan_dir(&self) -> PathBuf {
         self.scans_dir().join(Uuid::new_v4().to_string())
     }
 
     fn start_git_scan(&self, id: &str, url: &str, scan_dir: &Path) -> Response {
-        let gitleaks_results =
-            self.gitleaks
-                .git_scan(&self.config, &self.git, &self.patterns, scan_dir);
+        let gitleaks_results = self.gitleaks.git_scan(scan_dir);
 
         Response {
             id: Uuid::new_v4().to_string(),
@@ -127,13 +131,13 @@ impl<'s> Scanner<'s> {
         match req {
             Request::Git { id, url, options } => {
                 let scan_dir = self.scan_dir();
-                let result = self.git.clone(&url, &options, scan_dir.as_path());
+                let result = self.providers.git.clone(&url, &options, &scan_dir);
 
                 match result {
                     Err(err) => self.error_response(&id, &err.to_string()),
                     Ok(output) => {
                         if output.status.success() {
-                            self.start_git_scan(&id, &url, scan_dir.as_path())
+                            self.start_git_scan(&id, &url, &scan_dir)
                         } else {
                             let error = String::from_utf8_lossy(&output.stderr);
                             self.error_response(&id, &error)

@@ -1,6 +1,6 @@
 use super::patterns::Patterns;
 use super::proto::GitLeaksResult;
-use super::providers::git::Git;
+use super::providers::Providers;
 use crate::config::ScannerConfig;
 use log::info;
 use ring::digest::{Context, SHA256};
@@ -10,26 +10,32 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub struct Gitleaks;
+pub struct Gitleaks<'g> {
+    config: &'g ScannerConfig,
+    providers: &'g Providers,
+    patterns: &'g Patterns,
+}
 
-impl Gitleaks {
-    pub fn new() -> Gitleaks {
-        Gitleaks {}
+impl<'g> Gitleaks<'g> {
+    pub fn new(
+        config: &'g ScannerConfig,
+        providers: &'g Providers,
+        patterns: &'g Patterns,
+    ) -> Gitleaks<'g> {
+        Gitleaks {
+            config: config,
+            providers: providers,
+            patterns: patterns,
+        }
     }
 
-    fn gitleaks_path(&self, config: &ScannerConfig) -> PathBuf {
-        let bindir = config.workdir.join("bin");
-        let binpath = bindir.join(&config.gitleaks.filename);
-
-        if binpath.exists() {
-            return binpath;
-        }
-
+    #[inline]
+    fn download_gitleaks(&self, bindir: &Path, binpath: &Path) {
         fs::create_dir_all(&bindir).expect("Could not create bin file directory!");
 
-        let req = reqwest::blocking::get(&config.gitleaks.download_url).unwrap();
+        let req = reqwest::blocking::get(&self.config.gitleaks.download_url).unwrap();
         let data = req.bytes().unwrap();
-        let mut bin = File::create(bindir.join(&config.gitleaks.filename)).unwrap();
+        let mut bin = File::create(bindir.join(&self.config.gitleaks.filename)).unwrap();
 
         bin.write_all(&data).unwrap();
 
@@ -44,7 +50,7 @@ impl Gitleaks {
             .collect::<Vec<String>>()
             .join("");
 
-        if hex_digest != config.gitleaks.checksum {
+        if hex_digest != self.config.gitleaks.checksum {
             fs::remove_file(binpath).unwrap();
             panic!("Invalid gitleaks digest!");
         }
@@ -53,13 +59,22 @@ impl Gitleaks {
         perms.set_mode(0o770);
         fs::set_permissions(&binpath, perms).unwrap();
 
-        info!("{} downloaded!", &config.gitleaks.filename);
-
-        return binpath;
+        info!("{} downloaded!", &self.config.gitleaks.filename);
     }
 
-    fn gitleaks_log_opts(&self, git: &Git, scan_dir: &Path) -> Vec<String> {
-        let shallow_commits = git.shallow_commits(&scan_dir);
+    fn gitleaks_path(&self) -> PathBuf {
+        let bindir = self.config.workdir.join("bin");
+        let binpath = bindir.join(&self.config.gitleaks.filename);
+
+        if !binpath.exists() {
+            self.download_gitleaks(&bindir, &binpath);
+        }
+
+        binpath
+    }
+
+    fn gitleaks_log_opts(&self, scan_dir: &Path) -> Vec<String> {
+        let shallow_commits = self.providers.git.shallow_commits(&scan_dir);
 
         if shallow_commits.len() > 0 {
             let exclude_commits: Vec<String> =
@@ -75,26 +90,20 @@ impl Gitleaks {
         }
     }
 
-    pub fn git_scan(
-        &self,
-        config: &ScannerConfig,
-        git: &Git,
-        patterns: &Patterns,
-        scan_dir: &Path,
-    ) -> Vec<GitLeaksResult> {
-        let results = Command::new(self.gitleaks_path(config))
+    pub fn git_scan(&self, scan_dir: &Path) -> Vec<GitLeaksResult> {
+        let results = Command::new(self.gitleaks_path())
             .arg("detect")
             .arg("--report-path=/dev/stdout")
             .arg("--report-format=json")
             .arg("--config")
-            .arg(&patterns.path)
+            .arg(&self.patterns.gitleaks_patterns_path)
             .arg("--source")
             .arg(scan_dir)
-            .args(self.gitleaks_log_opts(&git, &scan_dir))
+            .args(self.gitleaks_log_opts(&scan_dir))
             .output()
             .expect("Could not run scan");
 
-        let raw_results = String::from_utf8(results.stdout).unwrap();
+        let raw_results = String::from_utf8_lossy(&results.stdout);
         serde_json::from_str(&raw_results).unwrap()
     }
 }

@@ -10,6 +10,8 @@ use crate::errors::Error;
 use crate::listner::Listner;
 use crate::logging::Logger;
 use crate::scanner::Scanner;
+use crate::scanner::patterns::Patterns;
+use crate::scanner::providers::Providers;
 
 fn main() -> Result<(), Error> {
     let config = match parser::args().config {
@@ -19,7 +21,9 @@ fn main() -> Result<(), Error> {
 
     Logger::init(&config.logger)?;
 
-    let scanner = Scanner::new(&config.scanner);
+    let patterns = Patterns::new(&config.scanner);
+    let providers = Providers::new();
+    let scanner = Scanner::new(&config.scanner, &providers, &patterns);
 
     for request in Listner::new() {
         let result = scanner.scan(&request);
