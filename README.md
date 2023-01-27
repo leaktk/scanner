@@ -162,7 +162,9 @@ Error (if "error" is present, the scan failed)
 ## TODO
 
 1. Local git scans without a clone
+1. Support unstaged commits (probably via gitleaks protect)
 1. Better error handling in the code to avoid panics
+1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
 1. Change workdir default to `${XDG_CACHE_HOME}/leaktk`
 1. if --config isn't set:
     * then try `${XDG_CONFIG_HOME}/leatktk/config.toml`
@@ -176,3 +178,4 @@ Error (if "error" is present, the scan failed)
 1. Group gitleaks code into a single object as the source of truth
 1. Create a Workspace object to manage the workspace folders (creating, clearing, etc)
 1. Figure out what to do with shallow commits on shallow-since type scans
+1. Look into creating rust bindings to call gitleaks directly from rust instead of spinning up a process
