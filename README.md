@@ -42,21 +42,18 @@ Notes about the formats below:
 * The requests below are pretty printed to make them easier to read.
 * Only the values in the `"options"` sections are optional.
 
-**WARNING**: Certain request types (e.g. `"type": "git", "url": "file://..."`)
-can access files outside of the scanner's workdir. Make sure you trust or
-sanitize the input to the scanner.
+### Git
 
-### Git (Remote)
-
-Clone a remote repo and scan it.
+Scan git repos
 
 ```json
 {
   "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c",
   "type": "git",
-  "url": "https://github.com/leaktk/fake-leaks.git",
+  "target": "https://github.com/leaktk/fake-leaks.git",
   "options": {
-      "branch":"main",
+      "local": false,
+      "branch": "main",
       "depth": 5,
       "shallow_since": "2020-01-01",
       "single_branch": true,
@@ -69,31 +66,26 @@ Clone a remote repo and scan it.
 
 Supported options:
 
-* `config:Vec<String>` -> `[--config String ...]`
-* `shallow_since:String` -> `--shallow-since String`
-* `single_branch:bool` -> `--[no-]single-branch`
-* `depth:u32` -> `--depth u32`
-* `branch:String` -> `--branch String`
+* Git options
+    * `config:Vec<String>` -> `[--config String ...]`
+    * `shallow_since:String` -> `--shallow-since String`
+    * `single_branch:bool` -> `--[no-]single-branch`
+    * `depth:u32` -> `--depth u32`
+    * `branch:String` -> `--branch String`
+* Scanner options
+    * `local:bool` - Skip clone and target like a path
 
-Note: These will be passed to the git command, even if the combination of
-options doesn't make sense.
+The git options will be passed to the git command, even if the
+combination of options doesn't make sense.
 
-### [WIP] Git (Local)
+When `local` is set to true (it defaults to false),
 
-Scan a local repo. Instead of cloning the repo, the scanner will simply
-scan the contents of the existing repo. This can be useful for implementing
-pre-commit hooks or tool-chains that already take care of cloning the repo.
+* `target` will be interpreted as a path.
+* The following options will be ignored:
+    * config
 
-```json
-{
-  "id": "a57dbbb5-42ff-4a7d-b580-eda9d01ce10c",
-  "type": "git",
-  "url": "file:///home/user/workspace/leaktk/fake-leaks",
-  "options": {
-    "depth": 5,
-  }
-}
-```
+**WARNING**: The `local` option should be striped from the requests if passing
+untrusted input to the scanner.
 
 ## Scan Results Format
 
@@ -125,7 +117,7 @@ Success
       },
       "source": {
         "type": "git",
-        "url": "https://github.com/leaktk/fake-leaks.git",
+        "target": "https://github.com/leaktk/fake-leaks.git",
         "path": "relative/path/to/the/file",
         "lines": {
           "start": 1,
