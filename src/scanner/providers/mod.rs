@@ -20,24 +20,24 @@ impl Providers {
     }
 
     pub fn clone(&self, req: &Request, dest: &Path) -> CloneResult {
+        if req.is_local() {
+            return CloneResult {
+                ok: true,
+                msg: "Skipped clone for local target".to_string(),
+            }
+        }
+
         match req.kind {
             RequestKind::Git => {
-                if req.is_local() {
-                    CloneResult {
-                        ok: true,
-                        msg: "Skipped clone for local repo".to_string(),
-                    }
-                } else {
-                    match self.git.clone(&req.target, &req.options, &dest) {
-                        Err(err) => CloneResult {
-                            ok: false,
-                            msg: err.to_string(),
-                        },
-                        Ok(output) => CloneResult {
-                            ok: output.status.success(),
-                            msg: String::from_utf8_lossy(&output.stderr).to_string(),
-                        },
-                    }
+                match self.git.clone(&req.target, &req.options, &dest) {
+                    Err(err) => CloneResult {
+                        ok: false,
+                        msg: err.to_string(),
+                    },
+                    Ok(output) => CloneResult {
+                        ok: output.status.success(),
+                        msg: String::from_utf8_lossy(&output.stderr).to_string(),
+                    },
                 }
             }
         }
