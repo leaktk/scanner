@@ -94,7 +94,7 @@ Is a date formatted `yyyy-mm-dd` used for filtering commits.
 
 **single_branch**
 
-Sets the branch to clone and the scope of the gitleaks scan
+Sets the branch to clone and the scope of the gitleaks scan.
 
 * Type: `bool`
 * Supported by local scan: yes
