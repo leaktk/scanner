@@ -1,7 +1,7 @@
-use crate::scanner::proto::GitOptions;
+use crate::scanner::proto::RequestOptions;
 use log::info;
 use std::fs;
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 use std::path::Path;
 use std::process::{Command, Output};
 
@@ -27,54 +27,53 @@ impl Git {
     pub fn clone(
         &self,
         clone_url: &String,
-        options: &Option<GitOptions>,
+        options: &RequestOptions,
         clone_dir: &Path,
     ) -> Result<Output, Error> {
-        let mut args: Vec<String> = Vec::new();
+        if !clone_url.starts_with("https://") {
+            // This is added here for safety. If this needs to change for some
+            // reason, additional sanitation might be needed.
+            return Err(Error::new(ErrorKind::Other, "Can only clone https URLs"));
+        }
 
-        if let Some(opts) = &options {
-            if let Some(configs) = &opts.config {
-                for config in configs {
-                    args.push(format!("--config={config}"));
-                }
-            }
+        let mut args = vec!["clone".to_string()];
 
-            if let Some(branch) = &opts.branch {
-                args.push(format!("--branch={branch}"));
-            }
-
-            if let Some(single_branch) = opts.single_branch {
-                if single_branch {
-                    args.push("--single-branch".to_string());
-                } else {
-                    args.push("--no-single-branch".to_string());
-                }
-            }
-
-            if let Some(depth) = opts.depth {
-                // Add one to the depth since the grafted commit is excluded
-                // from the scan
-                let depth = depth + 1;
-                args.push(format!("--depth={depth}"));
-            }
-
-            if let Some(shallow_since) = &opts.shallow_since {
-                args.push(format!("--shallow-since={shallow_since}"));
+        if let Some(configs) = &options.config {
+            for config in configs {
+                args.push(format!("--config={config}"));
             }
         }
 
-        info!(
-            "Running: git clone {} {} {}",
-            args.join(" "),
-            clone_url,
-            clone_dir.display()
-        );
+        if let Some(branch) = &options.branch {
+            args.push(format!("--branch={branch}"));
+        }
+
+        if let Some(single_branch) = options.single_branch {
+            if single_branch {
+                args.push("--single-branch".to_string());
+            } else {
+                args.push("--no-single-branch".to_string());
+            }
+        }
+
+        if let Some(depth) = options.depth {
+            // Add one to the depth since the grafted commit is excluded
+            // from the scan
+            let depth = depth + 1;
+            args.push(format!("--depth={depth}"));
+        }
+
+        if let Some(since) = &options.since {
+            args.push(format!("--shallow-since={since}"));
+        }
+
+        args.push(clone_url.to_string());
+        args.push(clone_dir.display().to_string());
+
+        info!("Running: git '{}'", args.join("' '"));
 
         Command::new("git")
-            .arg("clone")
             .args(args)
-            .arg(clone_url)
-            .arg(clone_dir)
             .env("GIT_TERMINAL_PROMPT", "0")
             .output()
     }

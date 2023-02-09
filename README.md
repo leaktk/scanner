@@ -42,23 +42,24 @@ Notes about the formats below:
 * The requests below are pretty printed to make them easier to read.
 * Only the values in the `"options"` sections are optional.
 
-**WARNING**: Certain request types (e.g. `"type": "git", "url": "file://..."`)
-can access files outside of the scanner's workdir. Make sure you trust or
-sanitize the input to the scanner.
+**WARNING**: Sanitize the input before passing it to the scanner. Work will
+be done to harden it a bit more, but don't run this as something taking user
+input on a host running this as a service.
 
-### Git (Remote)
+### Git
 
-Clone a remote repo and scan it.
+Scan git repos
 
 ```json
 {
   "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c",
-  "type": "git",
-  "url": "https://github.com/leaktk/fake-leaks.git",
+  "kind": "git",
+  "target": "https://github.com/leaktk/fake-leaks.git",
   "options": {
-      "branch":"main",
+      "local": false,
+      "branch": "main",
       "depth": 5,
-      "shallow_since": "2020-01-01",
+      "since": "2020-01-01",
       "single_branch": true,
       "config": [
         "http.sslVerify=true"
@@ -67,38 +68,57 @@ Clone a remote repo and scan it.
 }
 ```
 
-Supported options:
+#### Options
 
-* `config:Vec<String>` -> `[--config String ...]`
-* `shallow_since:String` -> `--shallow-since String`
-* `single_branch:bool` -> `--[no-]single-branch`
-* `depth:u32` -> `--depth u32`
-* `branch:String` -> `--branch String`
+**local**
 
-Note: These will be passed to the git command, even if the combination of
-options doesn't make sense.
+Skips the clone and `target` is treated as a path.
 
-### [WIP] Git (Local)
+* Type: `bool`
+* Defines a scan as a local scan when set to true
 
-Scan a local repo. Instead of cloning the repo, the scanner will simply
-scan the contents of the existing repo. This can be useful for implementing
-pre-commit hooks or tool-chains that already take care of cloning the repo.
+**config**
 
-```json
-{
-  "id": "a57dbbb5-42ff-4a7d-b580-eda9d01ce10c",
-  "type": "git",
-  "url": "file:///home/user/workspace/leaktk/fake-leaks",
-  "options": {
-    "depth": 5,
-  }
-}
-```
+Is a list of key=value strings that get passed to git using the `--config`
+flag.
+
+* Type: `Vec<String>`
+* Supported by local scan: no
+
+**since**
+
+Is a date formatted `yyyy-mm-dd` used for filtering commits.
+
+* Type: `String`
+* Supported by local scan: yes
+
+**single_branch**
+
+Sets the branch to clone and the scope of the gitleaks scan.
+
+* Type: `bool`
+* Supported by local scan: yes
+
+**depth**
+
+Sets `--depth` during a git clone and can limit the commits during a local
+scan if `single_branch` is set to true.
+
+* Type: `u32`
+* Supported by local scan: partial
+
+**branch**
+
+Sets `--branch` during git clone. If you wish to only scan this branch in a
+local scan, set `single_branch` to true as well.
+
+* Type: `String`
+* Supported by local scan: yes
 
 ## Scan Results Format
 
 The scan result format is in jsonl here are formatted examples of a single
-line by type
+line by kind.
 
 ### Git
 
@@ -124,8 +144,8 @@ Success
         ]
       },
       "source": {
-        "type": "git",
-        "url": "https://github.com/leaktk/fake-leaks.git",
+        "kind": "git",
+        "target": "https://github.com/leaktk/fake-leaks.git",
         "path": "relative/path/to/the/file",
         "lines": {
           "start": 1,
@@ -161,7 +181,6 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Local git scans without a clone
 1. Support unstaged commits (probably via gitleaks protect)
 1. Better error handling in the code to avoid panics
 1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
@@ -177,5 +196,6 @@ Error (if "error" is present, the scan failed)
 1. Proper error handling in the code to keep things clean, consistent and scalable
 1. Group gitleaks code into a single object as the source of truth
 1. Create a Workspace object to manage the workspace folders (creating, clearing, etc)
-1. Figure out what to do with shallow commits on shallow-since type scans
+1. Figure out what to do with shallow commits on shallow-since scans
 1. Look into creating rust bindings to call gitleaks directly from rust instead of spinning up a process
+1. Figure out a fast way for depth limiting when single\_branch is set to false where it gives n commits from each branch
