@@ -91,15 +91,22 @@ impl<'g> Gitleaks<'g> {
     }
 
     pub fn git_scan(&self, scan_dir: &Path) -> Vec<GitLeaksResult> {
-        let results = Command::new(self.gitleaks_path())
-            .arg("detect")
-            .arg("--report-path=/dev/stdout")
-            .arg("--report-format=json")
-            .arg("--config")
-            .arg(&self.patterns.gitleaks_patterns_path)
-            .arg("--source")
-            .arg(scan_dir)
-            .args(self.gitleaks_log_opts(&scan_dir))
+        let gitleaks_path = self.gitleaks_path();
+        let mut args = vec![
+            "detect".to_string(),
+            "--report-path=/dev/stdout".to_string(),
+            "--report-format=json".to_string(),
+            "--config".to_string(),
+            self.patterns.gitleaks_patterns_path.display().to_string(),
+            "--source".to_string(),
+            scan_dir.display().to_string(),
+        ];
+
+        args.extend(self.gitleaks_log_opts(&scan_dir));
+
+        info!("Running: {} {}", gitleaks_path.display(), args.join(" "));
+        let results = Command::new(&gitleaks_path)
+            .args(args)
             .output()
             .expect("Could not run scan");
 
