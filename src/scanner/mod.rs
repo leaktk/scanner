@@ -87,14 +87,16 @@ impl<'s> Scanner<'s> {
         }
     }
 
-    fn start_scan(&self, id: &str, target: &str, scan_dir: &Path) -> Response {
-        let gitleaks_results = self.gitleaks.git_scan(scan_dir);
-
+    fn start_scan(&self, req: &Request, scan_dir: &Path) -> Response {
         Response {
             id: Uuid::new_v4().to_string(),
-            request: ResponseRequest { id: id.to_string() },
+            request: ResponseRequest {
+                id: req.id.to_string(),
+            },
             error: None,
-            results: gitleaks_results
+            results: self
+                .gitleaks
+                .git_scan(scan_dir, &req.options)
                 .iter()
                 .map(|r| ScanResult {
                     context: r.context.clone(),
@@ -106,7 +108,7 @@ impl<'s> Scanner<'s> {
                         tags: r.rule_tags.clone(),
                     },
                     source: Source::Git {
-                        target: target.to_string(),
+                        target: req.target.to_string(),
                         path: r.source_path.clone(),
                         lines: Lines {
                             start: r.source_lines_start.clone(),
@@ -127,10 +129,12 @@ impl<'s> Scanner<'s> {
         }
     }
 
-    fn error_response(&self, id: &str, error: &str) -> Response {
+    fn error_response(&self, req: &Request, error: &str) -> Response {
         Response {
             id: Uuid::new_v4().to_string(),
-            request: ResponseRequest { id: id.to_string() },
+            request: ResponseRequest {
+                id: req.id.to_string(),
+            },
             results: Vec::new(),
             error: Some(error.to_string()),
         }
@@ -144,9 +148,9 @@ impl<'s> Scanner<'s> {
 
         let resp = if clone_result.ok {
             debug!("Ok clone result msg: {}", clone_result.msg);
-            self.start_scan(&req.id, &req.target, &scan_dir)
+            self.start_scan(&req, &scan_dir)
         } else {
-            self.error_response(&req.id, &clone_result.msg)
+            self.error_response(&req, &clone_result.msg)
         };
 
         self.clean_up(&req, &scan_dir);

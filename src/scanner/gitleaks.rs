@@ -1,5 +1,5 @@
 use super::patterns::Patterns;
-use super::proto::GitLeaksResult;
+use super::proto::{GitLeaksResult, RequestOptions};
 use super::providers::Providers;
 use crate::config::ScannerConfig;
 use log::info;
@@ -73,24 +73,51 @@ impl<'g> Gitleaks<'g> {
         binpath
     }
 
-    fn gitleaks_log_opts(&self, scan_dir: &Path) -> Vec<String> {
-        let shallow_commits = self.providers.git.shallow_commits(&scan_dir);
+    fn gitleaks_log_opts(&self, scan_dir: &Path, options: &RequestOptions) -> Vec<String> {
+        let mut log_opts = vec![
+            "--full-history".to_string(),
+            "--simplify-merges".to_string(),
+            "--show-pulls".to_string(),
+        ];
 
-        if shallow_commits.len() > 0 {
-            let exclude_commits: Vec<String> =
-                shallow_commits.iter().map(|s| format!("^{s}")).collect();
-
-            let log_opts = format!(
-                "--full-history --simplify-merges --show-pulls --all {}",
-                exclude_commits.join(" ")
-            );
-            vec!["--log-opts".to_string(), log_opts]
-        } else {
-            vec![]
+        if let Some(since) = &options.since{
+            log_opts.push(format!("--since-as-filter={since}T00:00:00-00:00"));
         }
+
+        if options.single_branch.unwrap_or(false) {
+            // For now, depth is only supported for single branches until I
+            // figure out a fast way to get n commits from each branch like
+            // --depth does during a clone. I would rather risk over scanning
+            // than underscanning
+            if let Some(depth) = options.depth {
+                log_opts.push(format!("--max-count={depth}"));
+            }
+        } else {
+            log_opts.push("--all".to_string());
+        }
+
+        if let Some(branch) = &options.branch {
+            log_opts.push(branch.to_string());
+        }
+
+        // For now when dealing with a local repo, don't exclude shallow
+        // commits. The intent of excluding shallow commits was to avoid
+        // over scanning during clones done by the scanner because it
+        // trys to compensate by cloning a little deeper than requested.
+        if !options.local.unwrap_or(false) {
+            let to_exclude:Vec<String> =
+                self.providers.git.shallow_commits(&scan_dir)
+                    .iter()
+                    .map(|s| format!("^{s}"))
+                    .collect();
+
+            log_opts.extend(to_exclude);
+        }
+
+        vec!["--log-opts".to_string(), log_opts.join(" ")]
     }
 
-    pub fn git_scan(&self, scan_dir: &Path) -> Vec<GitLeaksResult> {
+    pub fn git_scan(&self, scan_dir: &Path, options: &RequestOptions) -> Vec<GitLeaksResult> {
         let gitleaks_path = self.gitleaks_path();
         let mut args = vec![
             "detect".to_string(),
@@ -102,7 +129,7 @@ impl<'g> Gitleaks<'g> {
             scan_dir.display().to_string(),
         ];
 
-        args.extend(self.gitleaks_log_opts(&scan_dir));
+        args.extend(self.gitleaks_log_opts(&scan_dir, options));
 
         info!("Running: {} {}", gitleaks_path.display(), args.join(" "));
         let results = Command::new(&gitleaks_path)

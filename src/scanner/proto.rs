@@ -3,9 +3,6 @@ use serde::{self, Deserialize, Serialize};
 // Options for a git scan
 #[derive(Debug, Deserialize)]
 pub struct RequestOptions {
-    //
-    // Git Clone/Log Options
-    //
     // Set --depth for the git clone
     pub depth: Option<u32>,
     // Set config values
@@ -16,11 +13,21 @@ pub struct RequestOptions {
     pub branch: Option<String>,
     // Set --single-branch or -no-single-branch if present for the git clone
     pub single_branch: Option<bool>,
-    //
-    // Git Scan Options
-    //
     // Skip a clone and treat target like a local repo
     pub local: Option<bool>,
+}
+
+impl Default for RequestOptions {
+    fn default() -> Self {
+        RequestOptions {
+            depth: None,
+            config: None,
+            since: None,
+            branch: None,
+            single_branch: None,
+            local: None,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,17 +48,15 @@ pub struct Request {
     // What should be scaned (depends on the kind)
     pub target: String,
 
-    // Optional options for how the git scan
-    pub options: Option<RequestOptions>,
+    // Options for the scan
+    #[serde(default)]
+    pub options: RequestOptions,
 }
 
 impl Request {
+    #[inline]
     pub fn is_local(&self) -> bool {
-        if let Some(options) = &self.options {
-            options.local.unwrap_or(false)
-        } else {
-            false
-        }
+        self.options.local.unwrap_or(false)
     }
 }
 // The fields from the Request that should be included in response.request

@@ -42,6 +42,10 @@ Notes about the formats below:
 * The requests below are pretty printed to make them easier to read.
 * Only the values in the `"options"` sections are optional.
 
+**WARNING**: Sanitize the input before passing it to the scanner. Work will
+be done to harden it a bit more, but don't run this as something taking user
+input on a host running this as a service.
+
 ### Git
 
 Scan git repos
@@ -64,28 +68,52 @@ Scan git repos
 }
 ```
 
-Supported options:
+#### Options
 
-* Git options
-    * `config:Vec<String>` -> `[--config String ...]`
-    * `since:String` -> `--shallow-since String`
-    * `single_branch:bool` -> `--[no-]single-branch`
-    * `depth:u32` -> `--depth u32`
-    * `branch:String` -> `--branch String`
-* Scanner options
-    * `local:bool` - Skip clone and target like a path
+**local**
 
-The git options will be passed to the git command, even if the
-combination of options doesn't make sense.
+Skips the clone and `target` is treated as a path.
 
-When `local` is set to true (it defaults to false),
+* Type: `bool`
+* Defines a scan as a local scan when set to true
 
-* `target` will be interpreted as a path.
-* The following options will be ignored:
-    * config
+**config**
 
-**WARNING**: The `local` option should be striped from the requests if passing
-untrusted input to the scanner.
+Is a list of key=value strings that get passed to git using the `--config`
+flag.
+
+* Type: `Vec<String>`
+* Supported by local scan: no
+
+**since**
+
+Is a date formatted `yyyy-mm-dd` used for filtering commits.
+
+* Type: `String`
+* Supported by local scan: yes
+
+**single_branch**
+
+Sets the branch to clone and the scope of the gitleaks scan
+
+* Type: `bool`
+* Supported by local scan: yes
+
+**depth**
+
+Sets `--depth` during a git clone and can limit the commits during a local
+scan if `single_branch` is set to true.
+
+* Type: `u32`
+* Supported by local scan: partial
+
+**branch**
+
+Sets `--branch` during git clone. If you wish to only scan this branch in a
+local scan, set `single_branch` to true as well.
+
+* Type: `String`
+* Supported by local scan: yes
 
 ## Scan Results Format
 
@@ -153,7 +181,6 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Local git scans without a clone
 1. Support unstaged commits (probably via gitleaks protect)
 1. Better error handling in the code to avoid panics
 1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
@@ -171,3 +198,4 @@ Error (if "error" is present, the scan failed)
 1. Create a Workspace object to manage the workspace folders (creating, clearing, etc)
 1. Figure out what to do with shallow commits on shallow-since scans
 1. Look into creating rust bindings to call gitleaks directly from rust instead of spinning up a process
+1. Figure out a fast way for depth limiting when single\_branch is set to false where it gives n commits from each branch
