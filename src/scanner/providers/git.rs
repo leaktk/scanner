@@ -1,7 +1,7 @@
-use crate::scanner::proto::GitOptions;
+use crate::scanner::proto::RequestOptions;
 use log::info;
 use std::fs;
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 use std::path::Path;
 use std::process::{Command, Output};
 
@@ -27,9 +27,15 @@ impl Git {
     pub fn clone(
         &self,
         clone_url: &String,
-        options: &Option<GitOptions>,
+        options: &Option<RequestOptions>,
         clone_dir: &Path,
     ) -> Result<Output, Error> {
+        if !clone_url.starts_with("https://") {
+            // This is added here for safety. If this needs to change for some
+            // reason, additional sanitation might be needed.
+            return Err(Error::new(ErrorKind::Other, "Can only clone https URLs"));
+        }
+
         let mut args: Vec<String> = Vec::new();
 
         if let Some(opts) = &options {
@@ -58,8 +64,8 @@ impl Git {
                 args.push(format!("--depth={depth}"));
             }
 
-            if let Some(shallow_since) = &opts.shallow_since {
-                args.push(format!("--shallow-since={shallow_since}"));
+            if let Some(since) = &opts.since {
+                args.push(format!("--shallow-since={since}"));
             }
         }
 

@@ -49,13 +49,13 @@ Scan git repos
 ```json
 {
   "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c",
-  "type": "git",
+  "kind": "git",
   "target": "https://github.com/leaktk/fake-leaks.git",
   "options": {
       "local": false,
       "branch": "main",
       "depth": 5,
-      "shallow_since": "2020-01-01",
+      "since": "2020-01-01",
       "single_branch": true,
       "config": [
         "http.sslVerify=true"
@@ -68,7 +68,7 @@ Supported options:
 
 * Git options
     * `config:Vec<String>` -> `[--config String ...]`
-    * `shallow_since:String` -> `--shallow-since String`
+    * `since:String` -> `--shallow-since String`
     * `single_branch:bool` -> `--[no-]single-branch`
     * `depth:u32` -> `--depth u32`
     * `branch:String` -> `--branch String`
@@ -90,7 +90,7 @@ untrusted input to the scanner.
 ## Scan Results Format
 
 The scan result format is in jsonl here are formatted examples of a single
-line by type
+line by kind.
 
 ### Git
 
@@ -116,7 +116,7 @@ Success
         ]
       },
       "source": {
-        "type": "git",
+        "kind": "git",
         "target": "https://github.com/leaktk/fake-leaks.git",
         "path": "relative/path/to/the/file",
         "lines": {
@@ -169,5 +169,5 @@ Error (if "error" is present, the scan failed)
 1. Proper error handling in the code to keep things clean, consistent and scalable
 1. Group gitleaks code into a single object as the source of truth
 1. Create a Workspace object to manage the workspace folders (creating, clearing, etc)
-1. Figure out what to do with shallow commits on shallow-since type scans
+1. Figure out what to do with shallow commits on shallow-since scans
 1. Look into creating rust bindings to call gitleaks directly from rust instead of spinning up a process

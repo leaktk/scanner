@@ -2,34 +2,58 @@ use serde::{self, Deserialize, Serialize};
 
 // Options for a git scan
 #[derive(Debug, Deserialize)]
-pub struct GitOptions {
+pub struct RequestOptions {
+    //
+    // Git Clone/Log Options
+    //
     // Set --depth for the git clone
     pub depth: Option<u32>,
     // Set config values
     pub config: Option<Vec<String>>,
     // Set --shallow-since for the git clone
-    pub shallow_since: Option<String>,
+    pub since: Option<String>,
     // Set --branch for the git clone
     pub branch: Option<String>,
     // Set --single-branch or -no-single-branch if present for the git clone
     pub single_branch: Option<bool>,
+    //
+    // Git Scan Options
+    //
+    // Skip a clone and treat target like a local repo
+    pub local: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum RequestKind {
+    #[serde(rename = "git")]
+    Git,
 }
 
 // The incoming request
 #[derive(Debug, Deserialize)]
-#[serde(tag = "type")]
-pub enum Request {
-    #[serde(rename = "git")]
-    Git {
-        // A way to tie the response to the request
-        id: String,
-        // The URL of the repo to scan
-        url: String,
-        // Optional options for how the git scan
-        options: Option<GitOptions>,
-    },
+pub struct Request {
+    // A way to tie the response to the request
+    pub id: String,
+
+    // What kind of request is it
+    pub kind: RequestKind,
+
+    // What should be scaned (depends on the kind)
+    pub target: String,
+
+    // Optional options for how the git scan
+    pub options: Option<RequestOptions>,
 }
 
+impl Request {
+    pub fn is_local(&self) -> bool {
+        if let Some(options) = &self.options {
+            options.local.unwrap_or(false)
+        } else {
+            false
+        }
+    }
+}
 // The fields from the Request that should be included in response.request
 #[derive(Debug, Serialize)]
 pub struct ResponseRequest {
@@ -81,13 +105,13 @@ pub struct GitCommit {
 
 // Details about the source where the result was found
 #[derive(Debug, Serialize)]
-#[serde(tag = "type")]
+#[serde(tag = "kind")]
 pub enum Source {
     // When the scan source is a git repo
     #[serde(rename = "git")]
     Git {
-        // The URL to the remote or local git repo
-        url: String,
+        // The URL/Path to the remote or local git repo
+        target: String,
         // The path to the result relative to the repo
         path: String,
         // The line range for the result

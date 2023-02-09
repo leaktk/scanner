@@ -1,4 +1,4 @@
-{"id":"bca55c27-a0e1-42b6-91b4-1911017dd2a8","type":"git","url":"https://github.com/leaktk/fake-leaks.git"}
-{"id":"700b2352-f924-4953-a5ae-aebfc512979a","type":"git","url":"https://github.com/leaktk/fake-leaks.git","options":{"depth":5,"single_branch":true,"config":["http.sslVerify=true"]}}
-{"id":"700b2352-f924-4953-a5ae-aebfc512979a","type":"git","url":"https://github.com/leaktk/fake-leaks.git","options":{"shallow_since":"2020-01-01","branch":"main"}}
-{"id":"bca55c27-a0e1-42b6-91b4-1911017dd2a8","type":"git","url":"https://github.com/leaktk/not-a-real-repo.git"}
+{"id":"bca55c27-a0e1-42b6-91b4-1911017dd2a8","kind":"git","target":"https://github.com/leaktk/fake-leaks.git"}
+{"id":"700b2352-f924-4953-a5ae-aebfc512979a","kind":"git","target":"https://github.com/leaktk/fake-leaks.git","options":{"depth":5,"single_branch":true,"config":["http.sslVerify=true"]}}
+{"id":"700b2352-f924-4953-a5ae-aebfc512979a","kind":"git","target":"https://github.com/leaktk/fake-leaks.git","options":{"since":"2020-01-01","branch":"main"}}
+{"id":"bca55c27-a0e1-42b6-91b4-1911017dd2a8","kind":"git","target":"https://github.com/leaktk/not-a-real-repo.git"}

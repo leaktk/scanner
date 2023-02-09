@@ -6,7 +6,7 @@ mod gitleaks;
 
 use crate::config::ScannerConfig;
 use gitleaks::Gitleaks;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use patterns::Patterns;
 use proto::{
     GitCommit, GitCommitAuthor, Lines, Request, Response, ResponseRequest, Result as ScanResult,
@@ -72,11 +72,22 @@ impl<'s> Scanner<'s> {
     }
 
     // The dir for a specific scan folder
-    fn scan_dir(&self) -> PathBuf {
-        self.scans_dir().join(Uuid::new_v4().to_string())
+    fn scan_dir(&self, req: &Request) -> PathBuf {
+        if req.is_local() {
+            PathBuf::from(&req.target)
+        } else {
+            self.scans_dir().join(Uuid::new_v4().to_string())
+        }
     }
 
-    fn start_git_scan(&self, id: &str, url: &str, scan_dir: &Path) -> Response {
+    // Clean up after a scan is over
+    fn clean_up(&self, req: &Request, scan_dir: &PathBuf) {
+        if !req.is_local() && scan_dir.exists() {
+            fs::remove_dir_all(scan_dir).expect("Could not remove scan dir!");
+        }
+    }
+
+    fn start_scan(&self, id: &str, target: &str, scan_dir: &Path) -> Response {
         let gitleaks_results = self.gitleaks.git_scan(scan_dir);
 
         Response {
@@ -95,7 +106,7 @@ impl<'s> Scanner<'s> {
                         tags: r.rule_tags.clone(),
                     },
                     source: Source::Git {
-                        url: url.to_string(),
+                        target: target.to_string(),
                         path: r.source_path.clone(),
                         lines: Lines {
                             start: r.source_lines_start.clone(),
@@ -127,25 +138,18 @@ impl<'s> Scanner<'s> {
 
     pub fn scan(&self, req: &Request) -> Response {
         self.refresh_stale_patterns();
-        let scan_dir = self.scan_dir();
 
-        let resp = match req {
-            Request::Git { id, url, .. } => match self.providers.clone(&req, &scan_dir) {
-                Err(err) => self.error_response(&id, &err.to_string()),
-                Ok(output) => {
-                    if output.status.success() {
-                        self.start_git_scan(&id, &url, &scan_dir)
-                    } else {
-                        let error = String::from_utf8_lossy(&output.stderr);
-                        self.error_response(&id, &error)
-                    }
-                }
-            },
+        let scan_dir = self.scan_dir(&req);
+        let clone_result = self.providers.clone(&req, &scan_dir);
+
+        let resp = if clone_result.ok {
+            debug!("Ok clone result msg: {}", clone_result.msg);
+            self.start_scan(&req.id, &req.target, &scan_dir)
+        } else {
+            self.error_response(&req.id, &clone_result.msg)
         };
 
-        if scan_dir.exists() {
-            fs::remove_dir_all(scan_dir).expect("Could not remove scan dir!");
-        }
+        self.clean_up(&req, &scan_dir);
 
         resp
     }
