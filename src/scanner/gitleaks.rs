@@ -80,7 +80,7 @@ impl<'g> Gitleaks<'g> {
             "--show-pulls".to_string(),
         ];
 
-        if let Some(since) = &options.since{
+        if let Some(since) = &options.since {
             log_opts.push(format!("--since-as-filter={since}T00:00:00-00:00"));
         }
 
@@ -105,11 +105,13 @@ impl<'g> Gitleaks<'g> {
         // over scanning during clones done by the scanner because it
         // trys to compensate by cloning a little deeper than requested.
         if !options.local.unwrap_or(false) {
-            let to_exclude:Vec<String> =
-                self.providers.git.shallow_commits(&scan_dir)
-                    .iter()
-                    .map(|s| format!("^{s}"))
-                    .collect();
+            let to_exclude: Vec<String> = self
+                .providers
+                .git
+                .shallow_commits(&scan_dir)
+                .iter()
+                .map(|s| format!("^{s}"))
+                .collect();
 
             log_opts.extend(to_exclude);
         }
