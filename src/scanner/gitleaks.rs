@@ -133,7 +133,7 @@ impl<'g> Gitleaks<'g> {
 
         args.extend(self.gitleaks_log_opts(&scan_dir, options));
 
-        info!("Running: {} {}", gitleaks_path.display(), args.join(" "));
+        info!("Running: {} '{}'", gitleaks_path.display(), args.join("' '"));
         let results = Command::new(&gitleaks_path)
             .args(args)
             .output()

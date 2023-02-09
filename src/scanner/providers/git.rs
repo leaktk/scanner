@@ -70,7 +70,7 @@ impl Git {
         args.push(clone_url.to_string());
         args.push(clone_dir.display().to_string());
 
-        info!("Running: git {}", args.join(" "));
+        info!("Running: git '{}'", args.join("' '"));
 
         Command::new("git")
             .args(args)
