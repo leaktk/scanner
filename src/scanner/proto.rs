@@ -59,6 +59,7 @@ impl Request {
         self.options.local.unwrap_or(false)
     }
 }
+
 // The fields from the Request that should be included in response.request
 #[derive(Debug, Serialize)]
 pub struct ResponseRequest {
