@@ -208,6 +208,10 @@ Error (if "error" is present, the scan failed)
 ## TODO
 
 1. Better error handling in the code to avoid panics
+   using [thiserror](https://github.com/dtolnay/thiserror)
+   and [anyhow](https://github.com/dtolnay/anyhow)
+   (see [blog post](https://nick.groenen.me/posts/rust-error-handling/)
+   for examples).
 1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
 1. Change workdir default to `${XDG_CACHE_HOME}/leaktk`
 1. if --config isn't set:
