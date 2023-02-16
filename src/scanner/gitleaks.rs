@@ -121,8 +121,10 @@ impl<'g> Gitleaks<'g> {
 
     pub fn git_scan(&self, scan_dir: &Path, options: &RequestOptions) -> Vec<GitLeaksResult> {
         let gitleaks_path = self.gitleaks_path();
+        let staged = options.staged.unwrap_or(false);
+        let uncommitted = options.uncommitted.unwrap_or(staged);
+
         let mut args = vec![
-            "detect".to_string(),
             "--report-path=/dev/stdout".to_string(),
             "--report-format=json".to_string(),
             "--config".to_string(),
@@ -131,7 +133,16 @@ impl<'g> Gitleaks<'g> {
             scan_dir.display().to_string(),
         ];
 
-        args.extend(self.gitleaks_log_opts(&scan_dir, options));
+        if uncommitted {
+            args.push("protect".to_string());
+
+            if staged {
+                args.push("--staged".to_string());
+            }
+        } else {
+            args.push("detect".to_string());
+            args.extend(self.gitleaks_log_opts(&scan_dir, options));
+        }
 
         info!("Running: {} '{}'", gitleaks_path.display(), args.join("' '"));
         let results = Command::new(&gitleaks_path)

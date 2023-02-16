@@ -56,56 +56,16 @@ Scan git repos
   "kind": "git",
   "target": "https://github.com/leaktk/fake-leaks.git",
   "options": {
-      "local": false,
       "branch": "main",
+      "config": ["http.sslVerify=true"],
       "depth": 5,
       "since": "2020-01-01",
-      "single_branch": true,
-      "config": [
-        "http.sslVerify=true"
-      ]
+      "single_branch": true
   }
 }
 ```
 
 #### Options
-
-**local**
-
-Skips the clone and `target` is treated as a path.
-
-* Type: `bool`
-* Defines a scan as a local scan when set to true
-
-**config**
-
-Is a list of key=value strings that get passed to git using the `--config`
-flag.
-
-* Type: `Vec<String>`
-* Supported by local scan: no
-
-**since**
-
-Is a date formatted `yyyy-mm-dd` used for filtering commits.
-
-* Type: `String`
-* Supported by local scan: yes
-
-**single_branch**
-
-Sets the branch to clone and the scope of the gitleaks scan.
-
-* Type: `bool`
-* Supported by local scan: yes
-
-**depth**
-
-Sets `--depth` during a git clone and can limit the commits during a local
-scan if `single_branch` is set to true.
-
-* Type: `u32`
-* Supported by local scan: partial
 
 **branch**
 
@@ -113,7 +73,73 @@ Sets `--branch` during git clone. If you wish to only scan this branch in a
 local scan, set `single_branch` to true as well.
 
 * Type: `String`
+* Default: Excluded
 * Supported by local scan: yes
+* Supported by remote scan: yes
+
+**config**
+
+Is a list of key=value strings that get passed to git using the `--config`
+flag.
+
+* Type: `Vec<String>`
+* Default: Excluded
+* Supported by local scan: no
+* Supported by remote scan: yes
+
+**depth**
+
+Sets `--depth` during a git clone and can limit the commits during a local
+scan if `single_branch` is set to true.
+
+* Type: `u32`
+* Default: Excluded
+* Supported by local scan: partial
+* Supported by remote scan: yes
+
+**local**
+
+Skips the clone and `target` is treated as a path.
+
+* Type: `bool`
+* Default: `false`
+* Defines if it is a local or remote scan
+
+**since**
+
+Is a date formatted `yyyy-mm-dd` used for filtering commits.
+
+* Type: `String`
+* Default: Excluded
+* Supported by local scan: yes
+* Supported by remote scan: yes
+
+**single_branch**
+
+Sets the branch to clone and the scope of the gitleaks scan.
+
+* Type: `bool`
+* Default: `false`
+* Supported by local scan: yes
+* Supported by remote scan: yes
+
+**staged**
+
+Scan staged changes (implies `uncommitted` and is useful for pre-commit hooks).
+
+* Type: `bool`
+* Default: `false`
+* Supported by local scan: yes
+* Supported by remote scan: no
+
+**uncommitted**
+
+Scan uncommitted changes (implied by `staged`)
+
+* Type: `bool`
+* Default: `false`
+* Supported by local scan: yes
+* Supported by remote scan: no
 
 ## Scan Results Format
 
@@ -181,7 +207,6 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Support unstaged commits (probably via gitleaks protect)
 1. Better error handling in the code to avoid panics
 1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
 1. Change workdir default to `${XDG_CACHE_HOME}/leaktk`

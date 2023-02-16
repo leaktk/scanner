@@ -3,18 +3,22 @@ use serde::{self, Deserialize, Serialize};
 // Options for a git scan
 #[derive(Debug, Deserialize)]
 pub struct RequestOptions {
-    // Set --depth for the git clone
-    pub depth: Option<u32>,
-    // Set config values
-    pub config: Option<Vec<String>>,
-    // Set --shallow-since for the git clone
-    pub since: Option<String>,
     // Set --branch for the git clone
     pub branch: Option<String>,
-    // Set --single-branch or -no-single-branch if present for the git clone
-    pub single_branch: Option<bool>,
+    // Set config values
+    pub config: Option<Vec<String>>,
+    // Set --depth for the git clone
+    pub depth: Option<u32>,
     // Skip a clone and treat target like a local repo
     pub local: Option<bool>,
+    // Set --shallow-since for the git clone
+    pub since: Option<String>,
+    // Set --single-branch or -no-single-branch if present for the git clone
+    pub single_branch: Option<bool>,
+    // Scan staged uncommitted changes (implies uncommitted)
+    pub staged: Option<bool>,
+    // Scan uncommitted changes
+    pub uncommitted : Option<bool>,
 }
 
 impl Default for RequestOptions {
@@ -25,7 +29,9 @@ impl Default for RequestOptions {
             since: None,
             branch: None,
             single_branch: None,
-            local: None,
+            local: Some(false),
+            staged: Some(false),
+            uncommitted: Some(false),
         }
     }
 }
