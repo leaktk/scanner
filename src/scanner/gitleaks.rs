@@ -6,9 +6,11 @@ use log::info;
 use ring::digest::{Context, SHA256};
 use std::fs::{self, File};
 use std::io::Write;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+#[cfg(target_family = "unix")]
+use std::os::unix::fs::PermissionsExt;
 
 pub struct Gitleaks<'g> {
     config: &'g ScannerConfig,
@@ -54,10 +56,11 @@ impl<'g> Gitleaks<'g> {
             fs::remove_file(binpath).unwrap();
             panic!("Invalid gitleaks digest!");
         }
-
-        let mut perms = fs::metadata(&binpath).unwrap().permissions();
-        perms.set_mode(0o770);
-        fs::set_permissions(&binpath, perms).unwrap();
+        #[cfg(target_family = "unix")]{
+            let mut perms = fs::metadata(&binpath).unwrap().permissions();
+            perms.set_mode(0o770);
+            fs::set_permissions(&binpath, perms).unwrap();
+        }
 
         info!("{} downloaded!", &self.config.gitleaks.filename);
     }
