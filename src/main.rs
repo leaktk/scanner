@@ -1,13 +1,13 @@
 pub mod config;
 pub mod errors;
-pub mod listner;
+pub mod listener;
 pub mod logging;
 pub mod parser;
 pub mod scanner;
 
 use crate::config::Config;
 use crate::errors::Error;
-use crate::listner::Listner;
+use crate::listener::Listener;
 use crate::logging::Logger;
 use crate::scanner::patterns::Patterns;
 use crate::scanner::providers::Providers;
@@ -25,7 +25,7 @@ fn main() -> Result<(), Error> {
     let providers = Providers::new();
     let scanner = Scanner::new(&config.scanner, &providers, &patterns);
 
-    for request in Listner::new() {
+    for request in Listener::new() {
         let result = scanner.scan(&request);
         println!("{}", serde_json::to_string(&result).unwrap());
     }

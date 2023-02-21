@@ -18,13 +18,13 @@ impl Requests {
     }
 }
 
-pub struct Listner {
+pub struct Listener {
     requests: Requests,
 }
 
-impl Listner {
-    pub fn new() -> Listner {
-        Listner {
+impl Listener {
+    pub fn new() -> Listener {
+        Listener {
             requests: Requests {
                 lines: io::stdin().lines(),
             },
@@ -32,7 +32,7 @@ impl Listner {
     }
 }
 
-impl Iterator for Listner {
+impl Iterator for Listener {
     type Item = Request;
 
     fn next(&mut self) -> Option<Self::Item> {
