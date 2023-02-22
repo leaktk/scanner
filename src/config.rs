@@ -2,7 +2,8 @@ use crate::errors::Error;
 use serde::Deserialize;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use directories::BaseDirs;
 
 #[derive(Debug, Deserialize)]
 pub struct GitleaksConfig {
@@ -151,5 +152,29 @@ impl Config {
             .map_err(|err| Error::new(format!("Could not read {}: {}", path, err)))?;
 
         Config::from_str(&content)
+    }
+
+    /// Checks default config locations for configuration file
+    ///
+    /// Returns a Config 
+    pub fn default_load() -> Result<Config, Error> {
+        if let Some(base_dirs) = BaseDirs::new() {
+            let path = Path::new(base_dirs.config_dir()).join("leaktk").join("config.toml");
+            if path.exists() {
+                if let Some(path_str) = path.to_str() {
+                    return Config::load(path_str);
+                }
+            }
+        }
+        #[cfg(target_family = "unix")] {
+            let path = Path::new("/etc/leaktk/config.toml");
+            if path.exists() {
+                if let Some(path_str) = path.to_str() {
+                    println!("/etc hit");
+                    return Config::load(path_str);
+                }
+            }
+        }
+        Ok(Default::default())
     }
 }

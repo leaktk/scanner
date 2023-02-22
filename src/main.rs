@@ -16,7 +16,7 @@ use crate::scanner::Scanner;
 fn main() -> Result<(), Error> {
     let config = match parser::args().config {
         Some(config_path) => Config::load(&config_path)?,
-        None => Default::default(),
+        None => Config::default_load()?,
     };
 
     Logger::init(&config.logger)?;

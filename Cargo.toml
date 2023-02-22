@@ -18,3 +18,4 @@ ring = "0.16"
 log = { version = "0.4.17", features = ["std", "serde"] }
 time = "0.3.17"
 uuid = { version = "1.2.2", features = ["v4", "fast-rng"] }
+directories = "4.0"
