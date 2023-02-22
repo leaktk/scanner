@@ -34,6 +34,13 @@ format for requests and responses.
 The [example config](./examples/config.toml) has the default values set and
 comments explaining what each option does.
 
+The order of precedence for config paths:
+
+1. `--config <some path>`
+1. `${XDG_CONFIG_HOME}/leatktk/config.toml` if it exists
+1. `/etc/leaktk/config.toml` if it exists
+1. default config
+
 ## Scan Request Format
 
 Notes about the formats below:
@@ -214,10 +221,6 @@ Error (if "error" is present, the scan failed)
    for examples).
 1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
 1. Change workdir default to `${XDG_CACHE_HOME}/leaktk`
-1. if --config isn't set:
-    * then try `${XDG_CONFIG_HOME}/leatktk/config.toml`
-    * else try /etc/leaktk/config.toml
-    * else fall back on default config
 1. Allow optional config headers passed to the pattern server requests
 1. Finalize the request/response format
 1. Make sure it fully supports Linux and Mac
