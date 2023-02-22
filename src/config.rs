@@ -2,7 +2,8 @@ use crate::errors::Error;
 use serde::Deserialize;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use dirs;
 
 #[derive(Debug, Deserialize)]
 pub struct GitleaksConfig {
@@ -146,10 +147,38 @@ impl Config {
     }
 
     // Load the config from a file path
-    pub fn load(path: &str) -> Result<Config, Error> {
+    pub fn load_file(path: &str) -> Result<Config, Error> {
         let content = fs::read_to_string(path)
             .map_err(|err| Error::new(format!("Could not read {}: {}", path, err)))?;
 
         Config::from_str(&content)
+    }
+
+    /// Load config file from path or defaults
+    ///
+    /// Returns a Config
+    pub fn load(path: Option<String>) -> Result<Config, Error> {
+        if let Some(path) = path {
+            return Config::load_file(path.as_str());
+        }
+
+        if let Some(config_dir) = dirs::config_dir() {
+            let path = config_dir.join("leaktk").join("config.toml");
+            if path.exists() {
+                if let Some(path_str) = path.to_str() {
+                    return Config::load_file(path_str);
+                }
+            }
+        }
+
+        #[cfg(any(target_os = "linux", target_os = "macos"))] {
+            let path = Path::new("/etc/leaktk/config.toml");
+            if path.exists() {
+                if let Some(path_str) = path.to_str() {
+                    return Config::load_file(path_str);
+                }
+            }
+        }
+        Ok(Default::default())
     }
 }

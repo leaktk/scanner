@@ -14,10 +14,7 @@ use crate::scanner::providers::Providers;
 use crate::scanner::Scanner;
 
 fn main() -> Result<(), Error> {
-    let config = match parser::args().config {
-        Some(config_path) => Config::load(&config_path)?,
-        None => Default::default(),
-    };
+    let config = Config::load(parser::args().config)?;
 
     Logger::init(&config.logger)?;
 
