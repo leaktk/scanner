@@ -24,22 +24,20 @@ impl Providers {
             return CloneResult {
                 ok: true,
                 msg: "Skipped clone for local target".to_string(),
-            }
+            };
         }
 
         match req.kind {
-            RequestKind::Git => {
-                match self.git.clone(&req.target, &req.options, &dest) {
-                    Err(err) => CloneResult {
-                        ok: false,
-                        msg: err.to_string(),
-                    },
-                    Ok(output) => CloneResult {
-                        ok: output.status.success(),
-                        msg: String::from_utf8_lossy(&output.stderr).to_string(),
-                    },
-                }
-            }
+            RequestKind::Git => match self.git.clone(&req.target, &req.options, &dest) {
+                Err(err) => CloneResult {
+                    ok: false,
+                    msg: err.to_string(),
+                },
+                Ok(output) => CloneResult {
+                    ok: output.status.success(),
+                    msg: String::from_utf8_lossy(&output.stderr).to_string(),
+                },
+            },
         }
     }
 }

@@ -18,7 +18,7 @@ pub struct RequestOptions {
     // Scan staged uncommitted changes (implies uncommitted)
     pub staged: Option<bool>,
     // Scan uncommitted changes
-    pub uncommitted : Option<bool>,
+    pub uncommitted: Option<bool>,
 }
 
 impl Default for RequestOptions {

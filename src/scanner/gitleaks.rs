@@ -56,7 +56,8 @@ impl<'g> Gitleaks<'g> {
             fs::remove_file(binpath).unwrap();
             panic!("Invalid gitleaks digest!");
         }
-        #[cfg(target_family = "unix")]{
+        #[cfg(target_family = "unix")]
+        {
             let mut perms = fs::metadata(&binpath).unwrap().permissions();
             perms.set_mode(0o770);
             fs::set_permissions(&binpath, perms).unwrap();
@@ -147,7 +148,11 @@ impl<'g> Gitleaks<'g> {
             args.extend(self.gitleaks_log_opts(&scan_dir, options));
         }
 
-        info!("Running: {} '{}'", gitleaks_path.display(), args.join("' '"));
+        info!(
+            "Running: {} '{}'",
+            gitleaks_path.display(),
+            args.join("' '")
+        );
         let results = Command::new(&gitleaks_path)
             .args(args)
             .output()

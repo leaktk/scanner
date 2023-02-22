@@ -1,9 +1,9 @@
 use crate::errors::Error;
+use dirs;
 use serde::Deserialize;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use dirs;
 
 #[derive(Debug, Deserialize)]
 pub struct GitleaksConfig {
@@ -171,7 +171,8 @@ impl Config {
             }
         }
 
-        #[cfg(any(target_os = "linux", target_os = "macos"))] {
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        {
             let path = Path::new("/etc/leaktk/config.toml");
             if path.exists() {
                 if let Some(path_str) = path.to_str() {
