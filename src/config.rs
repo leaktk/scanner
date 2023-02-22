@@ -2,8 +2,8 @@ use crate::errors::Error;
 use serde::Deserialize;
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
-use directories::BaseDirs;
+use std::path::PathBuf;
+use dirs;
 
 #[derive(Debug, Deserialize)]
 pub struct GitleaksConfig {
@@ -156,10 +156,10 @@ impl Config {
 
     /// Checks default config locations for configuration file
     ///
-    /// Returns a Config 
+    /// Returns a Config
     pub fn default_load() -> Result<Config, Error> {
-        if let Some(base_dirs) = BaseDirs::new() {
-            let path = Path::new(base_dirs.config_dir()).join("leaktk").join("config.toml");
+        if let Some(config_dir) = dirs::config_dir() {
+            let path = config_dir.join("leaktk").join("config.toml");
             if path.exists() {
                 if let Some(path_str) = path.to_str() {
                     return Config::load(path_str);
