@@ -3,7 +3,10 @@ use dirs;
 use serde::Deserialize;
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 pub struct GitleaksConfig {
@@ -119,6 +122,12 @@ pub struct ScannerConfig {
 
 impl ScannerConfig {
     fn default_workdir() -> PathBuf {
+        // Defaults to users cache_dir which is generally longer lived than the tmp_dir
+        if let Some(cache_dir) = dirs::cache_dir() {
+            let leaktk_cache = cache_dir.join("leaktk");
+            return leaktk_cache;
+        };
+        // Fall back on the rust std temp_dir
         env::temp_dir().join("leaktk")
     }
 }
