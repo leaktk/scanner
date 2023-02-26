@@ -122,13 +122,13 @@ pub struct ScannerConfig {
 
 impl ScannerConfig {
     fn default_workdir() -> PathBuf {
-        // Defaults to users cache_dir which is generally longer lived than the tmp_dir
+        // Use user's cache_dir which is generally longer lived than the tmp_dir
+        // or fall back on tmpdir if that doesn't exist
         if let Some(cache_dir) = dirs::cache_dir() {
-            let leaktk_cache = cache_dir.join("leaktk");
-            return leaktk_cache;
-        };
-        // Fall back on the rust std temp_dir
-        env::temp_dir().join("leaktk")
+            cache_dir.join("leaktk")
+        } else {
+            env::temp_dir().join("leaktk")
+        }
     }
 }
 
@@ -189,6 +189,7 @@ impl Config {
                 }
             }
         }
+
         Ok(Default::default())
     }
 }

@@ -220,7 +220,6 @@ Error (if "error" is present, the scan failed)
    (see [blog post](https://nick.groenen.me/posts/rust-error-handling/)
    for examples).
 1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
-1. Change workdir default to `${XDG_CACHE_HOME}/leaktk`
 1. Allow optional config headers passed to the pattern server requests
 1. Finalize the request/response format
 1. Make sure it fully supports Linux and Mac
