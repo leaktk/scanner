@@ -1,14 +1,14 @@
 pub mod config;
 pub mod errors;
 pub mod listener;
-pub mod logging;
+pub mod logger;
 pub mod parser;
 pub mod scanner;
 
 use crate::config::Config;
 use crate::errors::Error;
 use crate::listener::Listener;
-use crate::logging::Logger;
+use crate::logger::Logger;
 use crate::scanner::patterns::Patterns;
 use crate::scanner::providers::Providers;
 use crate::scanner::Scanner;
