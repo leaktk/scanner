@@ -1,15 +1,25 @@
-use crate::scanner::proto::RequestOptions;
-use log::info;
 use std::fs;
-use std::io::{Error, ErrorKind};
 use std::path::Path;
 use std::process::{Command, Output};
+
+use log::{error, info};
+use thiserror::Error;
+
+use crate::scanner::proto::RequestOptions;
+
+#[derive(Error, Debug)]
+pub enum GitError {
+    #[error("clone failed")]
+    CloneFailed(#[from] std::io::Error),
+
+    #[error("invalid clone url")]
+    InvalidCloneURL,
+}
 
 pub struct Git;
 
 impl Git {
     pub fn new() -> Git {
-        // Created for when default options, etc might be added
         Git {}
     }
 
@@ -29,11 +39,12 @@ impl Git {
         clone_url: &String,
         options: &RequestOptions,
         clone_dir: &Path,
-    ) -> Result<Output, Error> {
+    ) -> Result<Output, GitError> {
+        // This is added here for safety. If this needs to change for some
+        // reason, additional sanitation might be needed.
         if !clone_url.starts_with("https://") {
-            // This is added here for safety. If this needs to change for some
-            // reason, additional sanitation might be needed.
-            return Err(Error::new(ErrorKind::Other, "Can only clone https URLs"));
+            error!("only https clone urls are supported");
+            return Err(GitError::InvalidCloneURL);
         }
 
         let mut args = vec!["clone".to_string()];
@@ -57,8 +68,7 @@ impl Git {
         }
 
         if let Some(depth) = options.depth {
-            // Add one to the depth since the grafted commit is excluded
-            // from the scan
+            // increment the depth since grafted commits are excluded
             let depth = depth + 1;
             args.push(format!("--depth={depth}"));
         }
@@ -70,11 +80,13 @@ impl Git {
         args.push(clone_url.to_string());
         args.push(clone_dir.display().to_string());
 
-        info!("Running: git '{}'", args.join("' '"));
+        info!("running git '{}'", args.join("' '"));
 
-        Command::new("git")
+        let output = Command::new("git")
             .args(args)
             .env("GIT_TERMINAL_PROMPT", "0")
-            .output()
+            .output()?;
+
+        Ok(output)
     }
 }

@@ -1,10 +1,24 @@
-use crate::config::ScannerConfig;
-use crate::errors::Error;
-use log::{debug, info};
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
 use std::time::{self, Duration, SystemTime};
+
+use log::{debug, info};
+use thiserror::Error;
+
+use crate::config::ScannerConfig;
+
+#[derive(Error, Debug)]
+pub enum PatternsError {
+    #[error("could not fetch patterns")]
+    CouldNotFetchPatterns(#[from] reqwest::Error),
+
+    #[error("could not save patterns")]
+    CouldNotSavePatterns(#[from] std::io::Error),
+
+    #[error("patterns path has no parent")]
+    PatternsPathHasNoParent,
+}
 
 struct PatternServer {
     url: String,
@@ -44,26 +58,25 @@ impl Patterns {
     }
 
     // Block and refresh the patterns file if it needs to be refreshed
-    pub fn refresh_if_stale(&self) -> Result<(), Error> {
+    pub fn refresh_if_stale(&self) -> Result<(), PatternsError> {
         if !self.are_stale() {
-            debug!("Patterns up-to-date");
+            debug!("patterns are already up-to-date");
             Ok(())
         } else {
-            info!("Refreshing patterns");
+            info!("refreshing patterns");
 
             fs::create_dir_all(
                 self.gitleaks_patterns_path
                     .parent()
-                    .expect("patterns in a directory"),
+                    .ok_or(PatternsError::PatternsPathHasNoParent)?,
             )?;
 
             let url = self.server.gitleaks_patterns_url();
             let content = reqwest::blocking::get(url)?.bytes()?;
-            let mut file = File::create(&self.gitleaks_patterns_path)?;
 
-            file.write_all(&content)?;
+            File::create(&self.gitleaks_patterns_path)?.write_all(&content)?;
+            info!("patterns refreshed");
 
-            info!("Patterns refreshed!");
             Ok(())
         }
     }
