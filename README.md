@@ -231,3 +231,4 @@ Error (if "error" is present, the scan failed)
 1. Look into creating rust bindings to call gitleaks directly from rust instead of spinning up a process
 1. Figure out a fast way for depth limiting when single\_branch is set to false where it gives n commits from each branch
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
+1. Support `.github/secret_scanning.yml` files
