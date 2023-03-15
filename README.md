@@ -214,11 +214,6 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Better error handling in the code to avoid panics
-   using [thiserror](https://github.com/dtolnay/thiserror)
-   and [anyhow](https://github.com/dtolnay/anyhow)
-   (see [blog post](https://nick.groenen.me/posts/rust-error-handling/)
-   for examples).
 1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
 1. Allow optional config headers passed to the pattern server requests
 1. Finalize the request/response format

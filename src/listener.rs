@@ -1,7 +1,8 @@
-use crate::scanner::proto::Request;
 use std::io::Lines;
 use std::io::{self, StdinLock};
 use std::iter::Iterator;
+
+use crate::scanner::proto::Request;
 
 struct Requests {
     lines: Lines<StdinLock<'static>>,

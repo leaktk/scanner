@@ -1,16 +1,37 @@
-use super::patterns::Patterns;
-use super::proto::{GitLeaksResult, RequestOptions};
-use super::providers::Providers;
-use crate::config::ScannerConfig;
-use log::info;
-use ring::digest::{Context, SHA256};
 use std::fs::{self, File};
 use std::io::Write;
+#[cfg(target_family = "unix")]
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-#[cfg(target_family = "unix")]
-use std::os::unix::fs::PermissionsExt;
+use log::info;
+use ring::digest::{Context, SHA256};
+use thiserror::Error;
+
+use crate::config::ScannerConfig;
+
+use super::patterns::Patterns;
+use super::proto::{GitLeaksResult, RequestOptions};
+use super::providers::Providers;
+
+#[derive(Error, Debug)]
+pub enum GitleaksError {
+    #[error("could not set up gitleaks")]
+    CouldNotSetUpGitleaks(#[from] std::io::Error),
+
+    #[error("could not fetch gitleaks")]
+    CouldNotFetchGitleaks(#[from] reqwest::Error),
+
+    #[error("could not parse results")]
+    CouldNotParseResults(#[from] serde_json::Error),
+
+    #[error("could not complete scan")]
+    CouldNotCompleteScan(#[source] std::io::Error),
+
+    #[error("invalid gitleaks digest")]
+    InvalidGitleaksDigest,
+}
 
 pub struct Gitleaks<'g> {
     config: &'g ScannerConfig,
@@ -32,14 +53,11 @@ impl<'g> Gitleaks<'g> {
     }
 
     #[inline]
-    fn download_gitleaks(&self, bindir: &Path, binpath: &Path) {
-        fs::create_dir_all(&bindir).expect("Could not create bin file directory!");
+    fn download_gitleaks(&self, bindir: &Path, binpath: &Path) -> Result<(), GitleaksError> {
+        fs::create_dir_all(&bindir)?;
 
-        let req = reqwest::blocking::get(&self.config.gitleaks.download_url).unwrap();
-        let data = req.bytes().unwrap();
-        let mut bin = File::create(bindir.join(&self.config.gitleaks.filename)).unwrap();
-
-        bin.write_all(&data).unwrap();
+        let data = reqwest::blocking::get(&self.config.gitleaks.download_url)?.bytes()?;
+        File::create(bindir.join(&self.config.gitleaks.filename))?.write_all(&data)?;
 
         let mut context = Context::new(&SHA256);
         context.update(&data);
@@ -53,28 +71,30 @@ impl<'g> Gitleaks<'g> {
             .join("");
 
         if hex_digest != self.config.gitleaks.checksum {
-            fs::remove_file(binpath).unwrap();
-            panic!("Invalid gitleaks digest!");
+            fs::remove_file(binpath)?;
+            return Err(GitleaksError::InvalidGitleaksDigest);
         }
+
         #[cfg(target_family = "unix")]
         {
-            let mut perms = fs::metadata(&binpath).unwrap().permissions();
+            let mut perms = fs::metadata(&binpath)?.permissions();
             perms.set_mode(0o770);
-            fs::set_permissions(&binpath, perms).unwrap();
+            fs::set_permissions(&binpath, perms)?;
         }
 
-        info!("{} downloaded!", &self.config.gitleaks.filename);
+        info!("{} downloaded", &self.config.gitleaks.filename);
+        Ok(())
     }
 
-    fn gitleaks_path(&self) -> PathBuf {
+    fn gitleaks_path(&self) -> Result<PathBuf, GitleaksError> {
         let bindir = self.config.workdir.join("bin");
         let binpath = bindir.join(&self.config.gitleaks.filename);
 
         if !binpath.exists() {
-            self.download_gitleaks(&bindir, &binpath);
+            self.download_gitleaks(&bindir, &binpath)?;
         }
 
-        binpath
+        Ok(binpath)
     }
 
     fn gitleaks_log_opts(&self, scan_dir: &Path, options: &RequestOptions) -> Vec<String> {
@@ -123,8 +143,12 @@ impl<'g> Gitleaks<'g> {
         vec!["--log-opts".to_string(), log_opts.join(" ")]
     }
 
-    pub fn git_scan(&self, scan_dir: &Path, options: &RequestOptions) -> Vec<GitLeaksResult> {
-        let gitleaks_path = self.gitleaks_path();
+    pub fn git_scan(
+        &self,
+        scan_dir: &Path,
+        options: &RequestOptions,
+    ) -> Result<Vec<GitLeaksResult>, GitleaksError> {
+        let gitleaks_path = self.gitleaks_path()?;
         let staged = options.staged.unwrap_or(false);
         let uncommitted = options.uncommitted.unwrap_or(staged);
 
@@ -148,17 +172,13 @@ impl<'g> Gitleaks<'g> {
             args.extend(self.gitleaks_log_opts(&scan_dir, options));
         }
 
-        info!(
-            "Running: {} '{}'",
-            gitleaks_path.display(),
-            args.join("' '")
-        );
-        let results = Command::new(&gitleaks_path)
+        info!("running {} '{}'", gitleaks_path.display(), args.join("' '"));
+        let stdout = Command::new(&gitleaks_path)
             .args(args)
             .output()
-            .expect("Could not run scan");
+            .map_err(GitleaksError::CouldNotCompleteScan)?
+            .stdout;
 
-        let raw_results = String::from_utf8_lossy(&results.stdout);
-        serde_json::from_str(&raw_results).unwrap()
+        Ok(serde_json::from_str(&String::from_utf8_lossy(&stdout))?)
     }
 }
