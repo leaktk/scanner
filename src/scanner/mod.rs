@@ -3,9 +3,10 @@ pub mod proto;
 pub mod providers;
 
 mod gitleaks;
+mod workspace;
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use log::{debug, error, info, warn};
 use thiserror::Error;
@@ -20,6 +21,7 @@ use proto::{
     Rule, Source,
 };
 use providers::{ProviderError, Providers};
+use workspace::Workspace;
 
 #[derive(Error, Debug)]
 pub enum ScannerError {
@@ -73,24 +75,22 @@ impl<'s> Scanner<'s> {
     }
 
     // The dir for a specific scan folder
-    fn scan_dir(&self, req: &Request) -> PathBuf {
+    fn workspace(&self, req: &Request) -> Workspace {
         if req.is_local() {
-            PathBuf::from(&req.target)
+            Workspace::new(&PathBuf::from(&req.target))
         } else {
-            self.scans_dir().join(Uuid::new_v4().to_string())
+            Workspace::new(&self.scans_dir().join(Uuid::new_v4().to_string()))
         }
     }
 
     // Clean up after a scan is over
-    fn clean_up(&self, req: &Request, scan_dir: &PathBuf) {
-        if !req.is_local() && scan_dir.exists() {
-            fs::remove_dir_all(scan_dir).unwrap_or_else(|err| {
-                error!("could not remove {}: {}", scan_dir.display(), err);
-            });
+    fn clean_up(&self, req: &Request, workspace: &Workspace) {
+        if !req.is_local() {
+            workspace.clean();
         }
     }
 
-    fn start_scan(&self, req: &Request, scan_dir: &Path) -> Result<Response, ScannerError> {
+    fn start_scan(&self, req: &Request, workspace: &Workspace) -> Result<Response, ScannerError> {
         Ok(Response {
             id: Uuid::new_v4().to_string(),
             request: ResponseRequest {
@@ -99,7 +99,7 @@ impl<'s> Scanner<'s> {
             error: None,
             results: self
                 .gitleaks
-                .git_scan(scan_dir, &req.options)?
+                .git_scan(workspace, &req.options)?
                 .iter()
                 .map(|r| ScanResult {
                     context: r.context.clone(),
@@ -154,19 +154,19 @@ impl<'s> Scanner<'s> {
             return self.error_response(&req, ScannerError::from(err));
         }
 
-        let scan_dir = self.scan_dir(&req);
+        let workspace = self.workspace(&req);
 
         let resp = self
             .providers
-            .clone(&req, &scan_dir)
+            .clone(&req, &workspace.scan_dir)
             .map_err(ScannerError::CouldNotClone)
             .and_then(|msg| {
                 debug!("clone success: {}", msg);
-                self.start_scan(&req, &scan_dir)
+                self.start_scan(&req, &workspace)
             })
             .unwrap_or_else(|err| self.error_response(&req, err));
 
-        self.clean_up(&req, &scan_dir);
+        self.clean_up(&req, &workspace);
 
         resp
     }
