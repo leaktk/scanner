@@ -1,6 +1,5 @@
 use std::env;
 use std::fs;
-#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::path::Path;
 use std::path::PathBuf;
 
