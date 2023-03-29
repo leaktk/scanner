@@ -12,14 +12,23 @@ pub struct Workspace {
 
     // Save repo specific configs in this directory
     pub config_dir: PathBuf,
+
+    // Save the results in this directory
+    pub results_dir: PathBuf,
 }
 
 impl Workspace {
-    pub fn new(root_dir: &Path) -> Self {
+    pub fn new(root_dir: &Path, external_scan_dir: Option<&Path>) -> Self {
         Workspace {
             root_dir: root_dir.to_path_buf(),
-            scan_dir: root_dir.join("repo"),
+            // A scan dir outside of the root_dir is not cleaned up.
+            // This can be useful for local scans where you don't want
+            // to delete the local repo
+            scan_dir: external_scan_dir
+                .unwrap_or(&root_dir.join("repo"))
+                .to_path_buf(),
             config_dir: root_dir.join("config"),
+            results_dir: root_dir.join("results"),
         }
     }
 

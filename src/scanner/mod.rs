@@ -49,9 +49,9 @@ impl<'s> Scanner<'s> {
         patterns: &'s Patterns,
     ) -> Scanner<'s> {
         let scanner = Scanner {
-            config: config,
-            patterns: patterns,
-            providers: providers,
+            config,
+            patterns,
+            providers,
             gitleaks: Gitleaks::new(&config, &providers, &patterns),
         };
 
@@ -76,17 +76,12 @@ impl<'s> Scanner<'s> {
 
     // The dir for a specific scan folder
     fn workspace(&self, req: &Request) -> Workspace {
-        if req.is_local() {
-            Workspace::new(&PathBuf::from(&req.target))
-        } else {
-            Workspace::new(&self.scans_dir().join(Uuid::new_v4().to_string()))
-        }
-    }
+        let root_dir = self.scans_dir().join(Uuid::new_v4().to_string());
 
-    // Clean up after a scan is over
-    fn clean_up(&self, req: &Request, workspace: &Workspace) {
-        if !req.is_local() {
-            workspace.clean();
+        if req.is_local() {
+            Workspace::new(&root_dir, Some(&PathBuf::from(&req.target)))
+        } else {
+            Workspace::new(&root_dir, None)
         }
     }
 
@@ -166,8 +161,7 @@ impl<'s> Scanner<'s> {
             })
             .unwrap_or_else(|err| self.error_response(&req, err));
 
-        self.clean_up(&req, &workspace);
-
+        workspace.clean();
         resp
     }
 }
