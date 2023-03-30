@@ -97,7 +97,7 @@ impl RestrictedConfig {
 
 #[derive(Debug, Serialize)]
 pub struct GitleaksRepoConfig {
-    extends: Extends,
+    extend: Extends,
     allowlist: Option<Allowlist>,
 }
 
@@ -109,7 +109,7 @@ impl GitleaksRepoConfig {
         let restricted_config = RestrictedConfig::load_file(repo_gitleaks_toml_path)?;
         let repo_config = Self {
             allowlist: restricted_config.allowlist,
-            extends: Extends {
+            extend: Extends {
                 path: global_config_path.display().to_string(),
             },
         };
