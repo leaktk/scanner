@@ -23,7 +23,7 @@ pub enum ConfigError {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Extends {
+struct Extend {
     path: String,
 }
 
@@ -85,7 +85,7 @@ impl RestrictedConfig {
 /// `{workspace.config_dir}/gitleaks.toml` that looks something like:
 ///
 /// ```toml
-/// [extends]
+/// [extend]
 /// path = "/path/to/global/config/from/the/pattern/server.toml"
 ///
 /// [allowlist]
@@ -97,7 +97,7 @@ impl RestrictedConfig {
 
 #[derive(Debug, Serialize)]
 pub struct GitleaksRepoConfig {
-    extend: Extends,
+    extend: Extend,
     allowlist: Option<Allowlist>,
 }
 
@@ -109,7 +109,7 @@ impl GitleaksRepoConfig {
         let restricted_config = RestrictedConfig::load_file(repo_gitleaks_toml_path)?;
         let repo_config = Self {
             allowlist: restricted_config.allowlist,
-            extend: Extends {
+            extend: Extend {
                 path: global_config_path.display().to_string(),
             },
         };
