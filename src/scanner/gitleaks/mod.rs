@@ -1,6 +1,7 @@
 mod config;
 
 use std::fs;
+use std::fs::File;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -180,6 +181,7 @@ impl<'g> Gitleaks<'g> {
         let repo_config_path = workspace.config_dir.join("gitleaks.toml");
 
         fs::create_dir_all(&workspace.config_dir)?;
+        fs::create_dir_all(&workspace.results_dir)?;
         fs::write(&repo_config_path, toml::to_string(&repo_config)?)?;
 
         Ok(repo_config_path)
@@ -207,7 +209,7 @@ impl<'g> Gitleaks<'g> {
         let gitleaks_path = self.gitleaks_path()?;
         let staged = options.staged.unwrap_or(false);
         let uncommitted = options.uncommitted.unwrap_or(staged);
-        let report_path = scan_dir.join("gitleaks-results.json");
+        let report_path = workspace.results_dir.join("gitleaks-results.json");
 
         let mut args = vec![
             "--report-path".to_string(),
