@@ -214,14 +214,13 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Sanitize any repo specific .gitleaks.tomls and load them as a part of the scans
+1. Fix clippy warnings and add it to the contributing guidelines
 1. Allow optional config headers passed to the pattern server requests
 1. Finalize the request/response format
 1. Make sure it fully supports Linux and Mac
 1. Unittest and refactor what's currently here
 1. Proper error handling in the code to keep things clean, consistent and scalable
 1. Group gitleaks code into a single object as the source of truth
-1. Create a Workspace object to manage the workspace folders (creating, clearing, etc)
 1. Figure out what to do with shallow commits on shallow-since scans
 1. Look into creating rust bindings to call gitleaks directly from rust instead of spinning up a process
 1. Figure out a fast way for depth limiting when single\_branch is set to false where it gives n commits from each branch

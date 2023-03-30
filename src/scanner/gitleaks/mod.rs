@@ -1,11 +1,12 @@
-use std::fs::{self, File};
-use std::io::Write;
+mod config;
+
+use std::fs;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use log::info;
+use log::{info, warn};
 use ring::digest::{Context, SHA256};
 use thiserror::Error;
 
@@ -14,6 +15,9 @@ use crate::config::ScannerConfig;
 use super::patterns::Patterns;
 use super::proto::{GitLeaksResult, RequestOptions};
 use super::providers::Providers;
+use super::workspace::Workspace;
+
+use config::{ConfigError, GitleaksRepoConfig};
 
 #[derive(Error, Debug)]
 pub enum GitleaksError {
@@ -34,6 +38,18 @@ pub enum GitleaksError {
 
     #[error("invalid gitleaks digest")]
     InvalidGitleaksDigest,
+}
+
+#[derive(Error, Debug)]
+pub enum RepoConfigError {
+    #[error(transparent)]
+    InvalidRepoConfig(#[from] ConfigError),
+
+    #[error("could not set up repo config")]
+    CouldNotSetUpRepoConfig(#[from] std::io::Error),
+
+    #[error("could not serialize repo config")]
+    CouldNotSerializeRepoConfig(#[from] toml::ser::Error),
 }
 
 pub struct Gitleaks<'g> {
@@ -60,7 +76,7 @@ impl<'g> Gitleaks<'g> {
         fs::create_dir_all(&bindir)?;
 
         let data = reqwest::blocking::get(&self.config.gitleaks.download_url)?.bytes()?;
-        File::create(bindir.join(&self.config.gitleaks.filename))?.write_all(&data)?;
+        fs::write(bindir.join(&self.config.gitleaks.filename), &data)?;
 
         let mut context = Context::new(&SHA256);
         context.update(&data);
@@ -146,9 +162,46 @@ impl<'g> Gitleaks<'g> {
         vec!["--log-opts".to_string(), log_opts.join(" ")]
     }
 
+    fn setup_repo_config(&self, workspace: &Workspace) -> Result<PathBuf, RepoConfigError> {
+        let global_config_path = &self.patterns.gitleaks_patterns_path;
+        let repo_gitleaks_toml_path = workspace.scan_dir.join(".gitleaks.toml");
+
+        if !repo_gitleaks_toml_path.exists() {
+            return Ok(global_config_path.clone());
+        }
+
+        let repo_config = GitleaksRepoConfig::new(&global_config_path, &repo_gitleaks_toml_path)?;
+
+        // No reason to use it if it's empty
+        if repo_config.is_empty() {
+            return Ok(global_config_path.clone());
+        }
+
+        let repo_config_path = workspace.config_dir.join("gitleaks.toml");
+
+        fs::create_dir_all(&workspace.config_dir)?;
+        fs::write(&repo_config_path, toml::to_string(&repo_config)?)?;
+
+        Ok(repo_config_path)
+    }
+
+    fn patterns_path(&self, workspace: &Workspace) -> PathBuf {
+        match self.setup_repo_config(&workspace) {
+            Ok(repo_config_path) => repo_config_path,
+            Err(err) => {
+                warn!(
+                    "could not configure custom repo config for {}: {}",
+                    workspace, err,
+                );
+
+                self.patterns.gitleaks_patterns_path.clone()
+            }
+        }
+    }
+
     pub fn git_scan(
         &self,
-        scan_dir: &Path,
+        workspace: &Workspace,
         options: &RequestOptions,
     ) -> Result<Vec<GitLeaksResult>, GitleaksError> {
         let gitleaks_path = self.gitleaks_path()?;
@@ -161,9 +214,9 @@ impl<'g> Gitleaks<'g> {
             report_path.display().to_string(),
             "--report-format=json".to_string(),
             "--config".to_string(),
-            self.patterns.gitleaks_patterns_path.display().to_string(),
+            self.patterns_path(&workspace).display().to_string(),
             "--source".to_string(),
-            scan_dir.display().to_string(),
+            workspace.scan_dir.display().to_string(),
         ];
 
         if uncommitted {
@@ -174,7 +227,7 @@ impl<'g> Gitleaks<'g> {
             }
         } else {
             args.push("detect".to_string());
-            args.extend(self.gitleaks_log_opts(&scan_dir, options));
+            args.extend(self.gitleaks_log_opts(&workspace.scan_dir, options));
         }
 
         info!("running {} '{}'", gitleaks_path.display(), args.join("' '"));
