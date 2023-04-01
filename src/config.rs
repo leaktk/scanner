@@ -170,13 +170,13 @@ pub struct Config {
 
 impl Config {
     /// Load the config from a `&str`
-    pub fn from_str(raw: &str) -> Result<Config, ConfigError> {
+    pub fn load_from_str(raw: &str) -> Result<Config, ConfigError> {
         Ok(toml::from_str(raw)?)
     }
 
     /// Load the config from a file path
     pub fn load_file(path: &Path) -> Result<Config, ConfigError> {
-        Config::from_str(&fs::read_to_string(path)?)
+        Config::load_from_str(&fs::read_to_string(path)?)
     }
 
     /// Load the config from a provided file path or fall back on defaults
