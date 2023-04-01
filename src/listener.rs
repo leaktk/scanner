@@ -21,6 +21,12 @@ pub struct Listener {
     requests: Requests,
 }
 
+impl Default for Listener {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Listener {
     pub fn new() -> Listener {
         Listener {

@@ -18,6 +18,12 @@ pub enum GitError {
 
 pub struct Git;
 
+impl Default for Git {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Git {
     pub fn new() -> Git {
         Git {}

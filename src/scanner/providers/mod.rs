@@ -18,6 +18,12 @@ pub struct Providers {
     pub git: Git,
 }
 
+impl Default for Providers {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // This handles building all of the providers for the scanner to use and
 impl Providers {
     pub fn new() -> Providers {
