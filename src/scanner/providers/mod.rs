@@ -31,7 +31,7 @@ impl Providers {
 
         match req.kind {
             RequestKind::Git => {
-                let output = self.git.clone(&req.target, &req.options, &dest)?;
+                let output = self.git.clone(&req.target, &req.options, dest)?;
                 Ok(String::from_utf8_lossy(&output.stderr).to_string())
             }
         }

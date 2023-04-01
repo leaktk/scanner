@@ -52,7 +52,7 @@ impl<'s> Scanner<'s> {
             config,
             patterns,
             providers,
-            gitleaks: Gitleaks::new(&config, &providers, &patterns),
+            gitleaks: Gitleaks::new(config, providers, patterns),
         };
 
         scanner.reset_scans_dir();
@@ -109,8 +109,8 @@ impl<'s> Scanner<'s> {
                         target: req.target.to_string(),
                         path: r.source_path.clone(),
                         lines: Lines {
-                            start: r.source_lines_start.clone(),
-                            end: r.source_lines_end.clone(),
+                            start: r.source_lines_start,
+                            end: r.source_lines_end,
                         },
                         commit: GitCommit {
                             id: r.source_commit_id.clone(),
@@ -146,20 +146,20 @@ impl<'s> Scanner<'s> {
                 warn!("using on stale patterns");
             }
 
-            return self.error_response(&req, ScannerError::from(err));
+            return self.error_response(req, ScannerError::from(err));
         }
 
-        let workspace = self.workspace(&req);
+        let workspace = self.workspace(req);
 
         let resp = self
             .providers
-            .clone(&req, &workspace.scan_dir)
+            .clone(req, &workspace.scan_dir)
             .map_err(ScannerError::CouldNotClone)
             .and_then(|msg| {
                 debug!("clone success: {}", msg);
-                self.start_scan(&req, &workspace)
+                self.start_scan(req, &workspace)
             })
-            .unwrap_or_else(|err| self.error_response(&req, err));
+            .unwrap_or_else(|err| self.error_response(req, err));
 
         workspace.clean();
         resp

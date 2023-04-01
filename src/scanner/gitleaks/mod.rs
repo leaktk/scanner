@@ -44,13 +44,13 @@ pub enum GitleaksError {
 #[derive(Error, Debug)]
 pub enum RepoConfigError {
     #[error(transparent)]
-    InvalidRepoConfig(#[from] ConfigError),
+    Invalid(#[from] ConfigError),
 
     #[error("could not set up repo config")]
-    CouldNotSetUpRepoConfig(#[from] std::io::Error),
+    CouldNotSetUp(#[from] std::io::Error),
 
     #[error("could not serialize repo config")]
-    CouldNotSerializeRepoConfig(#[from] toml::ser::Error),
+    CouldNotSerialize(#[from] toml::ser::Error),
 }
 
 pub struct Gitleaks<'g> {
@@ -66,15 +66,15 @@ impl<'g> Gitleaks<'g> {
         patterns: &'g Patterns,
     ) -> Gitleaks<'g> {
         Gitleaks {
-            config: config,
-            providers: providers,
-            patterns: patterns,
+            config,
+            providers,
+            patterns,
         }
     }
 
     #[inline]
     fn download_gitleaks(&self, bindir: &Path, binpath: &Path) -> Result<(), GitleaksError> {
-        fs::create_dir_all(&bindir)?;
+        fs::create_dir_all(bindir)?;
 
         let data = reqwest::blocking::get(&self.config.gitleaks.download_url)?.bytes()?;
         fs::write(bindir.join(&self.config.gitleaks.filename), &data)?;
@@ -152,7 +152,7 @@ impl<'g> Gitleaks<'g> {
             let to_exclude: Vec<String> = self
                 .providers
                 .git
-                .shallow_commits(&scan_dir)
+                .shallow_commits(scan_dir)
                 .iter()
                 .map(|s| format!("^{s}"))
                 .collect();
@@ -171,7 +171,7 @@ impl<'g> Gitleaks<'g> {
             return Ok(global_config_path.clone());
         }
 
-        let repo_config = GitleaksRepoConfig::new(&global_config_path, &repo_gitleaks_toml_path)?;
+        let repo_config = GitleaksRepoConfig::new(global_config_path, &repo_gitleaks_toml_path)?;
 
         // No reason to use it if it's empty
         if repo_config.is_empty() {
@@ -188,7 +188,7 @@ impl<'g> Gitleaks<'g> {
     }
 
     fn patterns_path(&self, workspace: &Workspace) -> PathBuf {
-        match self.setup_repo_config(&workspace) {
+        match self.setup_repo_config(workspace) {
             Ok(repo_config_path) => repo_config_path,
             Err(err) => {
                 warn!(
@@ -216,7 +216,7 @@ impl<'g> Gitleaks<'g> {
             report_path.display().to_string(),
             "--report-format=json".to_string(),
             "--config".to_string(),
-            self.patterns_path(&workspace).display().to_string(),
+            self.patterns_path(workspace).display().to_string(),
             "--source".to_string(),
             workspace.scan_dir.display().to_string(),
         ];

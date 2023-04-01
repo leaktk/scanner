@@ -182,7 +182,7 @@ impl Config {
     /// Load the config from a provided file path or fall back on defaults
     pub fn load(path: Option<String>) -> Result<Config, ConfigError> {
         if let Some(path) = path {
-            return Config::load_file(&Path::new(&path));
+            return Config::load_file(Path::new(&path));
         }
 
         if let Some(config_dir) = dirs::config_dir() {
