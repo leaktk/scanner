@@ -48,7 +48,7 @@ impl Default for GitleaksConfig {
             ),
             ("8.12.0", "windows", "x86_64") => (
                 "gitleaks-8.12.0-windows-x86_64.exe",
-                "d7a49162a15133958d3e4b8c0967581fe3069e81847978ad5b5f6903a9f6fa88  ",
+                "d7a49162a15133958d3e4b8c0967581fe3069e81847978ad5b5f6903a9f6fa88",
             ),
             _ => ("gitleaks-unknown-unknown-unknown", "UNSUPPORTED"),
         };
