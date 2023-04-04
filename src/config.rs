@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use serde::Deserialize;
 use thiserror::Error;
@@ -167,16 +168,19 @@ pub struct Config {
     #[serde(default)]
     pub scanner: ScannerConfig,
 }
+impl FromStr for Config {
+    type Err = ConfigError;
 
-impl Config {
     /// Load the config from a `&str`
-    pub fn load_from_str(raw: &str) -> Result<Config, ConfigError> {
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
         Ok(toml::from_str(raw)?)
     }
+}
 
+impl Config {
     /// Load the config from a file path
     pub fn load_file(path: &Path) -> Result<Config, ConfigError> {
-        Config::load_from_str(&fs::read_to_string(path)?)
+        Config::from_str(&fs::read_to_string(path)?)
     }
 
     /// Load the config from a provided file path or fall back on defaults
