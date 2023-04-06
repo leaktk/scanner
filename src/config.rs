@@ -13,7 +13,7 @@ pub enum ConfigError {
     CouldNotRead(#[from] std::io::Error),
 
     #[error("invalid config")]
-    InvalidConfig(#[from] toml::de::Error),
+    Invalid(#[from] toml::de::Error),
 }
 
 #[derive(Debug, Deserialize)]
