@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use serde::Deserialize;
 use thiserror::Error;
@@ -12,7 +13,7 @@ pub enum ConfigError {
     CouldNotRead(#[from] std::io::Error),
 
     #[error("invalid config")]
-    InvalidConfig(#[from] toml::de::Error),
+    Invalid(#[from] toml::de::Error),
 }
 
 #[derive(Debug, Deserialize)]
@@ -168,12 +169,16 @@ pub struct Config {
     pub scanner: ScannerConfig,
 }
 
-impl Config {
+impl FromStr for Config {
+    type Err = ConfigError;
+
     /// Load the config from a `&str`
-    pub fn from_str(raw: &str) -> Result<Config, ConfigError> {
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
         Ok(toml::from_str(raw)?)
     }
+}
 
+impl Config {
     /// Load the config from a file path
     pub fn load_file(path: &Path) -> Result<Config, ConfigError> {
         Config::from_str(&fs::read_to_string(path)?)
@@ -182,7 +187,7 @@ impl Config {
     /// Load the config from a provided file path or fall back on defaults
     pub fn load(path: Option<String>) -> Result<Config, ConfigError> {
         if let Some(path) = path {
-            return Config::load_file(&Path::new(&path));
+            return Config::load_file(Path::new(&path));
         }
 
         if let Some(config_dir) = dirs::config_dir() {
@@ -197,7 +202,7 @@ impl Config {
         {
             let path = Path::new("/etc/leaktk/config.toml");
             if path.exists() {
-                return Config::load_file(&path);
+                return Config::load_file(path);
             }
         }
 

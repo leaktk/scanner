@@ -214,7 +214,6 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Fix clippy warnings and add it to the contributing guidelines
 1. Allow optional config headers passed to the pattern server requests
 1. Finalize the request/response format
 1. Make sure it fully supports Linux and Mac

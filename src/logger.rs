@@ -8,7 +8,7 @@ use crate::config::LoggerConfig;
 #[derive(Error, Debug)]
 pub enum LoggerError {
     #[error("could not set logger")]
-    CouldNotSetLogger(#[from] log::SetLoggerError),
+    CouldNotSet(#[from] log::SetLoggerError),
 }
 
 pub struct Logger {

@@ -12,15 +12,19 @@ impl Requests {
     fn next(&mut self) -> Option<Request> {
         self.lines
             .next()
-            .map(Result::ok)
-            .flatten()
-            .map(|s| serde_json::from_str(&s).ok())
-            .flatten()
+            .and_then(Result::ok)
+            .and_then(|s| serde_json::from_str(&s).ok())
     }
 }
 
 pub struct Listener {
     requests: Requests,
+}
+
+impl Default for Listener {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Listener {

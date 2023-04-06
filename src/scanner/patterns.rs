@@ -11,13 +11,13 @@ use crate::config::ScannerConfig;
 #[derive(Error, Debug)]
 pub enum PatternsError {
     #[error("could not fetch patterns")]
-    CouldNotFetchPatterns(#[from] reqwest::Error),
+    CouldNotFetch(#[from] reqwest::Error),
 
     #[error("could not save patterns")]
-    CouldNotSavePatterns(#[from] std::io::Error),
+    CouldNotSave(#[from] std::io::Error),
 
     #[error("patterns path has no parent")]
-    PatternsPathHasNoParent,
+    PathHasNoParent,
 }
 
 struct PatternServer {
@@ -68,7 +68,7 @@ impl Patterns {
             fs::create_dir_all(
                 self.gitleaks_patterns_path
                     .parent()
-                    .ok_or(PatternsError::PatternsPathHasNoParent)?,
+                    .ok_or(PatternsError::PathHasNoParent)?,
             )?;
 
             let url = self.server.gitleaks_patterns_url();

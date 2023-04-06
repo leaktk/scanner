@@ -5,7 +5,7 @@ use regex::Regex;
 use serde::{self, Deserialize, Serialize};
 use thiserror::Error;
 
-fn filter_regex(values: &Vec<String>) -> Vec<String> {
+fn filter_regex(values: &[String]) -> Vec<String> {
     values
         .iter()
         .filter(|value| Regex::new(value).is_ok())
@@ -19,7 +19,7 @@ pub enum ConfigError {
     CouldNotRead(#[from] std::io::Error),
 
     #[error("invalid config: {0}")]
-    InvalidConfig(#[from] toml::de::Error),
+    Invalid(#[from] toml::de::Error),
 }
 
 #[derive(Debug, Deserialize, Serialize)]

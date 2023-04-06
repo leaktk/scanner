@@ -18,6 +18,12 @@ pub struct Providers {
     pub git: Git,
 }
 
+impl Default for Providers {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // This handles building all of the providers for the scanner to use and
 impl Providers {
     pub fn new() -> Providers {
@@ -31,7 +37,7 @@ impl Providers {
 
         match req.kind {
             RequestKind::Git => {
-                let output = self.git.clone(&req.target, &req.options, &dest)?;
+                let output = self.git.clone(&req.target, &req.options, dest)?;
                 Ok(String::from_utf8_lossy(&output.stderr).to_string())
             }
         }

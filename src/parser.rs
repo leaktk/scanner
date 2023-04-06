@@ -12,9 +12,9 @@ fn parse<I: Iterator<Item = String>>(
 ) -> HashMap<String, String> {
     loop {
         if let Some(arg) = args.next() {
-            if arg.starts_with("--") {
+            if let Some(argument) = arg.strip_prefix("--") {
                 if let Some(value) = args.next() {
-                    map.insert(arg[2..].to_string(), value);
+                    map.insert(argument.to_string(), value);
                 } else {
                     eprintln!("The option \"{}\" was missing a value.\n", arg);
                     eprintln!("USAGE\n\n    leaktk-scanner --config CONFIG_PATH");
