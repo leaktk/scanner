@@ -168,6 +168,7 @@ pub struct Config {
     #[serde(default)]
     pub scanner: ScannerConfig,
 }
+
 impl FromStr for Config {
     type Err = ConfigError;
 

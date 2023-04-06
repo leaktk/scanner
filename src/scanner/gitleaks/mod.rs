@@ -238,8 +238,7 @@ impl<'g> Gitleaks<'g> {
             .output()
             .map_err(GitleaksError::CouldNotCompleteScan)?;
 
-        let results = File::open(report_path)
-            .map_err(GitleaksError::CouldNotReadResultsFile)?;
+        let results = File::open(report_path).map_err(GitleaksError::CouldNotReadResultsFile)?;
 
         Ok(serde_json::from_reader(results)?)
     }
