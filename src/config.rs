@@ -34,11 +34,22 @@ impl Default for GitleaksConfig {
         let version = "8.12.0";
 
         let (filename, checksum) = match (version, env::consts::OS, env::consts::ARCH) {
+            ("8.12.0", "darwin", "arm64") => (
+                "gitleaks-8.12.0-darwin-arm64",
+                "da4e64fe24d2ed41e2472f67acdedbf6adadf8e6c7620ce037dc61d7b85859a7",
+            ),
+            ("8.12.0", "darwin", "x86_64") => (
+                "gitleaks-8.12.0-darwin-x86_64",
+                "708de7052fb76a2e61273d0b6210e717a3fac85e955ec1163d17e6bfe864fbfd",
+            ),
             ("8.12.0", "linux", "x86_64") => (
                 "gitleaks-8.12.0-linux-x86_64",
                 "9ed4271ffbfa04feec1423eb56154ad22c11ac4cae698f0115c1a064d4553524",
             ),
-            // Add more supported versions here
+            ("8.12.0", "windows", "x86_64") => (
+                "gitleaks-8.12.0-windows-x86_64.exe",
+                "d7a49162a15133958d3e4b8c0967581fe3069e81847978ad5b5f6903a9f6fa88",
+            ),
             _ => ("gitleaks-unknown-unknown-unknown", "UNSUPPORTED"),
         };
 

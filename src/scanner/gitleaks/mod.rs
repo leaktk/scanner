@@ -1,6 +1,7 @@
 mod config;
 
 use std::fs;
+use std::fs::File;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -32,6 +33,9 @@ pub enum GitleaksError {
 
     #[error("could not complete scan")]
     CouldNotCompleteScan(#[source] std::io::Error),
+
+    #[error("could not open results file")]
+    CouldNotReadResultsFile(#[source] std::io::Error),
 
     #[error("invalid gitleaks digest")]
     InvalidGitleaksDigest,
@@ -177,6 +181,7 @@ impl<'g> Gitleaks<'g> {
         let repo_config_path = workspace.config_dir.join("gitleaks.toml");
 
         fs::create_dir_all(&workspace.config_dir)?;
+        fs::create_dir_all(&workspace.results_dir)?;
         fs::write(&repo_config_path, toml::to_string(&repo_config)?)?;
 
         Ok(repo_config_path)
@@ -204,9 +209,11 @@ impl<'g> Gitleaks<'g> {
         let gitleaks_path = self.gitleaks_path()?;
         let staged = options.staged.unwrap_or(false);
         let uncommitted = options.uncommitted.unwrap_or(staged);
+        let report_path = workspace.results_dir.join("gitleaks-results.json");
 
         let mut args = vec![
-            "--report-path=/dev/stdout".to_string(),
+            "--report-path".to_string(),
+            report_path.display().to_string(),
             "--report-format=json".to_string(),
             "--config".to_string(),
             self.patterns_path(&workspace).display().to_string(),
@@ -226,12 +233,14 @@ impl<'g> Gitleaks<'g> {
         }
 
         info!("running {} '{}'", gitleaks_path.display(), args.join("' '"));
-        let stdout = Command::new(&gitleaks_path)
+        Command::new(&gitleaks_path)
             .args(args)
             .output()
-            .map_err(GitleaksError::CouldNotCompleteScan)?
-            .stdout;
+            .map_err(GitleaksError::CouldNotCompleteScan)?;
 
-        Ok(serde_json::from_str(&String::from_utf8_lossy(&stdout))?)
+        let results = File::open(report_path)
+            .map_err(GitleaksError::CouldNotReadResultsFile)?;
+
+        Ok(serde_json::from_reader(results)?)
     }
 }
