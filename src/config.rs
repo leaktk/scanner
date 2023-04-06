@@ -201,7 +201,7 @@ impl Config {
         {
             let path = Path::new("/etc/leaktk/config.toml");
             if path.exists() {
-                return Config::load_file(&path);
+                return Config::load_file(path);
             }
         }
 

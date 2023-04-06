@@ -97,9 +97,9 @@ impl<'g> Gitleaks<'g> {
 
         #[cfg(target_family = "unix")]
         {
-            let mut perms = fs::metadata(&binpath)?.permissions();
+            let mut perms = fs::metadata(binpath)?.permissions();
             perms.set_mode(0o770);
-            fs::set_permissions(&binpath, perms)?;
+            fs::set_permissions(binpath, perms)?;
         }
 
         info!("{} downloaded", &self.config.gitleaks.filename);
