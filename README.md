@@ -215,7 +215,6 @@ Error (if "error" is present, the scan failed)
 ## TODO
 
 1. Allow optional config headers passed to the pattern server requests
-1. Finalize the request/response format
 1. Make sure it fully supports Linux and Mac
 1. Unittest and refactor what's currently here
 1. Proper error handling in the code to keep things clean, consistent and scalable
