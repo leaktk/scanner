@@ -3,21 +3,40 @@
 #
 # All items in the config should have sane defaults and the
 # config is optional.
-
+#
 # [logger]
+#
 # # Valid Values: "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
 # level = "INFO"
 #
 # [scanner]
+#
 # # The full path to where the scanner should store files, clone repos, etc
 # # for better performance mount a tmpfs at this location
 # workdir = "/tmp/leaktk"
+# # This defaults to ~/.cache/leaktk (where ~/.cache is the value of dirs::cache_dir())
 #
 # [scanner.patterns]
+#
 # # How often should the patterns be refreshed
 # refresh_interval = 43200
 #
 # [scanner.patterns.server]
+#
 # # The URL to a pattern server
 # # The path "/patterns/{scanner}/{version}" will be appended to this URL
 # url = "https://raw.githubusercontent.com/leaktk/patterns/main/target"
+# # If this value is not set then the following sources will be checked in this order:
+# #
+# # 1) LEAKTK_PATTERN_SERVER_URL env var
+# # 2) Fall back on "https://raw.githubusercontent.com/leaktk/patterns/main/target"
+#
+# # This defines the auth bearer token sent to the server.
+# auth_token = "<insert auth token here>"
+# # If auth_token is not set, the following sources will be checked in this order:
+# #
+# # 1) LEAKTK_PATTERN_SERVER_AUTH_TOKEN env var
+# # 2) ~/.config/leaktk/pattern-server-auth-token (where ~/.config is the value of dirs::config_dir())
+# #
+# # If none of the above are defined, no Authorization header is sent to the pattern
+# # server.

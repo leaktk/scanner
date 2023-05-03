@@ -4,6 +4,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use log::error;
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -70,11 +71,38 @@ impl Default for GitleaksConfig {
 pub struct PatternServerConfig {
     #[serde(default = "PatternServerConfig::default_url")]
     pub url: String,
+
+    #[serde(default = "PatternServerConfig::default_auth_token")]
+    pub auth_token: Option<String>,
 }
 
 impl PatternServerConfig {
     fn default_url() -> String {
+        if let Ok(url) = env::var("LEAKTK_PATTERN_SERVER_URL") {
+            return url;
+        }
+
         "https://raw.githubusercontent.com/leaktk/patterns/main/target".to_string()
+    }
+
+    fn default_auth_token() -> Option<String> {
+        if let Ok(auth_token) = env::var("LEAKTK_PATTERN_SERVER_AUTH_TOKEN") {
+            return Some(auth_token);
+        }
+
+        if let Some(config_dir) = dirs::config_dir() {
+            let path = config_dir.join("leaktk").join("pattern-server-auth-token");
+
+            if path.exists() {
+                if let Ok(auth_token) = fs::read_to_string(&path) {
+                    return Some(auth_token);
+                }
+
+                error!("Could not open {}", path.display());
+            }
+        }
+
+        None
     }
 }
 
@@ -82,6 +110,7 @@ impl Default for PatternServerConfig {
     fn default() -> Self {
         PatternServerConfig {
             url: PatternServerConfig::default_url(),
+            auth_token: PatternServerConfig::default_auth_token(),
         }
     }
 }

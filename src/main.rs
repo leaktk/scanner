@@ -4,6 +4,9 @@ pub mod logger;
 pub mod parser;
 pub mod scanner;
 
+use std::panic;
+use log::error;
+
 use crate::config::Config;
 use crate::listener::Listener;
 use crate::logger::Logger;
@@ -17,6 +20,15 @@ fn main() -> Result<()> {
     let config = Config::load(parser::args().config)?;
 
     Logger::init(&config.logger)?;
+
+    // Use the logger for handling panics
+    panic::set_hook(Box::new(|panic_info| {
+        if let Some(payload) = panic_info.payload().downcast_ref::<&str>() {
+            error!("{}", payload);
+        } else {
+            error!("{}", panic_info);
+        }
+    }));
 
     let patterns = Patterns::new(&config.scanner);
     let providers = Providers::new();
