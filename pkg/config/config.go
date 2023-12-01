@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"github.com/BurntSushi/toml"
 	"log"
 	"os"
@@ -13,38 +14,37 @@ type (
 	// for the toolchain. This may be abstracted out to a common library in
 	// the future as more components are added to the toolchain.
 	Config struct {
-		Logger  Logger
-		Scanner Scanner
+		Logger  Logger  `toml:"logger"`
+		Scanner Scanner `toml:"scanner"`
 	}
 
 	// Logger provides general logging config
 	Logger struct {
-		Level string
+		Level string `toml:"level"`
 	}
 
 	// Scanner provides scanner specific config
 	Scanner struct {
-		Workdir  string
-		Gitleaks Gitleaks
-		Patterns Patterns
+		Workdir  string   `toml:"workdir"`
+		Gitleaks Gitleaks `toml:"gitleaks"`
+		Patterns Patterns `toml:"patterns"`
 	}
 
 	// Gitleaks configures the gitleaks subscanner
 	Gitleaks struct {
-		Version string
+		Version string `toml:"version"`
 	}
 
 	// Patterns provides configuration for managing pattern updates
 	Patterns struct {
-		RefreshInterval int
-		Server          PatternServer
+		RefreshInterval int           `toml:"refresh_interval"`
+		Server          PatternServer `toml:"server"`
 	}
 
 	// PatternServer provides pattern server configuration settings for the scanner
 	PatternServer struct {
-		URL string
-		// AuthToken is optional and is only needed if the server requires one
-		AuthToken string
+		URL       string `toml:"url"`
+		AuthToken string `toml:"auth_token"`
 	}
 )
 
@@ -115,15 +115,20 @@ func defaultPatternServerURL() string {
 	return "https://raw.githubusercontent.com/leaktk/patterns/main/target"
 }
 
-func validateLoggingLevel(config *Config) {
+func validateLoggingLevel(config *Config) error {
 	switch level := config.Logger.Level; level {
 	case "ERROR":
+		return nil
 	case "WARN":
+		return nil
 	case "INFO":
+		return nil
 	case "DEBUG":
+		return nil
 	case "TRACE":
+		return nil
 	default:
-		log.Fatalf("%s is an invalid log level", level)
+		return errors.New(level + " is an invalid log level")
 	}
 }
 
@@ -153,15 +158,18 @@ func DefaultConfig() *Config {
 // LoadConfigFromFile provides a config object with default values set plus any
 // custom values pulled in from the config file
 func LoadConfigFromFile(path string) (*Config, error) {
-	path = filepath.Clean(path)
 	config := DefaultConfig()
-	_, err := toml.DecodeFile(path, config)
+	_, err := toml.DecodeFile(filepath.Clean(path), config)
 
 	if err != nil {
 		return nil, err
 	}
 
-	validateLoggingLevel(config)
+	err = validateLoggingLevel(config)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return config, err
 }
