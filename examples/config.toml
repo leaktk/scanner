@@ -14,7 +14,7 @@
 # # The full path to where the scanner should store files, clone repos, etc
 # # for better performance mount a tmpfs at this location
 # workdir = "/tmp/leaktk"
-# # This defaults to ~/.cache/leaktk (where ~/.cache is the value of dirs::cache_dir())
+# # This defaults to ~/.cache/leaktk
 #
 # [scanner.patterns]
 #
@@ -36,7 +36,7 @@
 # # If auth_token is not set, the following sources will be checked in this order:
 # #
 # # 1) LEAKTK_PATTERN_SERVER_AUTH_TOKEN env var
-# # 2) ~/.config/leaktk/pattern-server-auth-token (where ~/.config is the value of dirs::config_dir())
+# # 2) ~/.config/leaktk/pattern-server-auth-token
 # #
 # # If none of the above are defined, no Authorization header is sent to the pattern
 # # server.
