@@ -3,9 +3,8 @@
 Provides a consistent API around some existing scanning tools to integrate them
 with the rest of the tool kit.
 
-This scanner is meant to be ran as a single instance listening on stdin
-for easy scripting. There will be a server to wrap the scanner to be able to
-turn it into a service
+This scanner can be ran either as an ad-hoc scan or in listening mode for easy
+scripting.
 
 The scanner leverages
 [gitleaks](https://github.com/zricethezav/gitleaks)
@@ -23,8 +22,9 @@ Just getting started.
 leaktk-scanner --config ./examples/config.toml < ./examples/requests.jsonl
 ```
 
-The scanner listens on stdin, responds on stdout, and logs to stderr.
-It reads one request per line and sends a response per line in jsonl.
+When in listening mode the scanner listens on stdin, responds on stdout, and
+logs to stderr. It reads one request per line and sends a response per line in
+jsonl.
 
 The "Scan Request Format" and "Scan Results Format" sections describe the
 format for requests and responses.
@@ -214,13 +214,14 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
+1. Rewrite exsting progress in go
+1. Delete exsting rust projets from crates.io
 1. Identify non-recoverable errors and have them log and exit
 1. Make sure it fully supports Linux and Mac
 1. Unittest and refactor what's currently here
 1. Proper error handling in the code to keep things clean, consistent and scalable
 1. Group gitleaks code into a single object as the source of truth
 1. Figure out what to do with shallow commits on shallow-since scans
-1. Look into creating rust bindings to call gitleaks directly from rust instead of spinning up a process
 1. Figure out a fast way for depth limiting when single\_branch is set to false where it gives n commits from each branch
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
