@@ -13,8 +13,8 @@
 #
 # # The full path to where the scanner should store files, clone repos, etc
 # # for better performance mount a tmpfs at this location
-# workdir = "/tmp/leaktk"
-# # This defaults to ~/.cache/leaktk
+# workdir = "/tmp/leaktk/scanner"
+# # This defaults to ~/.cache/leaktk/scanner
 #
 # [scanner.patterns]
 #

@@ -27,7 +27,7 @@ func TestLoadConfigFromFile(t *testing.T) {
 			actual:   config.Scanner.Gitleaks.Version,
 		},
 		{
-			expected: "/tmp/leaktk",
+			expected: "/tmp/leaktk/scanner",
 			actual:   config.Scanner.Workdir,
 		},
 		{

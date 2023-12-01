@@ -75,6 +75,14 @@ func leaktkConfigDir() string {
 	return filepath.Join(xdgConfigHome(), "leaktk")
 }
 
+func leaktkCacheDir() string {
+	return filepath.Join(xdgCacheHome(), "leaktk")
+}
+
+func defaultScannerWorkdir() string {
+	return filepath.Join(leaktkCacheDir(), "scanner")
+}
+
 func defaultPatternServerAuthToken() string {
 	authTokenFromEnvVar := os.Getenv("LEAKTK_PATTERN_SERVER_AUTH_TOKEN")
 
@@ -127,6 +135,7 @@ func DefaultConfig() *Config {
 			Level: "INFO",
 		},
 		Scanner: Scanner{
+			Workdir: defaultScannerWorkdir(),
 			Gitleaks: Gitleaks{
 				Version: "7.6.1",
 			},
