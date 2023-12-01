@@ -3,7 +3,7 @@
 #
 [logger]
 # Valid Values: "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
-level = "DEBUG"
+level = "FOOOOOP"
 
 [scanner]
 # The full path to where the scanner should store files, clone repos, etc

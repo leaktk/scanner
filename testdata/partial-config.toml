@@ -1,0 +1,14 @@
+[scanner]
+# The full path to where the scanner should store files, clone repos, etc
+# for better performance mount a tmpfs at this location
+workdir = "/tmp/leaktk/scanner"
+# This defaults to ~/.cache/leaktk/scanner
+
+[scanner.patterns.server]
+# The URL to a pattern server
+# The path "/patterns/{scanner}/{version}" will be appended to this URL
+url = "https://example.com/leaktk/patterns/main/target"
+# If this value is not set then the following sources will be checked in this order:
+#
+# 1) LEAKTK_PATTERN_SERVER_URL env var
+# 2) Fall back on "https://raw.githubusercontent.com/leaktk/patterns/main/target"
