@@ -11,17 +11,23 @@ all: build
 clean:
 	if [[ -e .git ]]; then git clean -dfX; fi
 
-build: format
+.PHONY: gosec
+gosec:
+	which gosec &> /dev/null || go install github.com/securego/gosec/v2/cmd/gosec@latest
+	gosec ./...
+
+.PHONY: golint
+golint:
+	which golint &> /dev/null || go install golang.org/x/lint/golint@latest
 	golint ./...
-	go vet ./...
+
+build: format test
 	go mod tidy
 	go build $(LDFLAGS) -o leaktk-scanner
 
 format:
 	go fmt ./...
 
-test: format
-	go get golang.org/x/lint/golint
+test: format gosec golint
 	go vet ./...
-	golint ./...
 	go test ./...
