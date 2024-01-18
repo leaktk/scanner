@@ -8,6 +8,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
 
+	gitleaksconfig "github.com/leaktk/gitleaks7/v2/config"
+
 	"github.com/leaktk/scanner/pkg/logger"
 )
 
@@ -27,14 +29,20 @@ type (
 
 	// Scanner provides scanner specific config
 	Scanner struct {
-		Workdir  string   `toml:"workdir"`
-		Gitleaks Gitleaks `toml:"gitleaks"`
-		Patterns Patterns `toml:"patterns"`
+		Workdir string `toml:"workdir"`
+		// Should this auto fetch any resources that its missing locally
+		Autofetch bool     `toml:"autofetch"`
+		Gitleaks  Gitleaks `toml:"gitleaks"`
+		Patterns  Patterns `toml:"patterns"`
 	}
 
 	// Gitleaks configures the gitleaks subscanner
 	Gitleaks struct {
 		Version string `toml:"version"`
+		// Config can be set in the leaktk/config.toml for flexibility, but
+		// its expected that this will be loaded by the scanner from patterns
+		// pulled from the pattern server
+		Config *gitleaksconfig.Config `toml:"config"`
 	}
 
 	// Patterns provides configuration for managing pattern updates
@@ -94,6 +102,18 @@ func defaultPatternServerURL() string {
 	return "https://raw.githubusercontent.com/leaktk/patterns/main/target"
 }
 
+func stringToBool(value string, defaultValue bool) bool {
+	if len(value) == 0 {
+		return defaultValue
+	}
+
+	if value == "true" || value == "1" {
+		return true
+	}
+
+	return false
+}
+
 // DefaultConfig provides a fully usable instance of Config with default
 // values provided
 func DefaultConfig() *Config {
@@ -102,7 +122,8 @@ func DefaultConfig() *Config {
 			Level: "INFO",
 		},
 		Scanner: Scanner{
-			Workdir: defaultScannerWorkdir(),
+			Workdir:   defaultScannerWorkdir(),
+			Autofetch: stringToBool(os.Getenv("LEAKTK_SCANNER_AUTOFETCH"), true),
 			Gitleaks: Gitleaks{
 				Version: "7.6.1",
 			},

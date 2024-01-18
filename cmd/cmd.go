@@ -116,7 +116,7 @@ func runScan(cmd *cobra.Command, args []string) {
 		logger.Fatal("no resource provided")
 	}
 
-	response, err := scanner.Scan(&request)
+	response, err := scanner.Scan(cfg, &request)
 	if err != nil {
 		logger.Fatal("%s", err)
 	}
@@ -158,7 +158,7 @@ func runListen(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		response, err := scanner.Scan(&request)
+		response, err := scanner.Scan(cfg, &request)
 		if err != nil {
 			logger.Error("%s: request_id=%s", err, request.ID)
 			continue
@@ -168,7 +168,7 @@ func runListen(cmd *cobra.Command, args []string) {
 	}
 
 	if err := stdinScanner.Err(); err != nil {
-		logger.Error("%s: request_id=%s", err, request.ID)
+		logger.Error("%s", err)
 	}
 }
 
