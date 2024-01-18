@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/leaktk/scanner/cmd"
+)
 
 func main() {
-	fmt.Println("Just getting started")
+	cmd.Execute()
 }
