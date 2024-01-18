@@ -1,3 +1,11 @@
+VERSION := 0.0.1
+COMMIT := $(shell git rev-parse HEAD)
+BUILD_META :=
+BUILD_META += -X=github.com/leaktk/scanner/cmd.Version=$(VERSION)
+BUILD_META += -X=github.com/leaktk/scanner/cmd.Commit=$(COMMIT)
+
+LDFLAGS := -ldflags "$(BUILD_META)"
+
 all: build
 
 clean:
@@ -7,7 +15,7 @@ build: format
 	golint ./...
 	go vet ./...
 	go mod tidy
-	go build -o leaktk-scanner
+	go build $(LDFLAGS) -o leaktk-scanner
 
 format:
 	go fmt ./...
