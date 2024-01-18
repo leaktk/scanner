@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/adrg/xdg"
 )
 
 type (
@@ -48,35 +50,12 @@ type (
 	}
 )
 
-func xdgDir(defaultName, envVar string) string {
-	xdgDirFromEnvVar := os.Getenv(envVar)
-
-	if len(xdgDirFromEnvVar) > 0 {
-		return filepath.Clean(xdgDirFromEnvVar)
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalf("from xdgDir: %v", err)
-	}
-
-	return filepath.Join(homeDir, defaultName)
-}
-
-func xdgConfigHome() string {
-	return xdgDir(".config", "XDG_CONFIG_HOME")
-}
-
-func xdgCacheHome() string {
-	return xdgDir(".cache", "XDG_CACHE_HOME")
-}
-
 func leaktkConfigDir() string {
-	return filepath.Join(xdgConfigHome(), "leaktk")
+	return filepath.Join(xdg.ConfigHome, "leaktk")
 }
 
 func leaktkCacheDir() string {
-	return filepath.Join(xdgCacheHome(), "leaktk")
+	return filepath.Join(xdg.CacheHome, "leaktk")
 }
 
 func defaultScannerWorkdir() string {
