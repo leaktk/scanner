@@ -16,24 +16,16 @@ var Version = ""
 // Commit id set by the build
 var Commit = ""
 
-const configDescription = `config file path
-
-order of precedence:
-
-1. --config/-c
-2. env var LEAKTK_CONFIG
-3. ${XDG_CONFIG_HOME}/leatktk/config.toml
-4. /etc/leatktk/config.toml
-5. The default config
-`
 const scanKindDescription = `what kind of resource is being scanned
 
 supported values:
 
 - GitRepo: If this is provided, resource should be something git can clone or
   a file path to scan the repo
+
 - Path: If this is provided, resource should be a local file path that should
   be scanned
+
 `
 
 const scanOptionDescription = `additional options to pass to the scan
@@ -50,6 +42,7 @@ https://github.com/leaktk/scanner/blob/main/README.md
 
 Note: You may want to run 'leaktk-scanner version' to make sure the README
 aligns with the version you're using.
+
 `
 
 var cfg *config.Config
@@ -66,7 +59,10 @@ func runHelp(cmd *cobra.Command, args []string) {
 	}
 }
 
-func runLogin(cmd *cobra.Command, args []string) {}
+func runLogin(cmd *cobra.Command, args []string) {
+	logger.Debug("TODO")
+}
+
 func loginCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "login",
@@ -96,7 +92,7 @@ func scanCommand() *cobra.Command {
 }
 
 func runListen(cmd *cobra.Command, args []string) {
-	fmt.Println("TODO")
+	logger.Debug("TODO")
 }
 
 func listenCommand() *cobra.Command {
@@ -127,7 +123,7 @@ func versionCommand() *cobra.Command {
 	}
 }
 
-func loadConfig(cmd *cobra.Command, _ []string) error {
+func loadConfig(cmd *cobra.Command, args []string) error {
 	path, err := cmd.Flags().GetString("config")
 
 	if err == nil {
@@ -150,7 +146,7 @@ func rootCommand() *cobra.Command {
 	}
 
 	flags := rootCommand.PersistentFlags()
-	flags.StringP("config", "c", "", configDescription)
+	flags.StringP("config", "c", "", "config file path")
 
 	rootCommand.AddCommand(loginCommand())
 	rootCommand.AddCommand(scanCommand())
