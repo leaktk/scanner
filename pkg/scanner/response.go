@@ -1,14 +1,12 @@
 package scanner
 
-type (
-	// Request to the scanner to scan some resource
-	Request struct {
-		ID       string            `json:"id"`
-		Kind     string            `json:"kind"`
-		Resource string            `json:"resource"`
-		Options  map[string]string `json:"options"`
-	}
+import (
+	"encoding/json"
 
+	"github.com/leaktk/scanner/pkg/logger"
+)
+
+type (
 	// Response from the scanner with the scan results
 	Response struct {
 		ID      string         `json:"id"`
@@ -66,3 +64,13 @@ type (
 		Email string `json:"email"`
 	}
 )
+
+// String renders a response structure to the JSON format
+func (r *Response) String() string {
+	out, err := json.Marshal(r)
+	if err != nil {
+		logger.Error("json.Marshal: %v", err.Error())
+	}
+
+	return string(out)
+}

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -8,7 +10,10 @@ import (
 
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/scanner"
 )
+
+const maxRequestSize = 256 * 1024
 
 // Version number set by the build
 var Version = ""
@@ -72,7 +77,47 @@ func loginCommand() *cobra.Command {
 }
 
 func runScan(cmd *cobra.Command, args []string) {
-	logger.Debug("TODO")
+	flags := cmd.Flags()
+	id, err := flags.GetString("id")
+	if err != nil {
+		logger.Fatal("id: %s", err.Error())
+	}
+
+	kind, err := flags.GetString("kind")
+	if err != nil {
+		logger.Fatal("kind: %s", err.Error())
+	}
+
+	resource, err := flags.GetString("resource")
+	if err != nil {
+		logger.Fatal("resource: %s", err.Error())
+	}
+
+	optionKvs, err := flags.GetStringArray("option")
+	if err != nil {
+		logger.Fatal("option: %s", err.Error())
+	}
+
+	options := make(map[string]string)
+
+	for _, kv := range optionKvs {
+		parts := strings.SplitN(kv, "=", 2)
+
+		if len(parts) != 2 {
+			logger.Fatal("option missing value: %s", kv)
+		}
+
+		options[parts[0]] = parts[1]
+	}
+
+	request := scanner.NewRequest(id, kind, resource, options)
+
+	response, err := scanner.Scan(&request)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	fmt.Println(response.String())
 }
 
 func scanCommand() *cobra.Command {
@@ -83,16 +128,39 @@ func scanCommand() *cobra.Command {
 	}
 
 	flags := scanCommand.PersistentFlags()
-	flags.String("kind", "GitRepo", scanKindDescription)
 	flags.String("id", "", "an ID for tying responses to requests")
-	flags.String("resource", "", "what will be scanned (what goes here depends on kind)")
-	flags.StringArray("option", []string{}, scanOptionDescription)
+	flags.StringP("kind", "k", "GitRepo", scanKindDescription)
+	flags.StringP("resource", "r", "", "what will be scanned (what goes here depends on kind)")
+	flags.StringArrayP("option", "o", []string{}, scanOptionDescription)
 
 	return scanCommand
 }
 
 func runListen(cmd *cobra.Command, args []string) {
-	logger.Debug("TODO")
+	s := bufio.NewScanner(os.Stdin)
+	s.Buffer(make([]byte, maxRequestSize), maxRequestSize)
+
+	for s.Scan() {
+		var request scanner.Request
+		err := json.Unmarshal(s.Bytes(), &request)
+
+		if err != nil {
+			logger.Error(err.Error())
+			continue
+		}
+
+		response, err := scanner.Scan(&request)
+		if err != nil {
+			logger.Error(err.Error())
+			continue
+		}
+
+		fmt.Println(response.String())
+	}
+
+	if err := s.Err(); err != nil {
+		logger.Error(err.Error())
+	}
 }
 
 func listenCommand() *cobra.Command {

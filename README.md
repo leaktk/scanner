@@ -215,6 +215,7 @@ Error (if "error" is present, the scan failed)
 ## TODO
 
 1. Rewrite exsting progress in go
+1. logger.SetLogMode(JSON|PRETTY) for listen vs other use cases
 1. Delete exsting rust projets from crates.io
 1. Identify non-recoverable errors and have them log and exit
 1. Make sure it fully supports Linux and Mac

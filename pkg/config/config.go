@@ -20,7 +20,7 @@ type (
 		Scanner Scanner `toml:"scanner"`
 	}
 
-	// Logger provides general logging config
+	// Logger provides general logger config
 	Logger struct {
 		Level string `toml:"level"`
 	}
