@@ -52,6 +52,8 @@ Note: You may want to run 'leaktk-scanner version' to make sure the README
 aligns with the version you're using.
 `
 
+var cfg *config.Config
+
 func initLogger() {
 	if err := logger.SetLoggerLevel("INFO"); err != nil {
 		logger.Warning("could not set log level to INFO")
@@ -125,14 +127,26 @@ func versionCommand() *cobra.Command {
 	}
 }
 
+func loadConfig(cmd *cobra.Command, _ []string) error {
+	path, err := cmd.Flags().GetString("config")
+
+	if err == nil {
+		// If the config path isn't set this will look other places
+		cfg, err = config.LocateAndLoadConfig(path)
+	}
+
+	return err
+}
+
 // NewCommand provides a built Command for the app to use
 func rootCommand() *cobra.Command {
 	cobra.OnInitialize(initLogger)
 
 	rootCommand := &cobra.Command{
-		Use:   "leaktk-scanner",
-		Short: "LeakTK Scanner: Scan for secrets",
-		Run:   runHelp,
+		Use:               "leaktk-scanner",
+		Short:             "LeakTK Scanner: Scan for secrets",
+		Run:               runHelp,
+		PersistentPreRunE: loadConfig,
 	}
 
 	flags := rootCommand.PersistentFlags()

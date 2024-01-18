@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// LogLevel is used to determine which log severities should actually log
 type LogLevel int
 
 const (

@@ -226,4 +226,3 @@ Error (if "error" is present, the scan failed)
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
 1. Explore base64 support (i.e. decoding it when spotted and scanning the contents)
-1. Consider using [viper](https://github.com/spf13/viper) for config

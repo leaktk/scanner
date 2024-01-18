@@ -1,11 +1,11 @@
 package config
 
 import (
-	"github.com/BurntSushi/toml"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
 
 	"github.com/leaktk/scanner/pkg/logger"
@@ -134,4 +134,28 @@ func LoadConfigFromFile(path string) (*Config, error) {
 	}
 
 	return config, err
+}
+
+// LocateAndLoadConfig looks through the possible places for the config
+// favoring the provided path if it is set
+func LocateAndLoadConfig(path string) (*Config, error) {
+	if len(path) > 0 {
+		return LoadConfigFromFile(path)
+	}
+
+	if path = os.Getenv("LEAKTK_CONFIG"); len(path) > 0 {
+		return LoadConfigFromFile(path)
+	}
+
+	path = filepath.Join(leaktkConfigDir(), "config.toml")
+	if _, err := os.Stat(path); err == nil {
+		return LoadConfigFromFile(path)
+	}
+
+	path = "/etc/leaktk/config.toml"
+	if _, err := os.Stat(path); err == nil {
+		return LoadConfigFromFile(path)
+	}
+
+	return DefaultConfig(), nil
 }
