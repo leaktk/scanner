@@ -1,14 +1,14 @@
 package config
 
 import (
-	"errors"
 	"github.com/BurntSushi/toml"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/adrg/xdg"
+
+	"github.com/leaktk/scanner/pkg/logger"
 )
 
 type (
@@ -75,7 +75,7 @@ func defaultPatternServerAuthToken() string {
 		authTokenBytes, err := os.ReadFile(authTokenFilePath)
 
 		if err != nil {
-			log.Fatalf("from defaultPatternServerAuthToken: %v", err)
+			logger.Fatal("from defaultPatternServerAuthToken: %v", err)
 		}
 
 		return strings.TrimSpace(string(authTokenBytes))
@@ -92,23 +92,6 @@ func defaultPatternServerURL() string {
 	}
 
 	return "https://raw.githubusercontent.com/leaktk/patterns/main/target"
-}
-
-func validateLoggingLevel(config *Config) error {
-	switch level := config.Logger.Level; level {
-	case "ERROR":
-		return nil
-	case "WARN":
-		return nil
-	case "INFO":
-		return nil
-	case "DEBUG":
-		return nil
-	case "TRACE":
-		return nil
-	default:
-		return errors.New(level + " is an invalid log level")
-	}
 }
 
 // DefaultConfig provides a fully usable instance of Config with default
@@ -144,7 +127,7 @@ func LoadConfigFromFile(path string) (*Config, error) {
 		return nil, err
 	}
 
-	err = validateLoggingLevel(config)
+	err = logger.SetLoggerLevel(config.Logger.Level)
 
 	if err != nil {
 		return nil, err

@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/leaktk/scanner/pkg/config"
 	"github.com/spf13/cobra"
-	"log"
 	"os"
 	"strings"
+
+	"github.com/leaktk/scanner/pkg/config"
+	"github.com/leaktk/scanner/pkg/logger"
 )
 
 // Version number set by the build
@@ -51,14 +52,16 @@ Note: You may want to run 'leaktk-scanner version' to make sure the README
 aligns with the version you're using.
 `
 
-func runHelp(cmd *cobra.Command, args []string) {
-	if err := cmd.Help(); err != nil {
-		log.Fatal(err.Error())
+func initLogger() {
+	if err := logger.SetLoggerLevel("INFO"); err != nil {
+		logger.Warning("could not set log level to INFO")
 	}
 }
 
-func initLogger() {
-	// TODO
+func runHelp(cmd *cobra.Command, args []string) {
+	if err := cmd.Help(); err != nil {
+		logger.Fatal(err.Error())
+	}
 }
 
 func runLogin(cmd *cobra.Command, args []string) {}
@@ -71,7 +74,7 @@ func loginCommand() *cobra.Command {
 }
 
 func runScan(cmd *cobra.Command, args []string) {
-	fmt.Println("TODO")
+	logger.Debug("TODO")
 }
 
 func scanCommand() *cobra.Command {
@@ -149,6 +152,6 @@ func Execute() {
 		if strings.Contains(err.Error(), "unknown flag") {
 			os.Exit(config.ExitCodeBlockingError)
 		}
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 }
