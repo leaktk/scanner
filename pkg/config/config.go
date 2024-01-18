@@ -69,7 +69,7 @@ func defaultPatternServerAuthToken() string {
 		return authTokenFromEnvVar
 	}
 
-	authTokenFilePath := filepath.Join(leaktkConfigDir(), "pattern-server-auth-token")
+	authTokenFilePath := filepath.Clean(filepath.Join(leaktkConfigDir(), "pattern-server-auth-token"))
 
 	if _, err := os.Stat(authTokenFilePath); err == nil {
 		authTokenBytes, err := os.ReadFile(authTokenFilePath)

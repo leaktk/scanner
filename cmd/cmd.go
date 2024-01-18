@@ -52,7 +52,9 @@ aligns with the version you're using.
 `
 
 func runHelp(cmd *cobra.Command, args []string) {
-	cmd.Help()
+	if err := cmd.Help(); err != nil {
+		log.Fatal(err.Error())
+	}
 }
 
 func initLogger() {
