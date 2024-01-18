@@ -60,7 +60,7 @@ func initLogger() {
 
 func runHelp(cmd *cobra.Command, args []string) {
 	if err := cmd.Help(); err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal("%s", err)
 	}
 }
 
@@ -80,22 +80,22 @@ func runScan(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 	id, err := flags.GetString("id")
 	if err != nil {
-		logger.Fatal("id: %s", err.Error())
+		logger.Fatal("id: %s", err)
 	}
 
 	kind, err := flags.GetString("kind")
 	if err != nil {
-		logger.Fatal("kind: %s", err.Error())
+		logger.Fatal("kind: %s", err)
 	}
 
 	resource, err := flags.GetString("resource")
 	if err != nil {
-		logger.Fatal("resource: %s", err.Error())
+		logger.Fatal("resource: %s", err)
 	}
 
 	optionKvs, err := flags.GetStringArray("option")
 	if err != nil {
-		logger.Fatal("option: %s", err.Error())
+		logger.Fatal("option: %s", err)
 	}
 
 	options := make(map[string]string)
@@ -112,9 +112,13 @@ func runScan(cmd *cobra.Command, args []string) {
 
 	request := scanner.NewRequest(id, kind, resource, options)
 
+	if len(request.Resource) == 0 {
+		logger.Fatal("no resource provided")
+	}
+
 	response, err := scanner.Scan(&request)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal("%s", err)
 	}
 
 	fmt.Println(response.String())
@@ -137,29 +141,34 @@ func scanCommand() *cobra.Command {
 }
 
 func runListen(cmd *cobra.Command, args []string) {
-	s := bufio.NewScanner(os.Stdin)
-	s.Buffer(make([]byte, maxRequestSize), maxRequestSize)
+	stdinScanner := bufio.NewScanner(os.Stdin)
+	stdinScanner.Buffer(make([]byte, maxRequestSize), maxRequestSize)
 
-	for s.Scan() {
+	for stdinScanner.Scan() {
 		var request scanner.Request
-		err := json.Unmarshal(s.Bytes(), &request)
+		err := json.Unmarshal(stdinScanner.Bytes(), &request)
 
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("%s: request_id=%s", err, request.ID)
+			continue
+		}
+
+		if len(request.Resource) == 0 {
+			logger.Error("no resource provided: request_id=%s", request.ID)
 			continue
 		}
 
 		response, err := scanner.Scan(&request)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("%s: request_id=%s", err, request.ID)
 			continue
 		}
 
 		fmt.Println(response.String())
 	}
 
-	if err := s.Err(); err != nil {
-		logger.Error(err.Error())
+	if err := stdinScanner.Err(); err != nil {
+		logger.Error("%s: request_id=%s", err, request.ID)
 	}
 }
 
@@ -230,6 +239,6 @@ func Execute() {
 		if strings.Contains(err.Error(), "unknown flag") {
 			os.Exit(config.ExitCodeBlockingError)
 		}
-		logger.Fatal(err.Error())
+		logger.Fatal("%s", err.Error())
 	}
 }

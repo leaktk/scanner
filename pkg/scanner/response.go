@@ -69,7 +69,7 @@ type (
 func (r *Response) String() string {
 	out, err := json.Marshal(r)
 	if err != nil {
-		logger.Error("json.Marshal: %v", err.Error())
+		logger.Error("json.Marshal: %s", err)
 	}
 
 	return string(out)

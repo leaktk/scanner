@@ -62,7 +62,7 @@ func (e Entry) String() string {
 
 	out, err := json.Marshal(e)
 	if err != nil {
-		log.Printf("json.Marshal: %v", err.Error())
+		log.Printf("json.Marshal: %s", err)
 	}
 
 	return string(out)
