@@ -82,41 +82,39 @@ func parseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
 
 // Gitleaks returns a Gitleaks config object if it's able to
 func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
-	var cfg *gitleaksconfig.Config
-
 	if p.config.Gitleaks.Config == nil {
+		// TODO: load patterns from FS if they exist and are newer than the refresh time
+
 		if !p.config.Autofetch {
-			return cfg, fmt.Errorf("could not autofetch gitleaks config because autofetch is disabled")
+			return p.config.Gitleaks.Config, fmt.Errorf("could not autofetch gitleaks config because autofetch is disabled")
 		}
 
 		rawConfig, err := p.fetchGitleaksConfig()
 		if err != nil {
-			return cfg, err
+			return p.config.Gitleaks.Config, err
 		}
 
-		cfg, err = parseGitleaksConfig(rawConfig)
+		p.config.Gitleaks.Config, err = parseGitleaksConfig(rawConfig)
 		if err != nil {
-			return cfg, err
+			return p.config.Gitleaks.Config, err
 		}
-
-		p.config.Gitleaks.Config = cfg
 
 		err = os.MkdirAll(filepath.Dir(p.config.Gitleaks.ConfigPath), 0700)
 		if err != nil {
-			return cfg, err
+			return p.config.Gitleaks.Config, err
 		}
 
 		configFile, err := os.Create(p.config.Gitleaks.ConfigPath)
 		if err != nil {
-			return cfg, err
+			return p.config.Gitleaks.Config, err
 		}
 		defer configFile.Close()
 
 		_, err = configFile.WriteString(rawConfig)
 		if err != nil {
-			return cfg, err
+			return p.config.Gitleaks.Config, err
 		}
 	}
 
-	return cfg, nil
+	return p.config.Gitleaks.Config, nil
 }
