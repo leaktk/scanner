@@ -1,2 +1,2 @@
-[scanner.gitleaks]
+[scanner.patterns.gitleaks]
 version="test-1"

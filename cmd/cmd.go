@@ -204,8 +204,12 @@ func loadConfig(cmd *cobra.Command, args []string) error {
 	path, err := cmd.Flags().GetString("config")
 
 	if err == nil {
-		// If the config path isn't set this will look other places
+		// If path == "", this will look other places
 		cfg, err = config.LocateAndLoadConfig(path)
+
+		if err == nil {
+			err = logger.SetLoggerLevel(cfg.Logger.Level)
+		}
 	}
 
 	return err
