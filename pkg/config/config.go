@@ -58,6 +58,8 @@ type (
 		// config to be self-contained for use in things like a server where the
 		// config file is templated out.
 		Config *gitleaksconfig.Config `toml:"config"`
+
+		ConfigPath string `toml:"config_path"`
 	}
 )
 
@@ -174,6 +176,15 @@ func LoadConfigFromFile(path string) (*Config, error) {
 		os.Getenv("LEAKTK_SCANNER_AUTOFETCH"),
 		cfg.Scanner.Patterns.Autofetch,
 	)
+
+	// The folowing items are defaults built from other settings
+
+	if len(cfg.Scanner.Patterns.Gitleaks.ConfigPath) == 0 {
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = filepath.Join(
+			cfg.Scanner.Workdir, "patterns", "gitleaks",
+			cfg.Scanner.Patterns.Gitleaks.Version,
+		)
+	}
 
 	return cfg, err
 }

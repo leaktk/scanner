@@ -116,7 +116,7 @@ func runScan(cmd *cobra.Command, args []string) {
 		logger.Fatal("no resource provided")
 	}
 
-	response, err := scanner.Scan(cfg, &request)
+	response, err := scanner.Scan(cfg, request)
 	if err != nil {
 		logger.Fatal("%s", err)
 	}
@@ -215,7 +215,6 @@ func loadConfig(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-// NewCommand provides a built Command for the app to use
 func rootCommand() *cobra.Command {
 	cobra.OnInitialize(initLogger)
 

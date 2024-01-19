@@ -10,8 +10,8 @@ type Request struct {
 
 // NewRequest is for creating request objects manually instead of unmarshaling
 // them though JSON
-func NewRequest(id, kind, resource string, options map[string]string) Request {
-	return Request{
+func NewRequest(id, kind, resource string, options map[string]string) *Request {
+	return &Request{
 		ID:       id,
 		Kind:     kind,
 		Resource: resource,
