@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -8,7 +10,10 @@ import (
 
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/scanner"
 )
+
+const maxRequestSize = 256 * 1024
 
 // Version number set by the build
 var Version = ""
@@ -55,7 +60,7 @@ func initLogger() {
 
 func runHelp(cmd *cobra.Command, args []string) {
 	if err := cmd.Help(); err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal("%s", err)
 	}
 }
 
@@ -72,7 +77,51 @@ func loginCommand() *cobra.Command {
 }
 
 func runScan(cmd *cobra.Command, args []string) {
-	logger.Debug("TODO")
+	flags := cmd.Flags()
+	id, err := flags.GetString("id")
+	if err != nil {
+		logger.Fatal("id: %s", err)
+	}
+
+	kind, err := flags.GetString("kind")
+	if err != nil {
+		logger.Fatal("kind: %s", err)
+	}
+
+	resource, err := flags.GetString("resource")
+	if err != nil {
+		logger.Fatal("resource: %s", err)
+	}
+
+	optionKvs, err := flags.GetStringArray("option")
+	if err != nil {
+		logger.Fatal("option: %s", err)
+	}
+
+	options := make(map[string]string)
+
+	for _, kv := range optionKvs {
+		parts := strings.SplitN(kv, "=", 2)
+
+		if len(parts) != 2 {
+			logger.Fatal("option missing value: %s", kv)
+		}
+
+		options[parts[0]] = parts[1]
+	}
+
+	request := scanner.NewRequest(id, kind, resource, options)
+
+	if len(request.Resource) == 0 {
+		logger.Fatal("no resource provided")
+	}
+
+	response, err := scanner.Scan(cfg, request)
+	if err != nil {
+		logger.Fatal("%s", err)
+	}
+
+	fmt.Println(response.String())
 }
 
 func scanCommand() *cobra.Command {
@@ -83,16 +132,44 @@ func scanCommand() *cobra.Command {
 	}
 
 	flags := scanCommand.PersistentFlags()
-	flags.String("kind", "GitRepo", scanKindDescription)
 	flags.String("id", "", "an ID for tying responses to requests")
-	flags.String("resource", "", "what will be scanned (what goes here depends on kind)")
-	flags.StringArray("option", []string{}, scanOptionDescription)
+	flags.StringP("kind", "k", "GitRepo", scanKindDescription)
+	flags.StringP("resource", "r", "", "what will be scanned (what goes here depends on kind)")
+	flags.StringArrayP("option", "o", []string{}, scanOptionDescription)
 
 	return scanCommand
 }
 
 func runListen(cmd *cobra.Command, args []string) {
-	logger.Debug("TODO")
+	stdinScanner := bufio.NewScanner(os.Stdin)
+	stdinScanner.Buffer(make([]byte, maxRequestSize), maxRequestSize)
+
+	for stdinScanner.Scan() {
+		var request scanner.Request
+		err := json.Unmarshal(stdinScanner.Bytes(), &request)
+
+		if err != nil {
+			logger.Error("%s: request_id=%s", err, request.ID)
+			continue
+		}
+
+		if len(request.Resource) == 0 {
+			logger.Error("no resource provided: request_id=%s", request.ID)
+			continue
+		}
+
+		response, err := scanner.Scan(cfg, &request)
+		if err != nil {
+			logger.Error("%s: request_id=%s", err, request.ID)
+			continue
+		}
+
+		fmt.Println(response.String())
+	}
+
+	if err := stdinScanner.Err(); err != nil {
+		logger.Error("%s", err)
+	}
 }
 
 func listenCommand() *cobra.Command {
@@ -127,14 +204,17 @@ func loadConfig(cmd *cobra.Command, args []string) error {
 	path, err := cmd.Flags().GetString("config")
 
 	if err == nil {
-		// If the config path isn't set this will look other places
+		// If path == "", this will look other places
 		cfg, err = config.LocateAndLoadConfig(path)
+
+		if err == nil {
+			err = logger.SetLoggerLevel(cfg.Logger.Level)
+		}
 	}
 
 	return err
 }
 
-// NewCommand provides a built Command for the app to use
 func rootCommand() *cobra.Command {
 	cobra.OnInitialize(initLogger)
 
@@ -162,6 +242,6 @@ func Execute() {
 		if strings.Contains(err.Error(), "unknown flag") {
 			os.Exit(config.ExitCodeBlockingError)
 		}
-		logger.Fatal(err.Error())
+		logger.Fatal("%s", err.Error())
 	}
 }

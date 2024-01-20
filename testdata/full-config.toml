@@ -11,7 +11,7 @@ level = "DEBUG"
 workdir = "/tmp/leaktk/scanner"
 # This defaults to ~/.cache/leaktk/scanner
 
-[scanner.gitleaks]
+[scanner.patterns.gitleaks]
 # This should never really be set in most cases, this is just to confirm it
 # can be
 version="set-by-config"

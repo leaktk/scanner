@@ -62,7 +62,7 @@ func (e Entry) String() string {
 
 	out, err := json.Marshal(e)
 	if err != nil {
-		log.Printf("json.Marshal: %v", err.Error())
+		log.Printf("json.Marshal: %s", err)
 	}
 
 	return string(out)
@@ -154,10 +154,6 @@ func Error(msg string, a ...any) {
 
 // Fatal emits an CRITICAL level log and stops the program
 func Fatal(msg string, a ...any) {
-	if currentLogLevel > CRITICAL {
-		return
-	}
-
 	log.Fatal(Entry{
 		Time:     time.Now().UTC().Format(time.RFC3339),
 		Severity: "CRITICAL",
