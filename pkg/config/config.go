@@ -1,14 +1,14 @@
 package config
 
 import (
-	"errors"
-	"github.com/BurntSushi/toml"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
+
+	"github.com/leaktk/scanner/pkg/logger"
 )
 
 type (
@@ -69,13 +69,13 @@ func defaultPatternServerAuthToken() string {
 		return authTokenFromEnvVar
 	}
 
-	authTokenFilePath := filepath.Join(leaktkConfigDir(), "pattern-server-auth-token")
+	authTokenFilePath := filepath.Clean(filepath.Join(leaktkConfigDir(), "pattern-server-auth-token"))
 
 	if _, err := os.Stat(authTokenFilePath); err == nil {
 		authTokenBytes, err := os.ReadFile(authTokenFilePath)
 
 		if err != nil {
-			log.Fatalf("from defaultPatternServerAuthToken: %v", err)
+			logger.Fatal("from defaultPatternServerAuthToken: %v", err)
 		}
 
 		return strings.TrimSpace(string(authTokenBytes))
@@ -92,23 +92,6 @@ func defaultPatternServerURL() string {
 	}
 
 	return "https://raw.githubusercontent.com/leaktk/patterns/main/target"
-}
-
-func validateLoggingLevel(config *Config) error {
-	switch level := config.Logger.Level; level {
-	case "ERROR":
-		return nil
-	case "WARN":
-		return nil
-	case "INFO":
-		return nil
-	case "DEBUG":
-		return nil
-	case "TRACE":
-		return nil
-	default:
-		return errors.New(level + " is an invalid log level")
-	}
 }
 
 // DefaultConfig provides a fully usable instance of Config with default
@@ -144,11 +127,35 @@ func LoadConfigFromFile(path string) (*Config, error) {
 		return nil, err
 	}
 
-	err = validateLoggingLevel(config)
+	err = logger.SetLoggerLevel(config.Logger.Level)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return config, err
+}
+
+// LocateAndLoadConfig looks through the possible places for the config
+// favoring the provided path if it is set
+func LocateAndLoadConfig(path string) (*Config, error) {
+	if len(path) > 0 {
+		return LoadConfigFromFile(path)
+	}
+
+	if path = os.Getenv("LEAKTK_CONFIG"); len(path) > 0 {
+		return LoadConfigFromFile(path)
+	}
+
+	path = filepath.Join(leaktkConfigDir(), "config.toml")
+	if _, err := os.Stat(path); err == nil {
+		return LoadConfigFromFile(path)
+	}
+
+	path = "/etc/leaktk/config.toml"
+	if _, err := os.Stat(path); err == nil {
+		return LoadConfigFromFile(path)
+	}
+
+	return DefaultConfig(), nil
 }

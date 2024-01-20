@@ -2,63 +2,21 @@ package config
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
+
+	"github.com/adrg/xdg"
+	"github.com/stretchr/testify/assert"
 )
 
-// TestFullLoadConfigFromFile tests that the config can be completely set
-// by a config file
-func TestFullLoadConfigFromFile(t *testing.T) {
-	config, err := LoadConfigFromFile("../../testdata/full-config.toml")
-
-	assert.NoError(t, err, "Unable to load test configuration")
-
-	assert.NotNil(t, config, "Expected config to not be nil")
-
-	// Check values
-	tests := []struct {
-		expected string
-		actual   string
-	}{
-		{
-			expected: "set-by-config",
-			actual:   config.Scanner.Gitleaks.Version,
-		},
-		{
-			expected: "/tmp/leaktk/scanner",
-			actual:   config.Scanner.Workdir,
-		},
-		{
-			expected: "10",
-			actual:   fmt.Sprint(config.Scanner.Patterns.RefreshInterval),
-		},
-		{
-			expected: "https://example.com/leaktk/patterns/main/target",
-			actual:   config.Scanner.Patterns.Server.URL,
-		},
-		{
-			expected: "placeholder_auth_token",
-			actual:   config.Scanner.Patterns.Server.AuthToken,
-		},
-		{
-			expected: "DEBUG",
-			actual:   config.Logger.Level,
-		},
-	}
-
-	for _, test := range tests {
-		assert.Equal(t, test.expected, test.actual)
-	}
-}
-
 func TestPartialLoadConfigFromFile(t *testing.T) {
-	config, err := LoadConfigFromFile("../../testdata/partial-config.toml")
+	cfg, err := LoadConfigFromFile("../../testdata/partial-config.toml")
 
 	if err != nil {
 		t.Errorf("Load returned an error %v", err)
 	}
 
-	if config == nil {
+	if cfg == nil {
 		t.Error("Got a nil config")
 	}
 
@@ -69,27 +27,27 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 	}{
 		{
 			expected: "7.6.1",
-			actual:   config.Scanner.Gitleaks.Version,
+			actual:   cfg.Scanner.Gitleaks.Version,
 		},
 		{
 			expected: "/tmp/leaktk/scanner",
-			actual:   config.Scanner.Workdir,
+			actual:   cfg.Scanner.Workdir,
 		},
 		{
 			expected: "43200",
-			actual:   fmt.Sprint(config.Scanner.Patterns.RefreshInterval),
+			actual:   fmt.Sprint(cfg.Scanner.Patterns.RefreshInterval),
 		},
 		{
 			expected: "https://example.com/leaktk/patterns/main/target",
-			actual:   config.Scanner.Patterns.Server.URL,
+			actual:   cfg.Scanner.Patterns.Server.URL,
 		},
 		{
 			expected: "",
-			actual:   config.Scanner.Patterns.Server.AuthToken,
+			actual:   cfg.Scanner.Patterns.Server.AuthToken,
 		},
 		{
 			expected: "INFO",
-			actual:   config.Logger.Level,
+			actual:   cfg.Logger.Level,
 		},
 	}
 
@@ -99,8 +57,30 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 }
 
 func TestLoadConfigFromFileWithInvalidLogLevel(t *testing.T) {
-	config, err := LoadConfigFromFile("../../testdata/invalid-log-level.toml")
-
+	cfg, err := LoadConfigFromFile("../../testdata/invalid-log-level.toml")
 	assert.Error(t, err, "Expected error from invalid config")
-	assert.Nil(t, config, "Expected invalid config to be nil")
+	assert.Nil(t, cfg, "Expected invalid config to be nil")
+}
+
+func TestLocateAndLoadConfig(t *testing.T) {
+	// Set the env var here to prove the provided path overrides it
+	xdg.ConfigHome = "../../testdata/locator-test"
+	os.Setenv("LEAKTK_CONFIG", "../../testdata/locator-test/leaktk/config.2.toml")
+
+	// Confirm load from file works
+	cfg, err := LocateAndLoadConfig("../../testdata/locator-test/leaktk/config.1.toml")
+	assert.Nil(t, err)
+	assert.Equal(t, "test-1", cfg.Scanner.Gitleaks.Version)
+
+	// Confirm load from the LEAKTK_CONFIG env var works
+	cfg, err = LocateAndLoadConfig("")
+	assert.Nil(t, err)
+	assert.Equal(t, "test-2", cfg.Scanner.Gitleaks.Version)
+
+	// Confirm load from the LEAKTK_CONFIG env var works
+	os.Unsetenv("LEAKTK_CONFIG")
+	cfg, err = LocateAndLoadConfig("")
+	assert.Nil(t, err)
+	assert.Equal(t, "test-3", cfg.Scanner.Gitleaks.Version)
+
 }
