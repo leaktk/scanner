@@ -2,10 +2,14 @@ package scanner
 
 // Request to the scanner to scan some resource
 type Request struct {
-	ID       string            `json:"id"`
-	Kind     string            `json:"kind"`
-	Resource string            `json:"resource"`
-	Options  map[string]string `json:"options"`
+	// Client provided identifier for associating a response to a request
+	ID string `json:"id"`
+	// Kind of thing being scanned
+	Kind string `json:"kind"`
+	// Thing to scan (e.g. URL, snippet of text, etc)
+	Resource string `json:"resource"`
+	// Flags to pass to the scanner (these depend heavily on the Kind)
+	Options map[string]string `json:"options"`
 }
 
 // NewRequest is for creating request objects manually instead of unmarshaling

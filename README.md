@@ -214,8 +214,15 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Rewrite exsting progress in go
+1. Support the following settings
+   - `max_scan_depth`
+   - `clone_workers (default: 1)`
+   - `scan_workers (default 1)`
+   - `max_scan_queue_size` (defines the back pressure the clones can put on the scanner if it gets behind)
+   - `clone_timeout`
+1. Move to gitleaks 8
 1. logger.SetLogMode(JSON|PRETTY) for listen vs other use cases
+1. Add JSON scan kind
 1. Make sure features in the internal scanner are upstreamed here
 1. Delete exsting rust projets from crates.io
 1. Identify non-recoverable errors and have them log and exit
