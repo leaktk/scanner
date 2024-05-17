@@ -31,9 +31,14 @@ type (
 
 	// Scanner provides scanner specific config
 	Scanner struct {
-		Patterns     Patterns `toml:"patterns"`
-		Workdir      string   `toml:"workdir"`
-		MaxScanDepth int      `toml:"max_scan_depth"`
+		MaxCloneQueueSize int      `toml:"max_clone_queue_size"`
+		MaxScanDepth      int      `toml:"max_scan_depth"`
+		MaxScanQueueSize  int      `toml:"max_scan_queue_size"`
+		CloneWorkers      int      `toml:"clone_workers"`
+		Patterns          Patterns `toml:"patterns"`
+		ScanWorkers       int      `toml:"scan_workers"`
+		Workdir           string   `toml:"workdir"`
+		CloneTimeout      int      `toml:"clone_timeout"`
 	}
 
 	// Patterns provides configuration for managing pattern updates
@@ -125,8 +130,13 @@ func DefaultConfig() *Config {
 			Level: "INFO",
 		},
 		Scanner: Scanner{
-			Workdir:      filepath.Join(leaktkCacheDir(), "scanner"),
-			MaxScanDepth: 0,
+			CloneTimeout:      0,
+			CloneWorkers:      1,
+			MaxCloneQueueSize: 1,
+			MaxScanDepth:      0,
+			MaxScanQueueSize:  1,
+			ScanWorkers:       1,
+			Workdir:           filepath.Join(leaktkCacheDir(), "scanner"),
 			Patterns: Patterns{
 				Autofetch:       true,
 				RefreshInterval: 60 * 60 * 12,

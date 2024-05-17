@@ -130,12 +130,13 @@ func runScan(cmd *cobra.Command, args []string) {
 		logger.Fatal("json.Unmarshal: %s", err)
 	}
 
-	response, err := scanner.Scan(cfg, &request)
-	if err != nil {
-		logger.Fatal("%s", err)
-	}
+	leakScanner := scanner.NewScanner(cfg)
+	defer leakScanner.Close()
+	leakScanner.Send(&request)
 
-	fmt.Println(response.String())
+	for response := range leakScanner.Responses() {
+		fmt.Println(response)
+	}
 }
 
 func scanCommand() *cobra.Command {
@@ -157,7 +158,17 @@ func scanCommand() *cobra.Command {
 func runListen(cmd *cobra.Command, args []string) {
 	stdinScanner := bufio.NewScanner(os.Stdin)
 	stdinScanner.Buffer(make([]byte, maxRequestSize), maxRequestSize)
+	leakScanner := scanner.NewScanner(cfg)
+	defer leakScanner.Close()
 
+	// Prints the output of the scanner as they come
+	go func() {
+		for response := range leakScanner.Responses() {
+			fmt.Println(response)
+		}
+	}()
+
+	// Listen for requests
 	for stdinScanner.Scan() {
 		var request scanner.Request
 		err := json.Unmarshal(stdinScanner.Bytes(), &request)
@@ -172,13 +183,7 @@ func runListen(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		response, err := scanner.Scan(cfg, &request)
-		if err != nil {
-			logger.Error("%s: request_id=%s", err, request.ID)
-			continue
-		}
-
-		fmt.Println(response.String())
+		leakScanner.Send(&request)
 	}
 
 	if err := stdinScanner.Err(); err != nil {

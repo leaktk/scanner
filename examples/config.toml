@@ -11,9 +11,20 @@
 #
 # [scanner]
 #
+# How long a clone can take before it times out and is aborted (default: 0)
+# # zero means no timeout.
+# clone_timeout = 60
+# # How many clones can happen at once
+# clone_workers = 1
+# # How many requests can sit in the clone queue before it blocks (default: 1)
+# max_clone_queue_size = 1
 # # The max depth the scanner will go back for things that have a version
 # # history. If unset or set to zero there is no max scan depth.
 # max_scan_depth = 256
+# # How many requests can sit in the scan queue before it blocks (default: 1)
+# max_scan_queue_size = 1
+# # How many scans can happen at once
+# scan_workers = 1
 # # The full path to where the scanner should store files, clone repos, etc
 # # for better performance mount a tmpfs at this location
 # workdir = "/tmp/leaktk/scanner"

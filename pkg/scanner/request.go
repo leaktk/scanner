@@ -52,7 +52,7 @@ func (r *Request) UnmarshalJSON(data []byte) error {
 
 		r.Options = &options
 	default:
-		return fmt.Errorf("%s is an unsupported kind", temp.Kind)
+		return fmt.Errorf("unsupported kind kind=%s id=%s", temp.Kind, temp.ID)
 	}
 
 	return nil
@@ -75,4 +75,6 @@ type GitRepoOptions struct {
 	Since string `json:"since"`
 	// Only scan this branch
 	Branch string `json:"branch"`
+	// Work through a proxy for this request
+	Proxy string `json:"proxy"`
 }

@@ -214,12 +214,9 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Support the following settings
-   - `clone_workers (default: 1)`
-   - `scan_workers (default 1)`
-   - `max_scan_queue_size` (defines the back pressure the clones can put on the scanner if it gets behind)
-   - `clone_timeout`
+1. Do a clone and clean up
 1. Move to gitleaks 8
+1. Do scans
 1. logger.SetLogMode(JSON|PRETTY) for listen vs other use cases
 1. Add JSON scan kind
 1. Make sure features in the internal scanner are upstreamed here
