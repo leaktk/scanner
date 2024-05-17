@@ -110,13 +110,27 @@ func runScan(cmd *cobra.Command, args []string) {
 		options[parts[0]] = parts[1]
 	}
 
-	request := scanner.NewRequest(id, kind, resource, options)
+	requestData, err := json.Marshal(
+		map[string]any{
+			"id":       id,
+			"kind":     kind,
+			"resource": resource,
+			"options":  options,
+		},
+	)
 
-	if len(request.Resource) == 0 {
-		logger.Fatal("no resource provided")
+	if err != nil {
+		logger.Fatal("json.Marshal: %s", err)
 	}
 
-	response, err := scanner.Scan(cfg, request)
+	var request scanner.Request
+
+	err = json.Unmarshal(requestData, &request)
+	if err != nil {
+		logger.Fatal("json.Unmarshal: %s", err)
+	}
+
+	response, err := scanner.Scan(cfg, &request)
 	if err != nil {
 		logger.Fatal("%s", err)
 	}

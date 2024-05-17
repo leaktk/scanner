@@ -23,8 +23,8 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 
 	// Check values
 	tests := []struct {
-		expected string
-		actual   string
+		expected any
+		actual   any
 	}{
 		{
 			expected: "7.6.1",
@@ -49,6 +49,10 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 		{
 			expected: "INFO",
 			actual:   cfg.Logger.Level,
+		},
+		{
+			expected: 0,
+			actual:   cfg.Scanner.MaxScanDepth,
 		},
 	}
 

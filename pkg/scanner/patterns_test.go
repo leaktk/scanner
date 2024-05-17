@@ -23,10 +23,10 @@ description = "Find the foo"
 regex = '''foo'''
 `
 
-type mockHttpClient struct {
+type mockHTTPClient struct {
 }
 
-func (c *mockHttpClient) Do(req *http.Request) (*http.Response, error) {
+func (c *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Body: io.NopCloser(bytes.NewReader([]byte(mockConfig))),
 	}, nil
@@ -49,7 +49,7 @@ func TestGitLeaksPatterns(t *testing.T) {
 	assert.Nil(t, err)
 	cfg.Gitleaks.ConfigPath = filepath.Clean(filepath.Join(tmpDir, "gitleaks.toml"))
 
-	client := &mockHttpClient{}
+	client := &mockHTTPClient{}
 	patterns := NewPatterns(cfg, client)
 
 	// Test fetch when autofetch is off

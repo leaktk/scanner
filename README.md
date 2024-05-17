@@ -215,7 +215,6 @@ Error (if "error" is present, the scan failed)
 ## TODO
 
 1. Support the following settings
-   - `max_scan_depth`
    - `clone_workers (default: 1)`
    - `scan_workers (default 1)`
    - `max_scan_queue_size` (defines the back pressure the clones can put on the scanner if it gets behind)

@@ -11,6 +11,9 @@
 #
 # [scanner]
 #
+# # The max depth the scanner will go back for things that have a version
+# # history. If unset or set to zero there is no max scan depth.
+# max_scan_depth = 256
 # # The full path to where the scanner should store files, clone repos, etc
 # # for better performance mount a tmpfs at this location
 # workdir = "/tmp/leaktk/scanner"

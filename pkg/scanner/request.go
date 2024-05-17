@@ -1,5 +1,11 @@
 package scanner
 
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+)
+
 // Request to the scanner to scan some resource
 type Request struct {
 	// Client provided identifier for associating a response to a request
@@ -9,16 +15,64 @@ type Request struct {
 	// Thing to scan (e.g. URL, snippet of text, etc)
 	Resource string `json:"resource"`
 	// Flags to pass to the scanner (these depend heavily on the Kind)
-	Options map[string]string `json:"options"`
+	Options any `json:"options"`
 }
 
-// NewRequest is for creating request objects manually instead of unmarshaling
-// them though JSON
-func NewRequest(id, kind, resource string, options map[string]string) *Request {
-	return &Request{
-		ID:       id,
-		Kind:     kind,
-		Resource: resource,
-		Options:  options,
+// UnmarshalJSON sets r to a copy of data
+func (r *Request) UnmarshalJSON(data []byte) error {
+	if r == nil {
+		return errors.New("Request: UnmarshalJSON on nil pointer")
 	}
+
+	var temp struct {
+		ID       string          `json:"id"`
+		Kind     string          `json:"kind"`
+		Resource string          `json:"resource"`
+		Options  json.RawMessage `json:"options"`
+	}
+
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	r.ID = temp.ID
+	r.Kind = temp.Kind
+	r.Resource = temp.Resource
+
+	// When adding different kinds, make sure to provide the corresponding
+	// request.<Kind>Options() (*<Kind>) that returns nil if that isn't the
+	// type of options on the object.
+	switch temp.Kind {
+	case "GitRepo":
+		var options GitRepoOptions
+
+		if err := json.Unmarshal(temp.Options, &options); err != nil {
+			return err
+		}
+
+		r.Options = &options
+	default:
+		return fmt.Errorf("%s is an unsupported kind", temp.Kind)
+	}
+
+	return nil
+}
+
+// GitRepoOptions returns Options casted to GitRepoOptions if that is the type
+func (r *Request) GitRepoOptions() *GitRepoOptions {
+	if options, ok := r.Options.(*GitRepoOptions); ok {
+		return options
+	}
+
+	return nil
+}
+
+// GitRepoOptions stores options specific to GitRepo scan requests
+type GitRepoOptions struct {
+	// Only scan this many commits (reduced if larger than the max scan depth)
+	Depth int `json:"depth"`
+	// Only scan since this date
+	Since string `json:"since"`
+	// Only scan this branch
+	Branch string `json:"branch"`
 }
