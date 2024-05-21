@@ -3,10 +3,13 @@ package cmd
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
+
+	"github.com/google/uuid"
 
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/logger"
@@ -77,25 +80,42 @@ func loginCommand() *cobra.Command {
 }
 
 func runScan(cmd *cobra.Command, args []string) {
-	flags := cmd.Flags()
-	id, err := flags.GetString("id")
+	request, err := scanCommandToRequest(cmd)
+
 	if err != nil {
-		logger.Fatal("id: %s", err)
+		logger.Fatal(err.Error())
+	}
+
+	leakScanner := scanner.NewScanner(cfg)
+	defer leakScanner.Close()
+	leakScanner.Send(request)
+
+	for response := range leakScanner.Responses() {
+		fmt.Println(response)
+	}
+}
+
+func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
+	flags := cmd.Flags()
+
+	id, err := flags.GetString("id")
+	if err != nil || len(id) == 0 {
+		return nil, errors.New("missing required field: id")
 	}
 
 	kind, err := flags.GetString("kind")
-	if err != nil {
-		logger.Fatal("kind: %s", err)
+	if err != nil || len(kind) == 0 {
+		return nil, errors.New("missing required field: kind")
 	}
 
 	resource, err := flags.GetString("resource")
-	if err != nil {
-		logger.Fatal("resource: %s", err)
+	if err != nil || len(resource) == 0 {
+		return nil, errors.New("missing required field: resource")
 	}
 
 	optionKvs, err := flags.GetStringArray("option")
 	if err != nil {
-		logger.Fatal("option: %s", err)
+		return nil, fmt.Errorf("option: %s", err)
 	}
 
 	options := make(map[string]string)
@@ -104,7 +124,7 @@ func runScan(cmd *cobra.Command, args []string) {
 		parts := strings.SplitN(kv, "=", 2)
 
 		if len(parts) != 2 {
-			logger.Fatal("option missing value: %s", kv)
+			return nil, fmt.Errorf("option missing value: %s", kv)
 		}
 
 		options[parts[0]] = parts[1]
@@ -120,23 +140,17 @@ func runScan(cmd *cobra.Command, args []string) {
 	)
 
 	if err != nil {
-		logger.Fatal("json.Marshal: %s", err)
+		return nil, fmt.Errorf("json.Marshal: %s", err)
 	}
 
 	var request scanner.Request
 
 	err = json.Unmarshal(requestData, &request)
 	if err != nil {
-		logger.Fatal("json.Unmarshal: %s", err)
+		return nil, fmt.Errorf("json.Unmarshal: %s", err)
 	}
 
-	leakScanner := scanner.NewScanner(cfg)
-	defer leakScanner.Close()
-	leakScanner.Send(&request)
-
-	for response := range leakScanner.Responses() {
-		fmt.Println(response)
-	}
+	return &request, nil
 }
 
 func scanCommand() *cobra.Command {
@@ -146,8 +160,8 @@ func scanCommand() *cobra.Command {
 		Run:   runScan,
 	}
 
-	flags := scanCommand.PersistentFlags()
-	flags.String("id", "", "an ID for tying responses to requests")
+	flags := scanCommand.Flags()
+	flags.StringP("id", "", uuid.New().String(), "an ID for tying responses to requests")
 	flags.StringP("kind", "k", "GitRepo", scanKindDescription)
 	flags.StringP("resource", "r", "", "what will be scanned (what goes here depends on kind)")
 	flags.StringArrayP("option", "o", []string{}, scanOptionDescription)

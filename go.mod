@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/adrg/xdg v0.4.0
+	github.com/google/uuid v1.6.0
 	github.com/leaktk/gitleaks7/v2 v2.0.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
