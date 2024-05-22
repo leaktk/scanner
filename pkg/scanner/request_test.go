@@ -36,14 +36,7 @@ func TestGitRepoRequest(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, validRequest.ID, "foobar")
-	assert.Equal(t, validRequest.Kind, "GitRepo")
-
-	options := validRequest.GitRepoOptions()
-	assert.NotNil(t, options)
-
-	assert.Equal(t, options.Depth, 256)
-	assert.Equal(t, options.Since, "2000-01-01")
-	assert.Equal(t, options.Branch, "")
+	assert.Equal(t, validRequest.Resource.Kind(), "GitRepo")
 
 	var invalidRequest Request
 	err = json.Unmarshal([]byte(invalidGitRepoRequest), &invalidRequest)

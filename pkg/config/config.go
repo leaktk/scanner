@@ -31,19 +31,19 @@ type (
 
 	// Scanner provides scanner specific config
 	Scanner struct {
-		MaxCloneQueueSize int      `toml:"max_clone_queue_size"`
-		MaxScanDepth      int      `toml:"max_scan_depth"`
-		MaxScanQueueSize  int      `toml:"max_scan_queue_size"`
-		CloneWorkers      int      `toml:"clone_workers"`
+		MaxCloneQueueSize uint16   `toml:"max_clone_queue_size"`
+		MaxScanDepth      uint16   `toml:"max_scan_depth"`
+		MaxScanQueueSize  uint16   `toml:"max_scan_queue_size"`
+		CloneWorkers      uint16   `toml:"clone_workers"`
 		Patterns          Patterns `toml:"patterns"`
-		ScanWorkers       int      `toml:"scan_workers"`
+		ScanWorkers       uint16   `toml:"scan_workers"`
 		Workdir           string   `toml:"workdir"`
-		CloneTimeout      int      `toml:"clone_timeout"`
+		CloneTimeout      uint16   `toml:"clone_timeout"`
 	}
 
 	// Patterns provides configuration for managing pattern updates
 	Patterns struct {
-		RefreshInterval int           `toml:"refresh_interval"`
+		RefreshInterval uint32        `toml:"refresh_interval"`
 		Server          PatternServer `toml:"server"`
 		Autofetch       bool          `toml:"autofetch"`
 		Gitleaks        Gitleaks      `toml:"gitleaks"`

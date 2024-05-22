@@ -192,7 +192,7 @@ func runListen(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		if len(request.Resource) == 0 {
+		if len(request.Resource.String()) == 0 {
 			logger.Error("no resource provided: request_id=%s", request.ID)
 			continue
 		}

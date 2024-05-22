@@ -24,7 +24,7 @@ func TestScanCommandToRequest(t *testing.T) {
 	// Id should default to a random UUID
 	assert.Equal(t, len(request.ID), 36)
 	// Kind should default to GitRepo
-	assert.Equal(t, request.Kind, "GitRepo")
+	assert.Equal(t, request.Resource.Kind(), "GitRepo")
 
-  // TODO: test options
+	// TODO: test options
 }

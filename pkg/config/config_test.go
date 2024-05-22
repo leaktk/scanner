@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -35,8 +34,8 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 			actual:   cfg.Scanner.Workdir,
 		},
 		{
-			expected: "43200",
-			actual:   fmt.Sprint(cfg.Scanner.Patterns.RefreshInterval),
+			expected: uint32(43200),
+			actual:   cfg.Scanner.Patterns.RefreshInterval,
 		},
 		{
 			expected: "https://example.com/leaktk/patterns/main/target",
@@ -51,7 +50,7 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 			actual:   cfg.Logger.Level,
 		},
 		{
-			expected: 0,
+			expected: uint16(0),
 			actual:   cfg.Scanner.MaxScanDepth,
 		},
 	}

@@ -1,25 +1,25 @@
 package scanner
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"os/exec"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/resource"
 )
 
 // Scanner holds the config and state for the scanner processes
 type Scanner struct {
 	cloneQueue   chan *Request
+	cloneTimeout time.Duration
+	cloneWorkers uint16
+	maxScanDepth uint16
 	responses    chan *Response
 	scanQueue    chan *Request
-	cloneTimeout time.Duration
-	cloneWorkers int
-	maxScanDepth int
-	scanWorkers  int
+	scanWorkers  uint16
+	resourceDir  string
 }
 
 // NewScanner returns a initialized and listening scanner instance that should
@@ -27,12 +27,13 @@ type Scanner struct {
 func NewScanner(cfg *config.Config) *Scanner {
 	scanner := &Scanner{
 		cloneQueue:   make(chan *Request, cfg.Scanner.MaxCloneQueueSize),
-		responses:    make(chan *Response),
-		scanQueue:    make(chan *Request, cfg.Scanner.MaxScanQueueSize),
 		cloneTimeout: time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
 		cloneWorkers: cfg.Scanner.CloneWorkers,
 		maxScanDepth: cfg.Scanner.MaxScanDepth,
+		responses:    make(chan *Response),
+		scanQueue:    make(chan *Request, cfg.Scanner.MaxScanQueueSize),
 		scanWorkers:  cfg.Scanner.ScanWorkers,
+		resourceDir:  filepath.Join(cfg.Scanner.Workdir, "resources"),
 	}
 
 	scanner.start()
@@ -61,11 +62,11 @@ func (s *Scanner) Send(request *Request) {
 // start kicks off the background workers
 func (s *Scanner) start() {
 	// Start clone workers
-	for i := 0; i < s.cloneWorkers; i++ {
+	for i := uint16(0); i < s.cloneWorkers; i++ {
 		go s.listenForCloneRequests()
 	}
 	// Start scan workers
-	for i := 0; i < s.scanWorkers; i++ {
+	for i := uint16(0); i < s.scanWorkers; i++ {
 		go s.listenForScanRequests()
 	}
 }
@@ -73,19 +74,24 @@ func (s *Scanner) start() {
 // Watch the clone queue for requests
 func (s *Scanner) listenForCloneRequests() {
 	for request := range s.cloneQueue {
-		var err error = nil
-		// Pick the right cloning method (if we get too many of these it might
-		// make sense to abstract that behind some kind of provider interface)
-		switch request.Kind {
-		case "GitRepo":
-			err = s.cloneGitRepo(request)
-		default:
-			logger.Error("unsupported kind kind=%s id=%s", request.Kind, request.ID)
-			continue
+		reqResource := request.Resource
+
+		if s.cloneTimeout > 0 {
+			reqResource.SetCloneTimeout(s.cloneTimeout)
 		}
-		// Stop if there was an error and log it
-		if err != nil {
-			logger.Error("clone error: %s", err)
+
+		if s.maxScanDepth > 0 && reqResource.Depth() > s.maxScanDepth {
+			reqResource.SetDepth(s.maxScanDepth)
+			logger.Warning("reduced scan depth: resource_id=%q depth=%d", reqResource.ID(), s.maxScanDepth)
+		}
+
+		if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
+			logger.Error("clone error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+
+			if err := s.removeResourceFiles(reqResource); err != nil {
+				logger.Error("resource file cleanup error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+			}
+
 			continue
 		}
 
@@ -94,93 +100,37 @@ func (s *Scanner) listenForCloneRequests() {
 	}
 }
 
+func (s *Scanner) resourceFilesPath(reqResource resource.Resource) string {
+	return filepath.Join(s.resourceDir, reqResource.ID())
+}
+
+func (s *Scanner) resourceClonePath(reqResource resource.Resource) string {
+	return filepath.Join(s.resourceFilesPath(reqResource), "clone")
+}
+
+// removeResourceFiles cleares out any left over resource files for scan
+func (s *Scanner) removeResourceFiles(reqResource resource.Resource) error {
+	return os.RemoveAll(s.resourceFilesPath(reqResource))
+}
+
 // Watch the scan queue for requests
 func (s *Scanner) listenForScanRequests() {
 	for request := range s.scanQueue {
-		switch request.Kind {
-		case "GitRepo":
-			s.scanGitRepo(request)
-		default:
-			logger.Error("unsupported kind kind=%s id=%s", request.Kind, request.ID)
+		reqResource := request.Resource
+
+		// TODO: gitleaks 8 scan
+		logger.Warning("TODO: scan %s", reqResource.String())
+
+		if err := s.removeResourceFiles(reqResource); err != nil {
+			logger.Error("resource file cleanup error: resource_id=%q error=%q", reqResource.ID(), err.Error())
 		}
-	}
-}
 
-// cloneGitRepo handles clones before handing them off to the scans
-func (s *Scanner) cloneGitRepo(request *Request) error {
-	options := request.GitRepoOptions()
-
-	if options == nil {
-		return errors.New("GitRepoOptions is nil")
-	}
-
-	if s.maxScanDepth > 0 && options.Depth > s.maxScanDepth {
-		logger.Warning("reducing the scan depth to the max scan depth: %d", s.maxScanDepth)
-		options.Depth = s.maxScanDepth
-	}
-
-	cloneArgs := []string{"clone"}
-
-	if len(options.Proxy) > 0 {
-		cloneArgs = append(cloneArgs, "--config")
-		cloneArgs = append(cloneArgs, fmt.Sprintf("http.proxy=%s", options.Proxy))
-	}
-
-	if len(options.Since) > 0 {
-		cloneArgs = append(cloneArgs, "--shallow-since")
-		cloneArgs = append(cloneArgs, options.Since)
-	}
-
-	if len(options.Branch) > 0 {
-		cloneArgs = append(cloneArgs, "--single-branch")
-		cloneArgs = append(cloneArgs, "--branch")
-		cloneArgs = append(cloneArgs, options.Branch)
-	} else {
-		cloneArgs = append(cloneArgs, "--no-single-branch")
-	}
-
-	if options.Depth > 0 {
-		cloneArgs = append(cloneArgs, "--depth")
-		// TODO: Confirm this is an issue still in gitleaks 8
-		// Overclone by one commit to avoid issues with scanning the grafted commit
-		cloneArgs = append(cloneArgs, fmt.Sprint(options.Depth+1))
-	}
-
-	// Include the clone URL
-	cloneArgs = append(cloneArgs, request.Resource)
-
-	// TODO determine the repo dir and store that on the request somewhere
-	// for the scan. Might make sense to determine that right when the
-	// request happens and just reference here. Also if there are any errors
-	// the repo dir needs to be cleaned up.
-
-	ctx, cancel := context.WithTimeout(context.Background(), s.cloneTimeout)
-	defer cancel()
-
-	gitClone := exec.CommandContext(ctx, "git", cloneArgs...)
-	output, err := gitClone.CombinedOutput()
-
-	if err != nil {
-		logger.Error("git clone error: %v", err)
-		logger.Error("%s", output)
-	} else {
-		logger.Debug("%s", output)
-	}
-
-	if ctx.Err() == context.DeadlineExceeded {
-		return fmt.Errorf("clone timeout exceeded id=%s %v", request.ID, ctx.Err())
-	}
-
-	return nil
-}
-
-// scanGitRepo handles git repo scans
-func (s *Scanner) scanGitRepo(request *Request) {
-	s.responses <- &Response{
-		Request: RequestDetails{
-			ID:       request.ID,
-			Kind:     request.Kind,
-			Resource: request.Resource,
-		},
+		s.responses <- &Response{
+			Request: RequestDetails{
+				ID:       request.ID,
+				Kind:     request.Resource.Kind(),
+				Resource: request.Resource.String(),
+			},
+		}
 	}
 }
