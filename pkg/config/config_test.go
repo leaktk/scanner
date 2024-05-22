@@ -26,7 +26,7 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 		actual   any
 	}{
 		{
-			expected: "7.6.1",
+			expected: "8.18.2",
 			actual:   cfg.Scanner.Patterns.Gitleaks.Version,
 		},
 		{

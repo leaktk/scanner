@@ -8,7 +8,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
 
-	gitleaksconfig "github.com/leaktk/gitleaks7/v2/config"
+	gitleaksconfig "github.com/zricethezav/gitleaks/v8/config"
 
 	"github.com/leaktk/scanner/pkg/logger"
 )
@@ -63,9 +63,8 @@ type (
 		// single config.toml and turn Autofetch to false if you wanted all of the
 		// config to be self-contained for use in things like a server where the
 		// config file is templated out.
-		Config *gitleaksconfig.Config `toml:"config"`
-
-		ConfigPath string `toml:"config_path"`
+		Config     *gitleaksconfig.Config `toml:"config"`
+		ConfigPath string                 `toml:"config_path"`
 	}
 )
 
@@ -144,7 +143,7 @@ func DefaultConfig() *Config {
 					URL: "https://raw.githubusercontent.com/leaktk/patterns/main/target",
 				},
 				Gitleaks: Gitleaks{
-					Version: "7.6.1",
+					Version: "8.18.2",
 				},
 			},
 		},

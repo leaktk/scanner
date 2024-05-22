@@ -97,9 +97,9 @@ func (r *GitRepo) Clone(path string) error {
 
 	if err != nil {
 		return fmt.Errorf("git clone: resource_id=%q command=%q error=%q output=%q", r.ID(), gitClone.String(), err.Error(), output)
-	} else {
-		logger.Debug("git clone: resource_id=%q command=%q output=%q", r.ID(), gitClone.String(), output)
 	}
+
+	logger.Debug("git clone: resource_id=%q command=%q output=%q", r.ID(), gitClone.String(), output)
 
 	if ctx != nil && ctx.Err() == context.DeadlineExceeded {
 		return fmt.Errorf("clone timeout exceeded resource_id=%q error=%q", r.ID(), ctx.Err().Error())

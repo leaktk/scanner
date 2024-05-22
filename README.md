@@ -7,7 +7,7 @@ This scanner can be ran either as an ad-hoc scan or in listening mode for easy
 scripting.
 
 The scanner leverages
-[gitleaks](https://github.com/zricethezav/gitleaks)
+[gitleaks](https://github.com/gitleaks/gitleaks)
 internally because gitleaks is an awesome tool, and we already have quite a few
 [patterns built up](https://github.com/leaktk/patterns)
 for it.
@@ -214,7 +214,6 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Do a clone and clean up
 1. Move to gitleaks 8
 1. Do scans
 1. logger.SetLogMode(JSON|PRETTY) for listen vs other use cases
