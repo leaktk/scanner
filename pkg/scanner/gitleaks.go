@@ -78,6 +78,7 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 
 // Scan does the gitleaks scan on the resource
 func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
+  // TODO: make sure to add log opts to ignore any grafed commits when the scanner has done the clone
 	gitCmd, err := sources.NewGitLogCmd(scanResource.ClonePath(), g.gitLogOpts)
 
 	if err != nil {
@@ -94,6 +95,8 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 
 	for i, finding := range findings {
 		results[i] = &Result{
+      // TODO: We want to strike a balance between stable fields and unique
+      // ones. We want to avoid re-reporting when there's been a small change.
 			ID: ResultID(
 				scanResource.Kind(),
 				finding.RuleID,
@@ -121,8 +124,8 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 				Tags:        finding.Tags,
 			},
 			Location: Location{
-				Path:    finding.File,
 				Version: finding.Commit,
+				Path:    finding.File,
 				Start: Point{
 					Line:   finding.StartLine,
 					Column: finding.StartColumn,

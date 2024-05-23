@@ -8,8 +8,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
 
-	gitleaksconfig "github.com/zricethezav/gitleaks/v8/config"
-
 	"github.com/leaktk/scanner/pkg/logger"
 )
 
@@ -57,14 +55,8 @@ type (
 
 	// Gitleaks holds version and config information for the Gitleaks scanner
 	Gitleaks struct {
-		Version string `toml:"version"`
-		// This is kept in memory to speed up streaming scans when using the listen
-		// sub-command. Another use case would be to set up the patterns in your
-		// single config.toml and turn Autofetch to false if you wanted all of the
-		// config to be self-contained for use in things like a server where the
-		// config file is templated out.
-		Config     *gitleaksconfig.Config `toml:"config"`
-		ConfigPath string                 `toml:"config_path"`
+		Version    string `toml:"version"`
+		ConfigPath string `toml:"config_path"`
 	}
 )
 

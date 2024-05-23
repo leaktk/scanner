@@ -31,18 +31,18 @@ type (
 		Secret   string   `json:"secret"`
 		Match    string   `json:"match"`
 		Entropy  float32  `json:"entropy"`
-		Rule     Rule     `json:"rule"`
-		Location Location `json:"location"`
-		Contact  Contact  `json:"contact"`
 		Date     string   `json:"date"`
+		Rule     Rule     `json:"rule"`
+		Contact  Contact  `json:"contact"`
+		Location Location `json:"location"`
 		Notes    string   `json:"notes"`
 	}
 
 	// Location in the specific resource being scanned
 	Location struct {
-		Path string `json:"path"`
 		// This can be things like a commit or some other version control identifier
 		Version string `json:"version"`
+		Path    string `json:"path"`
 		// If the start column isn't available it will be zero.
 		Start Point `json:"start"`
 		// If the end information isn't available it will be the same as the

@@ -36,13 +36,10 @@ supported values:
 
 `
 
-const scanOptionDescription = `additional options to pass to the scan
+const scanOptionsDescription = `additional options to pass to the scan
 format:
 
---option key=value --option key=value ...
-
-The supported values depend on the kind of scan. If multiple of the same key
-are used, the value will become a list.
+--options '{json...}'
 
 Check out the README for supported options:
 
@@ -88,11 +85,9 @@ func runScan(cmd *cobra.Command, args []string) {
 
 	leakScanner := scanner.NewScanner(cfg)
 	defer leakScanner.Close()
-	leakScanner.Send(request)
 
-	for response := range leakScanner.Responses() {
-		fmt.Println(response)
-	}
+	leakScanner.Send(request)
+	fmt.Println(<-leakScanner.Responses())
 }
 
 func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
@@ -113,21 +108,14 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 		return nil, errors.New("missing required field: resource")
 	}
 
-	optionKvs, err := flags.GetStringArray("option")
+	rawOptions, err := flags.GetString("options")
 	if err != nil {
-		return nil, fmt.Errorf("option: %s", err)
+		return nil, fmt.Errorf("there was an issue with the options flag (%v)", err)
 	}
 
-	options := make(map[string]string)
-
-	for _, kv := range optionKvs {
-		parts := strings.SplitN(kv, "=", 2)
-
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("option missing value: %s", kv)
-		}
-
-		options[parts[0]] = parts[1]
+	options := make(map[string]any)
+	if err := json.Unmarshal([]byte(rawOptions), &options); err != nil {
+		return nil, fmt.Errorf("could not parse options (%v)", err)
 	}
 
 	requestData, err := json.Marshal(
@@ -164,7 +152,7 @@ func scanCommand() *cobra.Command {
 	flags.StringP("id", "", uuid.New().String(), "an ID for tying responses to requests")
 	flags.StringP("kind", "k", "GitRepo", scanKindDescription)
 	flags.StringP("resource", "r", "", "what will be scanned (what goes here depends on kind)")
-	flags.StringArrayP("option", "o", []string{}, scanOptionDescription)
+	flags.StringP("options", "o", "{}", scanOptionsDescription)
 
 	return scanCommand
 }

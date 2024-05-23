@@ -125,8 +125,7 @@ func (s *Scanner) listenForScanRequests() {
 	for request := range s.scanQueue {
 		reqResource := request.Resource
 
-		logger.Warning("TODO: scan %s", reqResource.String())
-		var results []*Result
+		results := make([]*Result, 0)
 
 		for _, backend := range s.backends {
 			backendResults, err := backend.Scan(reqResource)

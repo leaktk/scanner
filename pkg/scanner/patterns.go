@@ -13,20 +13,22 @@ import (
 	gitleaksconfig "github.com/zricethezav/gitleaks/v8/config"
 
 	"github.com/leaktk/scanner/pkg/config"
+	"github.com/leaktk/scanner/pkg/logger"
 )
 
 // Patterns acts as an abstraction for fetching different scanner patterns
 // and keeping them up to date and cached
 type Patterns struct {
-	config *config.Patterns
-	client HTTPClient
+	client         HTTPClient
+	config         *config.Patterns
+	gitleaksConfig *gitleaksconfig.Config
 }
 
 // NewPatterns returns a configured instance of Patterns
 func NewPatterns(cfg *config.Patterns, client HTTPClient) *Patterns {
 	return &Patterns{
-		config: cfg,
 		client: client,
+		config: cfg,
 	}
 }
 
@@ -35,6 +37,7 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 		p.config.Server.URL, "patterns", "gitleaks", p.config.Gitleaks.Version,
 	)
 
+	logger.Debug("patterns url: url=%q", url)
 	if err != nil {
 		return "", err
 	}
@@ -45,6 +48,7 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 	}
 
 	if len(p.config.Server.AuthToken) > 0 {
+		logger.Debug("setting authorization header")
 		request.Header.Add(
 			"Authorization",
 			fmt.Sprintf("Bearer %s", p.config.Server.AuthToken),
@@ -60,7 +64,6 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
-
 	if err != nil {
 		return "", err
 	}
@@ -94,39 +97,40 @@ func (p *Patterns) parseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config
 // Gitleaks returns a Gitleaks config object if it's able to
 // TODO: make sure this is safe for concurrency
 func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
-	if p.config.Gitleaks.Config == nil {
+	if p.gitleaksConfig == nil {
 		// TODO: load patterns from FS if they exist and are newer than the refresh time
 
 		if !p.config.Autofetch {
-			return p.config.Gitleaks.Config, fmt.Errorf("could not autofetch gitleaks config because autofetch is disabled")
+			return p.gitleaksConfig, fmt.Errorf("could not autofetch gitleaks config because autofetch is disabled")
 		}
 
 		rawConfig, err := p.fetchGitleaksConfig()
 		if err != nil {
-			return p.config.Gitleaks.Config, err
+			return p.gitleaksConfig, err
 		}
 
-		p.config.Gitleaks.Config, err = p.parseGitleaksConfig(rawConfig)
+		p.gitleaksConfig, err = p.parseGitleaksConfig(rawConfig)
 		if err != nil {
-			return p.config.Gitleaks.Config, err
+			logger.Debug("returned gitleaks config:\n%s", rawConfig)
+			return p.gitleaksConfig, err
 		}
 
 		err = os.MkdirAll(filepath.Dir(p.config.Gitleaks.ConfigPath), 0700)
 		if err != nil {
-			return p.config.Gitleaks.Config, err
+			return p.gitleaksConfig, err
 		}
 
 		configFile, err := os.Create(p.config.Gitleaks.ConfigPath)
 		if err != nil {
-			return p.config.Gitleaks.Config, err
+			return p.gitleaksConfig, err
 		}
 		defer configFile.Close()
 
 		_, err = configFile.WriteString(rawConfig)
 		if err != nil {
-			return p.config.Gitleaks.Config, err
+			return p.gitleaksConfig, err
 		}
 	}
 
-	return p.config.Gitleaks.Config, nil
+	return p.gitleaksConfig, nil
 }
