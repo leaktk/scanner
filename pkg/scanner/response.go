@@ -1,7 +1,10 @@
 package scanner
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/leaktk/scanner/pkg/logger"
 )
@@ -11,7 +14,7 @@ type (
 	Response struct {
 		ID      string         `json:"id"`
 		Request RequestDetails `json:"request"`
-		Results []Result       `json:"results"`
+		Results []*Result      `json:"results"`
 	}
 
 	// RequestDetails that we return with the response for tying the two together
@@ -25,19 +28,21 @@ type (
 	Result struct {
 		ID       string   `json:"id"`
 		Kind     string   `json:"kind"`
+		Secret   string   `json:"secret"`
 		Match    string   `json:"match"`
-		Context  string   `json:"context"`
 		Entropy  float32  `json:"entropy"`
 		Rule     Rule     `json:"rule"`
 		Location Location `json:"location"`
 		Contact  Contact  `json:"contact"`
 		Date     string   `json:"date"`
-		Note     string   `json:"note"`
+		Notes    string   `json:"notes"`
 	}
 
 	// Location in the specific resource being scanned
 	Location struct {
 		Path string `json:"path"`
+		// This can be things like a commit or some other version control identifier
+		Version string `json:"version"`
 		// If the start column isn't available it will be zero.
 		Start Point `json:"start"`
 		// If the end information isn't available it will be the same as the
@@ -73,4 +78,10 @@ func (r *Response) String() string {
 	}
 
 	return string(out)
+}
+
+// ResultID takes components and joins them together for making a unique
+// result ID
+func ResultID(parts ...string) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(parts, "|"))))
 }

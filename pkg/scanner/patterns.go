@@ -92,6 +92,7 @@ func (p *Patterns) parseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config
 }
 
 // Gitleaks returns a Gitleaks config object if it's able to
+// TODO: make sure this is safe for concurrency
 func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 	if p.config.Gitleaks.Config == nil {
 		// TODO: load patterns from FS if they exist and are newer than the refresh time

@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -22,6 +23,7 @@ type Scanner struct {
 	scanQueue    chan *Request
 	scanWorkers  uint16
 	resourceDir  string
+	backends     []Backend
 }
 
 // NewScanner returns a initialized and listening scanner instance that should
@@ -36,6 +38,9 @@ func NewScanner(cfg *config.Config) *Scanner {
 		scanQueue:    make(chan *Request, cfg.Scanner.MaxScanQueueSize),
 		scanWorkers:  cfg.Scanner.ScanWorkers,
 		resourceDir:  filepath.Join(cfg.Scanner.Workdir, "resources"),
+		backends: []Backend{
+			NewGitleaks(NewPatterns(&cfg.Scanner.Patterns, &http.Client{})),
+		},
 	}
 
 	scanner.start()
@@ -121,18 +126,19 @@ func (s *Scanner) listenForScanRequests() {
 		reqResource := request.Resource
 
 		logger.Warning("TODO: scan %s", reqResource.String())
-		var results []Result
+		var results []*Result
 
-		// TODO: gitleaks 8 scan https://github.com/gitleaks/gitleaks/blob/79cac73f7267f4a48f4bc73db11e105a6098a836/cmd/detect.go#L44
-		// gitleaksResults, err := s.gitleaks.Scan(reqResource)
-		// if err != nil {
-		//  logger.Error("gitleaks scan error: resource_id=%q error=%q", reqResource.ID(), err.Error())
-		// }
-		// results = append(results, gitleaksResults...)
+		for _, backend := range s.backends {
+			backendResults, err := backend.Scan(reqResource)
 
-		//
-		// Other scanners can be added here to build up results
-		//
+			if err != nil {
+				logger.Error("scan error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+			}
+
+			if backendResults != nil {
+				results = append(results, backendResults...)
+			}
+		}
 
 		if err := s.removeResourceFiles(reqResource); err != nil {
 			logger.Error("resource file cleanup error: resource_id=%q error=%q", reqResource.ID(), err.Error())
