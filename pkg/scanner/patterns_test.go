@@ -63,7 +63,7 @@ func TestGitLeaksPatterns(t *testing.T) {
 	cfg.Autofetch = true
 	gitleaks, err = patterns.Gitleaks()
 	assert.Nil(t, err)
-	assert.Equal(t, len(gitleaks.Rules), 1)
+	assert.Equal(t, 1, len(gitleaks.Rules))
 	assertPathExists(t, cfg.Gitleaks.ConfigPath)
 
 	// TODO:

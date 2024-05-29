@@ -10,6 +10,7 @@ import (
 	"github.com/zricethezav/gitleaks/v8/sources"
 
 	"github.com/leaktk/scanner/pkg/fs"
+	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
 )
 
@@ -32,13 +33,13 @@ func (g *Gitleaks) Name() string {
 
 // newDetector creates and configures a detector object for this resource
 func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector, error) {
-	gitleaksConfig, err := g.patterns.Gitleaks()
+	cfg, err := g.patterns.Gitleaks()
 
 	if err != nil {
 		return nil, err
 	}
 
-	detector := detect.NewDetector(*gitleaksConfig)
+	detector := detect.NewDetector(*cfg)
 	detector.FollowSymlinks = false
 	detector.IgnoreGitleaksAllow = false
 	detector.MaxTargetMegaBytes = 0
@@ -57,6 +58,19 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	if fs.FileExists(gitleaksBaselinePath) {
 		if err = detector.AddBaseline(gitleaksBaselinePath, scanResource.ClonePath()); err != nil {
 			return nil, fmt.Errorf("could not call AddBaseline (%v)", err)
+		}
+	}
+
+	clonedConfigPath := filepath.Join(scanResource.ClonePath(), ".gitleaks.toml")
+	if fs.FileExists(clonedConfigPath) {
+		clonedConfig, err := ParseGitleaksConfigFile(clonedConfigPath)
+
+		if err != nil {
+			detector.Config.Allowlist.Commits = append(detector.Config.Allowlist.Commits, clonedConfig.Allowlist.Commits...)
+			detector.Config.Allowlist.Paths = append(detector.Config.Allowlist.Paths, clonedConfig.Allowlist.Paths...)
+			detector.Config.Allowlist.Regexes = append(detector.Config.Allowlist.Regexes, clonedConfig.Allowlist.Regexes...)
+		} else {
+			logger.Error("could not load cloned .gitleaks.toml: resource_id=%q cloned_config_path=%q error=%q", scanResource.ID(), clonedConfigPath, err)
 		}
 	}
 
@@ -100,7 +114,6 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 		return nil, err
 	}
 
-	// TODO: handle additional config in <clone_path>/.gitleaks.toml
 	findings, err := detector.DetectGit(gitCmd)
 	results := make([]*Result, len(findings))
 

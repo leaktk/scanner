@@ -65,6 +65,7 @@ func runHelp(cmd *cobra.Command, args []string) {
 }
 
 func runLogin(cmd *cobra.Command, args []string) {
+	// also do a logout
 	logger.Debug("TODO")
 }
 

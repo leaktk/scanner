@@ -7,9 +7,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/spf13/viper"
+	"github.com/BurntSushi/toml"
 	gitleaksconfig "github.com/zricethezav/gitleaks/v8/config"
 
 	"github.com/leaktk/scanner/pkg/config"
@@ -71,29 +70,6 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 	return string(body), err
 }
 
-func (p *Patterns) parseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
-	// From https://github.com/gitleaks/gitleaks/blob/79cac73f7267f4a48f4bc73db11e105a6098a836/cmd/root.go#L123
-	viper.SetConfigType("toml")
-	if err := viper.ReadConfig(strings.NewReader(rawConfig)); err != nil {
-		return nil, err
-	}
-
-	// From https://github.com/gitleaks/gitleaks/blob/79cac73f7267f4a48f4bc73db11e105a6098a836/cmd/root.go#L160
-	var vc gitleaksconfig.ViperConfig
-	if err := viper.Unmarshal(&vc); err != nil {
-		return nil, err
-	}
-
-	cfg, err := vc.Translate()
-	if err != nil {
-		return nil, err
-	}
-
-	cfg.Path = p.config.Gitleaks.ConfigPath
-
-	return &cfg, nil
-}
-
 // Gitleaks returns a Gitleaks config object if it's able to
 // TODO: make sure this is safe for concurrency
 func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
@@ -109,7 +85,7 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 			return p.gitleaksConfig, err
 		}
 
-		p.gitleaksConfig, err = p.parseGitleaksConfig(rawConfig)
+		p.gitleaksConfig, err = ParseGitleaksConfig(rawConfig)
 		if err != nil {
 			logger.Debug("returned gitleaks config:\n%v", rawConfig)
 			return p.gitleaksConfig, err
@@ -133,4 +109,30 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 	}
 
 	return p.gitleaksConfig, nil
+}
+
+// ParseGitleaksConfig takes a gitleaks config string and returns a config object
+func ParseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
+	var vc gitleaksconfig.ViperConfig
+
+	_, err := toml.Decode(rawConfig, &vc)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := vc.Translate()
+	return &cfg, err
+}
+
+// ParseGitleaksConfigFile takes a gitleaks config path and returns a config object
+func ParseGitleaksConfigFile(path string) (*gitleaksconfig.Config, error) {
+	var vc gitleaksconfig.ViperConfig
+
+	_, err := toml.DecodeFile(path, &vc)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := vc.Translate()
+	return &cfg, err
 }

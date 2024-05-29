@@ -7,7 +7,6 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.8.0
-	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.8.4
 	github.com/zricethezav/gitleaks/v8 v8.18.2
 )
@@ -39,6 +38,7 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/viper v1.8.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.16.0 // indirect
