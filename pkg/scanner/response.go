@@ -32,16 +32,16 @@ type (
 
 	// Result of a scan
 	Result struct {
-		ID       string   `json:"id"`
-		Kind     string   `json:"kind"`
-		Secret   string   `json:"secret"`
-		Match    string   `json:"match"`
-		Entropy  float32  `json:"entropy"`
-		Date     string   `json:"date"`
-		Rule     Rule     `json:"rule"`
-		Contact  Contact  `json:"contact"`
-		Location Location `json:"location"`
-		Notes    string   `json:"notes"`
+		ID       string            `json:"id"`
+		Kind     string            `json:"kind"`
+		Secret   string            `json:"secret"`
+		Match    string            `json:"match"`
+		Entropy  float32           `json:"entropy"`
+		Date     string            `json:"date"`
+		Rule     Rule              `json:"rule"`
+		Contact  Contact           `json:"contact"`
+		Location Location          `json:"location"`
+		Notes    map[string]string `json:"notes"`
 	}
 
 	// Location in the specific resource being scanned

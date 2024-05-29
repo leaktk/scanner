@@ -3,6 +3,7 @@ COMMIT := $(shell git rev-parse HEAD)
 BUILD_META :=
 BUILD_META += -X=github.com/leaktk/scanner/cmd.Version=$(VERSION)
 BUILD_META += -X=github.com/leaktk/scanner/cmd.Commit=$(COMMIT)
+PREFIX := /usr
 
 LDFLAGS := -ldflags "$(BUILD_META)"
 
@@ -31,3 +32,6 @@ format:
 test: format gosec golint
 	go vet ./...
 	go test ./...
+
+install: build
+	install ./leaktk-scanner $(DESTDIR)$(PREFIX)/bin/leaktk-scanner

@@ -129,7 +129,9 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 			Match:   finding.Match,
 			Entropy: finding.Entropy,
 			Date:    finding.Date,
-			Notes:   fmt.Sprintf("commit message: %v", finding.Message),
+			Notes: map[string]string{
+				"message": finding.Message,
+			},
 			Contact: Contact{
 				Name:  finding.Author,
 				Email: finding.Email,
