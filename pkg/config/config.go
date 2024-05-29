@@ -70,11 +70,11 @@ func leaktkCacheDir() string {
 
 func loadPatternServerAuthTokenFromFile(path string) string {
 	path = filepath.Clean(path)
-	logger.Debug("loading pattern-server-auth-token from %s", path)
+	logger.Debug("loading pattern-server-auth-token from %v", path)
 	authTokenBytes, err := os.ReadFile(path)
 
 	if err != nil {
-		logger.Fatal("loadPatternServerAuthTokenFromFile: %s", err)
+		logger.Fatal("loadPatternServerAuthTokenFromFile: %v", err)
 	}
 
 	return strings.TrimSpace(string(authTokenBytes))
@@ -146,7 +146,7 @@ func DefaultConfig() *Config {
 // custom values pulled in from the config file
 func LoadConfigFromFile(path string) (*Config, error) {
 	path = filepath.Clean(path)
-	logger.Debug("loading config from %s", path)
+	logger.Debug("loading config from %v", path)
 	cfg := DefaultConfig()
 	_, err := toml.DecodeFile(path, cfg)
 
@@ -203,7 +203,7 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 		return LoadConfigFromFile(path)
 	}
 
-	logger.Info("loading config from %s", path)
+	logger.Info("loading config from %v", path)
 
 	path = filepath.Join(leaktkConfigDir(), "config.toml")
 	if _, err := os.Stat(path); err == nil {

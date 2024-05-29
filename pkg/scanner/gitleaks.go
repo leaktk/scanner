@@ -4,43 +4,30 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/zricethezav/gitleaks/v8/detect"
 	"github.com/zricethezav/gitleaks/v8/sources"
 
+	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/resource"
 )
 
-// TODO: include the repo's .gitleaks.toml's allowlist and figure out
-// if we wan't to support any extra rules for when the time comes to use
-// this as a pre-commit hook. We could just strip the tags on them or and
-// limit how many rules we allow or something similar.
-
-func fileExists(fileName string) bool {
-	info, err := os.Stat(fileName)
-	if err != nil && !os.IsNotExist(err) {
-		return false
-	}
-
-	if info != nil && err == nil {
-		if !info.IsDir() {
-			return true
-		}
-	}
-	return false
-}
-
 // Gitleaks wraps gitleaks as a scanner backend
 type Gitleaks struct {
-	patterns   *Patterns
-	gitLogOpts string
+	patterns *Patterns
 }
 
+// NewGitLeaks returns a configured gitleaks backend instance
 func NewGitleaks(patterns *Patterns) *Gitleaks {
 	return &Gitleaks{
-		patterns:   patterns,
-		gitLogOpts: "", // Custom git log flags we can pass
+		patterns: patterns,
 	}
+}
+
+// Name returns the human readable name of the backend for logging details
+func (g *Gitleaks) Name() string {
+	return "Gitleaks"
 }
 
 // newDetector creates and configures a detector object for this resource
@@ -60,14 +47,14 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	detector.Verbose = false
 
 	gitleaksIgnorePath := filepath.Join(scanResource.ClonePath(), ".gitleaksignore")
-	if fileExists(gitleaksIgnorePath) {
+	if fs.FileExists(gitleaksIgnorePath) {
 		if err = detector.AddGitleaksIgnore(gitleaksIgnorePath); err != nil {
 			return nil, fmt.Errorf("could not call AddGitleaksIgnore (%v)", err)
 		}
 	}
 
 	gitleaksBaselinePath := filepath.Join(scanResource.ClonePath(), ".gitleaksbaseline")
-	if fileExists(gitleaksBaselinePath) {
+	if fs.FileExists(gitleaksBaselinePath) {
 		if err = detector.AddBaseline(gitleaksBaselinePath, scanResource.ClonePath()); err != nil {
 			return nil, fmt.Errorf("could not call AddBaseline (%v)", err)
 		}
@@ -76,10 +63,33 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	return detector, nil
 }
 
+func (g *Gitleaks) shallowCommits(scanResource resource.Resource) []string {
+	shallowFilePath := filepath.Join(scanResource.ClonePath(), ".git", "shallow")
+	data, err := os.ReadFile(filepath.Clean(shallowFilePath))
+
+	if err != nil {
+		return []string{}
+	}
+
+	return strings.Split(string(data), "\n")
+}
+
 // Scan does the gitleaks scan on the resource
 func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
-  // TODO: make sure to add log opts to ignore any grafed commits when the scanner has done the clone
-	gitCmd, err := sources.NewGitLogCmd(scanResource.ClonePath(), g.gitLogOpts)
+	gitLogOpts := []string{"--full-history", "--all"}
+
+	if len(scanResource.Since()) > 0 {
+		gitLogOpts = append(gitLogOpts, "--since")
+		gitLogOpts = append(gitLogOpts, scanResource.Since())
+	}
+
+	// Should be the last set of args
+	if shallowCommits := g.shallowCommits(scanResource); len(shallowCommits) > 0 {
+		gitLogOpts = append(gitLogOpts, "--not")
+		gitLogOpts = append(gitLogOpts, shallowCommits...)
+	}
+
+	gitCmd, err := sources.NewGitLogCmd(scanResource.ClonePath(), strings.Join(gitLogOpts, " "))
 
 	if err != nil {
 		return nil, err
@@ -90,30 +100,36 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 		return nil, err
 	}
 
+	// TODO: handle additional config in <clone_path>/.gitleaks.toml
 	findings, err := detector.DetectGit(gitCmd)
 	results := make([]*Result, len(findings))
 
 	for i, finding := range findings {
 		results[i] = &Result{
-      // TODO: We want to strike a balance between stable fields and unique
-      // ones. We want to avoid re-reporting when there's been a small change.
+			// Be careful changing how this is generated, this could result in
+			// duplicate alerts
 			ID: ResultID(
-				scanResource.Kind(),
-				finding.RuleID,
+				// What: Uniquely identify the kind of thing that's being scanned
+				GitCommitResultKind,
 				scanResource.String(),
+
+				// Where: Uniquely identify where in that resource it was being scanned
 				finding.Commit,
 				finding.File,
 				fmt.Sprint(finding.StartLine),
 				fmt.Sprint(finding.StartColumn),
 				fmt.Sprint(finding.EndLine),
 				fmt.Sprint(finding.EndColumn),
+
+				// How: Uniquely identify what was used to find it
+				finding.RuleID,
 			),
-			Kind:    scanResource.Kind(),
+			Kind:    GitCommitResultKind,
 			Secret:  finding.Secret,
 			Match:   finding.Match,
 			Entropy: finding.Entropy,
 			Date:    finding.Date,
-			Notes:   fmt.Sprintf("commit message: %s", finding.Message),
+			Notes:   fmt.Sprintf("commit message: %v", finding.Message),
 			Contact: Contact{
 				Name:  finding.Author,
 				Email: finding.Email,

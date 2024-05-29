@@ -62,7 +62,7 @@ func (e Entry) String() string {
 
 	out, err := json.Marshal(e)
 	if err != nil {
-		log.Printf("json.Marshal: %s", err)
+		log.Printf("json.Marshal: %v", err)
 	}
 
 	return string(out)
@@ -89,7 +89,7 @@ func SetLoggerLevel(levelName string) error {
 	case "CRITICAL":
 		currentLogLevel = CRITICAL
 	default:
-		return fmt.Errorf("%s is not a valid log level", levelName)
+		return fmt.Errorf("invalid log level: level=%q", levelName)
 	}
 
 	return nil

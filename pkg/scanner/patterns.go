@@ -111,7 +111,7 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 
 		p.gitleaksConfig, err = p.parseGitleaksConfig(rawConfig)
 		if err != nil {
-			logger.Debug("returned gitleaks config:\n%s", rawConfig)
+			logger.Debug("returned gitleaks config:\n%v", rawConfig)
 			return p.gitleaksConfig, err
 		}
 

@@ -9,6 +9,12 @@ import (
 	"github.com/leaktk/scanner/pkg/logger"
 )
 
+// In the future we might have things like GitCommitMessage
+// GithubPullRequest, etc
+const (
+	GitCommitResultKind = "GitCommit"
+)
+
 type (
 	// Response from the scanner with the scan results
 	Response struct {
@@ -74,7 +80,7 @@ type (
 func (r *Response) String() string {
 	out, err := json.Marshal(r)
 	if err != nil {
-		logger.Error("json.Marshal: %s", err)
+		logger.Error("json.Marshal: %v", err)
 	}
 
 	return string(out)

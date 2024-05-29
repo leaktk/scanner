@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/leaktk/scanner/pkg/config"
+	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
 )
@@ -63,6 +64,7 @@ func (s *Scanner) Responses() <-chan *Response {
 
 // Send accepts a request for scanning and puts it in the queues
 func (s *Scanner) Send(request *Request) {
+	logger.Debug("queueing clone: request_id=%q", request.ID)
 	s.cloneQueue <- request
 }
 
@@ -84,25 +86,22 @@ func (s *Scanner) listenForCloneRequests() {
 		reqResource := request.Resource
 
 		if s.cloneTimeout > 0 {
+			logger.Debug("setting clone timeout: request_id=%q timeout=%v", request.ID, s.cloneTimeout.Seconds())
 			reqResource.SetCloneTimeout(s.cloneTimeout)
 		}
 
 		if s.maxScanDepth > 0 && reqResource.Depth() > s.maxScanDepth {
+			logger.Warning("reducing scan depth: resource_id=%q old_depth=%v new_depth=%v", reqResource.ID(), reqResource.Depth(), s.maxScanDepth)
 			reqResource.SetDepth(s.maxScanDepth)
-			logger.Warning("reduced scan depth: resource_id=%q depth=%d", reqResource.ID(), s.maxScanDepth)
 		}
 
+		logger.Info("starting clone: reqsource_id=%q", reqResource.ID())
 		if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
 			logger.Error("clone error: resource_id=%q error=%q", reqResource.ID(), err.Error())
-
-			if err := s.removeResourceFiles(reqResource); err != nil {
-				logger.Error("resource file cleanup error: resource_id=%q error=%q", reqResource.ID(), err.Error())
-			}
-
-			continue
 		}
 
 		// Now that it's cloned send it on to the scan queue
+		logger.Debug("queueing scan: request_id=%q", request.ID)
 		s.scanQueue <- request
 	}
 }
@@ -127,20 +126,23 @@ func (s *Scanner) listenForScanRequests() {
 
 		results := make([]*Result, 0)
 
-		for _, backend := range s.backends {
-			backendResults, err := backend.Scan(reqResource)
+		if fs.PathExists(reqResource.ClonePath()) {
+			for _, backend := range s.backends {
+				logger.Info("starting scan: reqsource_id=%q scanner_backend=%q", reqResource.ID(), backend.Name())
 
-			if err != nil {
-				logger.Error("scan error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+				backendResults, err := backend.Scan(reqResource)
+				if err != nil {
+					logger.Error("scan error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+				}
+				if backendResults != nil {
+					results = append(results, backendResults...)
+				}
 			}
-
-			if backendResults != nil {
-				results = append(results, backendResults...)
+			if err := s.removeResourceFiles(reqResource); err != nil {
+				logger.Error("resource file cleanup error: resource_id=%q error=%q", reqResource.ID(), err.Error())
 			}
-		}
-
-		if err := s.removeResourceFiles(reqResource); err != nil {
-			logger.Error("resource file cleanup error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+		} else {
+			logger.Error("skipping scan due to missing clone path: resource_id=%q", reqResource.ID())
 		}
 
 		s.responses <- &Response{

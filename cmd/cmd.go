@@ -60,7 +60,7 @@ func initLogger() {
 
 func runHelp(cmd *cobra.Command, args []string) {
 	if err := cmd.Help(); err != nil {
-		logger.Fatal("%s", err)
+		logger.Fatal("%v", err)
 	}
 }
 
@@ -128,14 +128,14 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("json.Marshal: %s", err)
+		return nil, fmt.Errorf("json.Marshal: %v", err)
 	}
 
 	var request scanner.Request
 
 	err = json.Unmarshal(requestData, &request)
 	if err != nil {
-		return nil, fmt.Errorf("json.Unmarshal: %s", err)
+		return nil, fmt.Errorf("json.Unmarshal: %v", err)
 	}
 
 	return &request, nil
@@ -176,12 +176,12 @@ func runListen(cmd *cobra.Command, args []string) {
 		err := json.Unmarshal(stdinScanner.Bytes(), &request)
 
 		if err != nil {
-			logger.Error("%s: request_id=%s", err, request.ID)
+			logger.Error("%v: request_id=%q", err, request.ID)
 			continue
 		}
 
 		if len(request.Resource.String()) == 0 {
-			logger.Error("no resource provided: request_id=%s", request.ID)
+			logger.Error("no resource provided: request_id=%q", request.ID)
 			continue
 		}
 
@@ -189,7 +189,7 @@ func runListen(cmd *cobra.Command, args []string) {
 	}
 
 	if err := stdinScanner.Err(); err != nil {
-		logger.Error("%s", err)
+		logger.Error("%v", err)
 	}
 }
 
@@ -263,6 +263,6 @@ func Execute() {
 		if strings.Contains(err.Error(), "unknown flag") {
 			os.Exit(config.ExitCodeBlockingError)
 		}
-		logger.Fatal("%s", err.Error())
+		logger.Fatal("%v", err.Error())
 	}
 }

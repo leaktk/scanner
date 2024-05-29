@@ -56,6 +56,10 @@ func (r *GitRepo) Clone(path string) error {
 
 	cloneArgs := []string{"clone"}
 
+	// Add expanded refs to capture things like PRs etc.
+	cloneArgs = append(cloneArgs, "--config")
+	cloneArgs = append(cloneArgs, "remote.origin.fetch=+refs/*:refs/remotes/origin/*")
+
 	if len(r.options.Proxy) > 0 {
 		cloneArgs = append(cloneArgs, "--config")
 		cloneArgs = append(cloneArgs, fmt.Sprintf("http.proxy=%s", r.options.Proxy))
@@ -126,4 +130,10 @@ func (r *GitRepo) SetDepth(depth uint16) {
 // SetCloneTimeout lets you adjust the timeout before the clone aborts
 func (r *GitRepo) SetCloneTimeout(timeout time.Duration) {
 	r.cloneTimeout = timeout
+}
+
+// Since returns the date after which things should be scanned for things
+// that have versions
+func (r *GitRepo) Since() string {
+	return r.options.Since
 }

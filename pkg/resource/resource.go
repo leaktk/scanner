@@ -19,6 +19,7 @@ type Resource interface {
 	SetCloneTimeout(timeout time.Duration)
 	SetDepth(depth uint16)
 	String() string
+	Since() string
 }
 
 // NewResource handles building out the resource from kind, the resource string
@@ -37,7 +38,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 		return NewGitRepo(resource, &gitRepoOptions), nil
 	default:
-		return nil, fmt.Errorf("unsupported kind kind=%s", kind)
+		return nil, fmt.Errorf("unsupported kind: kind=%q", kind)
 	}
 }
 

@@ -34,12 +34,12 @@ func (c *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 
 func assertPathExists(t *testing.T, path string) {
 	_, err := os.Stat(path)
-	assert.Nil(t, err, fmt.Sprintf("the path %s does not exist", path))
+	assert.Nil(t, err, fmt.Sprintf("the path %v does not exist", path))
 }
 
 func assertPathNotExists(t *testing.T, path string) {
 	_, err := os.Stat(path)
-	assert.NotNil(t, err, fmt.Sprintf("the path %s does exists", path))
+	assert.NotNil(t, err, fmt.Sprintf("the path %v does exists", path))
 }
 
 func TestGitLeaksPatterns(t *testing.T) {
