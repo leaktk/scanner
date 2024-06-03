@@ -61,16 +61,16 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 		}
 	}
 
-	clonedConfigPath := filepath.Join(scanResource.ClonePath(), ".gitleaks.toml")
-	if fs.FileExists(clonedConfigPath) {
-		clonedConfig, err := ParseGitleaksConfigFile(clonedConfigPath)
+	rawClonedConfig, err := scanResource.ReadFile(".gitleaks.toml")
+	if err == nil {
+		clonedConfig, err := ParseGitleaksConfig(string(rawClonedConfig))
 
 		if err != nil {
 			detector.Config.Allowlist.Commits = append(detector.Config.Allowlist.Commits, clonedConfig.Allowlist.Commits...)
 			detector.Config.Allowlist.Paths = append(detector.Config.Allowlist.Paths, clonedConfig.Allowlist.Paths...)
 			detector.Config.Allowlist.Regexes = append(detector.Config.Allowlist.Regexes, clonedConfig.Allowlist.Regexes...)
 		} else {
-			logger.Error("could not load cloned .gitleaks.toml: resource_id=%q cloned_config_path=%q error=%q", scanResource.ID(), clonedConfigPath, err)
+			logger.Error("could not load cloned .gitleaks.toml: resource_id=%q error=%q", scanResource.ID(), err)
 		}
 	}
 
@@ -78,14 +78,16 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 }
 
 func (g *Gitleaks) shallowCommits(scanResource resource.Resource) []string {
-	shallowFilePath := filepath.Join(scanResource.ClonePath(), ".git", "shallow")
-	data, err := os.ReadFile(filepath.Clean(shallowFilePath))
+	if gitRepo, ok := scanResource.(*resource.GitRepo); ok {
+		shallowFilePath := filepath.Join(gitRepo.GitDirPath(), "shallow")
+		data, err := os.ReadFile(filepath.Clean(shallowFilePath))
 
-	if err != nil {
-		return []string{}
+		if err == nil {
+			return strings.Split(string(data), "\n")
+		}
 	}
 
-	return strings.Split(string(data), "\n")
+	return []string{}
 }
 
 // Scan does the gitleaks scan on the resource

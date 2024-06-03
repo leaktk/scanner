@@ -73,16 +73,25 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 // Gitleaks returns a Gitleaks config object if it's able to
 // TODO: make sure this is safe for concurrency
 func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
+	var err error
+
 	if p.gitleaksConfig == nil {
-		// TODO: load patterns from FS if they exist and are newer than the refresh time
+		var rawConfig string
+		fetchedNewConfig := false
 
-		if !p.config.Autofetch {
-			return p.gitleaksConfig, fmt.Errorf("could not autofetch gitleaks config because autofetch is disabled")
-		}
+		// TODO: load patterns from FS if they exist AND are newer than the refresh time
+		if contents, err := os.ReadFile(p.config.Gitleaks.ConfigPath); err == nil {
+			rawConfig = string(contents)
+		} else {
+			if !p.config.Autofetch {
+				return p.gitleaksConfig, fmt.Errorf("could not autofetch gitleaks config because autofetch is disabled")
+			}
 
-		rawConfig, err := p.fetchGitleaksConfig()
-		if err != nil {
-			return p.gitleaksConfig, err
+			rawConfig, err = p.fetchGitleaksConfig()
+			fetchedNewConfig = true
+			if err != nil {
+				return p.gitleaksConfig, err
+			}
 		}
 
 		p.gitleaksConfig, err = ParseGitleaksConfig(rawConfig)
@@ -96,15 +105,17 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 			return p.gitleaksConfig, err
 		}
 
-		configFile, err := os.Create(p.config.Gitleaks.ConfigPath)
-		if err != nil {
-			return p.gitleaksConfig, err
-		}
-		defer configFile.Close()
+		if fetchedNewConfig {
+			configFile, err := os.Create(p.config.Gitleaks.ConfigPath)
+			if err != nil {
+				return p.gitleaksConfig, err
+			}
+			defer configFile.Close()
 
-		_, err = configFile.WriteString(rawConfig)
-		if err != nil {
-			return p.gitleaksConfig, err
+			_, err = configFile.WriteString(rawConfig)
+			if err != nil {
+				return p.gitleaksConfig, err
+			}
 		}
 	}
 
@@ -116,19 +127,6 @@ func ParseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
 	var vc gitleaksconfig.ViperConfig
 
 	_, err := toml.Decode(rawConfig, &vc)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := vc.Translate()
-	return &cfg, err
-}
-
-// ParseGitleaksConfigFile takes a gitleaks config path and returns a config object
-func ParseGitleaksConfigFile(path string) (*gitleaksconfig.Config, error) {
-	var vc gitleaksconfig.ViperConfig
-
-	_, err := toml.DecodeFile(path, &vc)
 	if err != nil {
 		return nil, err
 	}

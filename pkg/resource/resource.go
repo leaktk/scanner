@@ -16,10 +16,11 @@ type Resource interface {
 	Depth() uint16
 	ID() string
 	Kind() string
+	ReadFile(path string) ([]byte, error)
 	SetCloneTimeout(timeout time.Duration)
 	SetDepth(depth uint16)
-	String() string
 	Since() string
+	String() string
 }
 
 // NewResource handles building out the resource from kind, the resource string

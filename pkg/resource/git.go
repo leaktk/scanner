@@ -3,11 +3,26 @@ package resource
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/leaktk/scanner/pkg/logger"
 )
+
+// Configure git env
+func init() {
+	// Make sure git never prompts for a password
+	if err := os.Setenv("GIT_TERMINAL_PROMPT", "0"); err != nil {
+		logger.Error("could not set GIT_TERMINAL_PROMPT=0: error=%q", err)
+	}
+
+	// Make sure replace is disabled so we can scan all of the refs
+	if err := os.Setenv("GIT_NO_REPLACE_OBJECTS", "1"); err != nil {
+		logger.Error("could not set GIT_NO_REPLACE_OBJECTS=1: error=%q", err)
+	}
+}
 
 // GitRepoOptions stores options specific to GitRepo scan requests
 type GitRepoOptions struct {
@@ -54,28 +69,26 @@ func (r *GitRepo) String() string {
 func (r *GitRepo) Clone(path string) error {
 	r.clonePath = path
 
-	cloneArgs := []string{"clone"}
-
-	// Add expanded refs to capture things like PRs etc.
-	cloneArgs = append(cloneArgs, "--config")
-	cloneArgs = append(cloneArgs, "remote.origin.fetch=+refs/*:refs/remotes/origin/*")
+	cloneArgs := []string{"clone", "--mirror"}
 
 	if len(r.options.Proxy) > 0 {
 		cloneArgs = append(cloneArgs, "--config")
 		cloneArgs = append(cloneArgs, fmt.Sprintf("http.proxy=%s", r.options.Proxy))
 	}
 
-	if len(r.options.Since) > 0 {
-		cloneArgs = append(cloneArgs, "--shallow-since")
-		cloneArgs = append(cloneArgs, r.options.Since)
-	}
-
+	// The --[no-]single-branch flags are still needed with mirror due to how
+	// things like --depth and --shallow-since behave
 	if len(r.options.Branch) > 0 {
 		cloneArgs = append(cloneArgs, "--single-branch")
 		cloneArgs = append(cloneArgs, "--branch")
 		cloneArgs = append(cloneArgs, r.options.Branch)
 	} else {
 		cloneArgs = append(cloneArgs, "--no-single-branch")
+	}
+
+	if len(r.options.Since) > 0 {
+		cloneArgs = append(cloneArgs, "--shallow-since")
+		cloneArgs = append(cloneArgs, r.options.Since)
 	}
 
 	if r.options.Depth > 0 {
@@ -136,4 +149,17 @@ func (r *GitRepo) SetCloneTimeout(timeout time.Duration) {
 // that have versions
 func (r *GitRepo) Since() string {
 	return r.options.Since
+}
+
+// ReadFile provides a way to get files out of the repo
+func (r *GitRepo) ReadFile(path string) ([]byte, error) {
+	object := fmt.Sprintf("HEAD:%s", filepath.Clean(path))
+	return exec.Command("git", "-C", r.ClonePath(), "show", object).Output() // #nosec G204
+}
+
+// GitDirPath returns the path to the git dir so that other things don'g need
+// to know how the repo was cloned
+func (r *GitRepo) GitDirPath() string {
+	// Since --mirror implies --bare, the GitDirPath is the ClonePath
+	return r.ClonePath()
 }
