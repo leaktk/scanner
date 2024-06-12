@@ -42,10 +42,11 @@ type (
 
 	// Patterns provides configuration for managing pattern updates
 	Patterns struct {
-		RefreshInterval uint32        `toml:"refresh_interval"`
-		Server          PatternServer `toml:"server"`
-		Autofetch       bool          `toml:"autofetch"`
-		Gitleaks        Gitleaks      `toml:"gitleaks"`
+		RefreshAfter uint32        `toml:"refresh_after"`
+		ExpiredAfter uint32        `toml:"expired_after"`
+		Server       PatternServer `toml:"server"`
+		Autofetch    bool          `toml:"autofetch"`
+		Gitleaks     Gitleaks      `toml:"gitleaks"`
 	}
 
 	// PatternServer provides pattern server configuration settings for the scanner
@@ -146,8 +147,9 @@ func DefaultConfig() *Config {
 			ScanWorkers:       1,
 			Workdir:           filepath.Join(leaktkCacheDir(), "scanner"),
 			Patterns: Patterns{
-				Autofetch:       true,
-				RefreshInterval: 60 * 60 * 12,
+				Autofetch:    true,
+				RefreshAfter: 60 * 60 * 12,      // 12 hours
+				ExpiredAfter: 60 * 60 * 12 * 14, // 7 days
 				Server: PatternServer{
 					URL: "https://raw.githubusercontent.com/leaktk/patterns/main/target",
 				},

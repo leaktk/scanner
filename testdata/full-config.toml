@@ -18,7 +18,7 @@ version="set-by-config"
 
 [scanner.patterns]
 # How often should the patterns be refreshed
-refresh_interval = 10
+refresh_after = 10
 
 [scanner.patterns.server]
 # The URL to a pattern server

@@ -35,7 +35,7 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 		},
 		{
 			expected: uint32(43200),
-			actual:   cfg.Scanner.Patterns.RefreshInterval,
+			actual:   cfg.Scanner.Patterns.RefreshAfter,
 		},
 		{
 			expected: "https://example.com/leaktk/patterns/main/target",

@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	gitleaksconfig "github.com/zricethezav/gitleaks/v8/config"
@@ -21,6 +23,7 @@ type Patterns struct {
 	client         HTTPClient
 	config         *config.Patterns
 	gitleaksConfig *gitleaksconfig.Config
+	mutex          sync.Mutex
 }
 
 // NewPatterns returns a configured instance of Patterns
@@ -32,6 +35,7 @@ func NewPatterns(cfg *config.Patterns, client HTTPClient) *Patterns {
 }
 
 func (p *Patterns) fetchGitleaksConfig() (string, error) {
+	logger.Info("fetching gitleaks patterns")
 	url, err := url.JoinPath(
 		p.config.Server.URL, "patterns", "gitleaks", p.config.Gitleaks.Version,
 	)
@@ -70,52 +74,62 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 	return string(body), err
 }
 
+// gitleaksConfigModTimeExceeds returns true if the file is older than
+// `modTimeLimit` seconds
+func (p *Patterns) gitleaksConfigModTimeExceeds(modTimeLimit uint32) bool {
+	if fileInfo, err := os.Stat(p.config.Gitleaks.ConfigPath); err == nil {
+		return uint32(time.Now().Sub(fileInfo.ModTime()).Seconds()) > modTimeLimit
+	}
+
+	return true
+}
+
 // Gitleaks returns a Gitleaks config object if it's able to
-// TODO: make sure this is safe for concurrency
 func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
-	var err error
+	// Lock since this this updates the value of p.gitleaksConfig on the fly
+	// and updates files on the filesystem
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
-	if p.gitleaksConfig == nil {
-		var rawConfig string
-		fetchedNewConfig := false
+	if p.config.Autofetch && p.gitleaksConfigModTimeExceeds(p.config.RefreshAfter) {
+		rawConfig, err := p.fetchGitleaksConfig()
 
-		// TODO: load patterns from FS if they exist AND are newer than the refresh time
-		if contents, err := os.ReadFile(p.config.Gitleaks.ConfigPath); err == nil {
-			rawConfig = string(contents)
-		} else {
-			if !p.config.Autofetch {
-				return p.gitleaksConfig, fmt.Errorf("could not autofetch gitleaks config because autofetch is disabled")
-			}
-
-			rawConfig, err = p.fetchGitleaksConfig()
-			fetchedNewConfig = true
-			if err != nil {
-				return p.gitleaksConfig, err
-			}
+		if err != nil {
+			return p.gitleaksConfig, err
 		}
 
 		p.gitleaksConfig, err = ParseGitleaksConfig(rawConfig)
 		if err != nil {
-			logger.Debug("returned gitleaks config:\n%v", rawConfig)
-			return p.gitleaksConfig, err
+			logger.Debug("fetched config:\n%s\n", rawConfig)
+			return p.gitleaksConfig, fmt.Errorf("could not parse config: error=%q", err)
 		}
 
-		err = os.MkdirAll(filepath.Dir(p.config.Gitleaks.ConfigPath), 0700)
+		if err := os.MkdirAll(filepath.Dir(p.config.Gitleaks.ConfigPath), 0700); err != nil {
+			return p.gitleaksConfig, fmt.Errorf("could not create config dir: error=%q", err)
+		}
+
+		// only write the config after parsing it, that way we don't break a good
+		// existing config if the server returns an invalid response
+		if err := os.WriteFile(p.config.Gitleaks.ConfigPath, []byte(rawConfig), 0600); err != nil {
+			return p.gitleaksConfig, fmt.Errorf("could not write config: error=%q", err)
+		}
+	} else if p.gitleaksConfig == nil {
+		if p.gitleaksConfigModTimeExceeds(p.config.ExpiredAfter) {
+			return nil, fmt.Errorf(
+				"gitleaks config is expired and autofetch is disabled: config_path=%q",
+				p.config.Gitleaks.ConfigPath,
+			)
+		}
+
+		rawConfig, err := os.ReadFile(p.config.Gitleaks.ConfigPath)
 		if err != nil {
 			return p.gitleaksConfig, err
 		}
 
-		if fetchedNewConfig {
-			configFile, err := os.Create(p.config.Gitleaks.ConfigPath)
-			if err != nil {
-				return p.gitleaksConfig, err
-			}
-			defer configFile.Close()
-
-			_, err = configFile.WriteString(rawConfig)
-			if err != nil {
-				return p.gitleaksConfig, err
-			}
+		p.gitleaksConfig, err = ParseGitleaksConfig(string(rawConfig))
+		if err != nil {
+			logger.Debug("loaded config:\n%s\n", rawConfig)
+			return p.gitleaksConfig, fmt.Errorf("could not parse config: error=%q", err)
 		}
 	}
 

@@ -33,7 +33,7 @@
 # [scanner.patterns]
 #
 # # How often should the patterns be refreshed
-# refresh_interval = 43200
+# refresh_after = 43200
 #
 # [scanner.patterns.server]
 #
