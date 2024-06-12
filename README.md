@@ -216,7 +216,6 @@ Error (if "error" is present, the scan failed)
 
 1. Finish and test steps to make it usable inside PwnedAlert
 1. Figure out how to capture/quite logs from imported libs
-1. logger.SetLogMode(JSON|PRETTY) for listen vs other use cases
 1. Add JSON scan kind
 1. Make sure features in the internal scanner are upstreamed here
 1. Delete exsting rust projets from crates.io

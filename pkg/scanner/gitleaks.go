@@ -19,7 +19,7 @@ type Gitleaks struct {
 	patterns *Patterns
 }
 
-// NewGitLeaks returns a configured gitleaks backend instance
+// NewGitleaks returns a configured gitleaks backend instance
 func NewGitleaks(patterns *Patterns) *Gitleaks {
 	return &Gitleaks{
 		patterns: patterns,

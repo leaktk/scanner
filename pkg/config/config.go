@@ -8,6 +8,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
 
+	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
 )
 
@@ -61,11 +62,23 @@ type (
 )
 
 func leaktkConfigDir() string {
-	return filepath.Join(xdg.ConfigHome, "leaktk")
+	path := filepath.Join(xdg.ConfigHome, "leaktk")
+
+	if err := os.MkdirAll(path, 0700); err != nil {
+		logger.Error("could not create dir: path=%q", path)
+	}
+
+	return path
 }
 
 func leaktkCacheDir() string {
-	return filepath.Join(xdg.CacheHome, "leaktk")
+	path := filepath.Join(xdg.CacheHome, "leaktk")
+
+	if err := os.MkdirAll(path, 0700); err != nil {
+		logger.Error("could not create dir: path=%q", path)
+	}
+
+	return path
 }
 
 func loadPatternServerAuthTokenFromFile(path string) string {
@@ -80,6 +93,10 @@ func loadPatternServerAuthTokenFromFile(path string) string {
 	return strings.TrimSpace(string(authTokenBytes))
 }
 
+func localPatternServerAuthTokenPath() string {
+	return filepath.Join(leaktkConfigDir(), "pattern-server-auth-token")
+}
+
 func loadPatternServerAuthToken() string {
 	authTokenFromEnvVar := os.Getenv("LEAKTK_PATTERN_SERVER_AUTH_TOKEN")
 
@@ -88,7 +105,7 @@ func loadPatternServerAuthToken() string {
 		return authTokenFromEnvVar
 	}
 
-	path := filepath.Join(leaktkConfigDir(), "pattern-server-auth-token")
+	path := localPatternServerAuthTokenPath()
 	if _, err := os.Stat(path); err == nil {
 		return loadPatternServerAuthTokenFromFile(path)
 	}
@@ -146,7 +163,7 @@ func DefaultConfig() *Config {
 // custom values pulled in from the config file
 func LoadConfigFromFile(path string) (*Config, error) {
 	path = filepath.Clean(path)
-	logger.Debug("loading config from %v", path)
+	logger.Debug("loading config: path=%q", path)
 	cfg := DefaultConfig()
 	_, err := toml.DecodeFile(path, cfg)
 
@@ -203,7 +220,11 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 		return LoadConfigFromFile(path)
 	}
 
-	logger.Info("loading config from %v", path)
+	if len(path) > 0 {
+		logger.Debug("loading config: path=%q", path)
+	} else {
+		logger.Debug("using default config")
+	}
 
 	path = filepath.Join(leaktkConfigDir(), "config.toml")
 	if _, err := os.Stat(path); err == nil {
@@ -216,4 +237,28 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 	}
 
 	return DefaultConfig(), nil
+}
+
+// SavePatternServerAuthToken saves the token in the path where it should go
+func SavePatternServerAuthToken(authToken string) error {
+	path := localPatternServerAuthTokenPath()
+
+	if err := os.WriteFile(path, []byte(authToken), 0600); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RemovePatternServerAuthToken deletes the auth token
+func RemovePatternServerAuthToken() error {
+	path := localPatternServerAuthTokenPath()
+
+	if fs.FileExists(path) {
+		if err := os.Remove(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

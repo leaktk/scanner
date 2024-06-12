@@ -65,8 +65,30 @@ func runHelp(cmd *cobra.Command, args []string) {
 }
 
 func runLogin(cmd *cobra.Command, args []string) {
-	// also do a logout
-	logger.Debug("TODO")
+	logger.Info("logging in: pattern_server=%q", cfg.Scanner.Patterns.Server.URL)
+
+	fmt.Print("Enter auth token: ")
+
+	var authToken string
+	if _, err := fmt.Scanln(&authToken); err != nil {
+		logger.Fatal("could not login: error=%q", err)
+	}
+
+	if err := config.SavePatternServerAuthToken(authToken); err != nil {
+		logger.Fatal("could not login: error=%q", err)
+	}
+
+	logger.Info("token saved")
+}
+
+func runLogout(cmd *cobra.Command, args []string) {
+	logger.Info("logging out: pattern_server=%q", cfg.Scanner.Patterns.Server.URL)
+
+	if err := config.RemovePatternServerAuthToken(); err != nil {
+		logger.Fatal("could not logout: error=%q", err)
+	}
+
+	logger.Info("token removed")
 }
 
 func loginCommand() *cobra.Command {
@@ -74,6 +96,14 @@ func loginCommand() *cobra.Command {
 		Use:   "login",
 		Short: "Log into a pattern server",
 		Run:   runLogin,
+	}
+}
+
+func logoutCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "logout",
+		Short: "Log out of a pattern server",
+		Run:   runLogout,
 	}
 }
 
@@ -222,7 +252,17 @@ func versionCommand() *cobra.Command {
 	}
 }
 
-func loadConfig(cmd *cobra.Command, args []string) error {
+func configure(cmd *cobra.Command, args []string) error {
+	switch cmd.Use {
+	case "listen":
+		if err := logger.SetLoggerFormat(logger.JSON); err != nil {
+			return err
+		}
+	default:
+		if err := logger.SetLoggerFormat(logger.HUMAN); err != nil {
+			return err
+		}
+	}
 	path, err := cmd.Flags().GetString("config")
 
 	if err == nil {
@@ -244,13 +284,14 @@ func rootCommand() *cobra.Command {
 		Use:               "leaktk-scanner",
 		Short:             "LeakTK Scanner: Scan for secrets",
 		Run:               runHelp,
-		PersistentPreRunE: loadConfig,
+		PersistentPreRunE: configure,
 	}
 
 	flags := rootCommand.PersistentFlags()
 	flags.StringP("config", "c", "", "config file path")
 
 	rootCommand.AddCommand(loginCommand())
+	rootCommand.AddCommand(logoutCommand())
 	rootCommand.AddCommand(scanCommand())
 	rootCommand.AddCommand(listenCommand())
 	rootCommand.AddCommand(versionCommand())

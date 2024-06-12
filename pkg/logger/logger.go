@@ -10,6 +10,9 @@ import (
 // LogLevel is used to determine which log severities should actually log
 type LogLevel int
 
+// LogFormat is used to set the how the log messages should be displayed
+type LogFormat int
+
 const (
 	// NOTSET will log everything
 	NOTSET LogLevel = 0
@@ -23,6 +26,13 @@ const (
 	ERROR LogLevel = 40
 	// CRITICAL will enable these logs and higer
 	CRITICAL LogLevel = 50
+)
+
+const (
+	// JSON displays the logs as JSON dicts
+	JSON LogFormat = 0
+	// HUMAN displays the logs in a way that's nice for humans to read
+	HUMAN LogFormat = 1
 )
 
 // String renders a LogLevel as its string value
@@ -46,6 +56,7 @@ func (l LogLevel) String() string {
 }
 
 var currentLogLevel = INFO
+var currentLogFormat = HUMAN
 
 // Entry defines a log entry
 type Entry struct {
@@ -60,12 +71,23 @@ func (e Entry) String() string {
 		e.Severity = "INFO"
 	}
 
-	out, err := json.Marshal(e)
-	if err != nil {
-		log.Printf("json.Marshal: %v", err)
+	switch currentLogFormat {
+	case HUMAN:
+		return fmt.Sprintf("[%s] %s", e.Severity, e.Message)
+
+	case JSON:
+		out, err := json.Marshal(e)
+
+		if err != nil {
+			log.Printf("json.Marshal: %v", err)
+		}
+
+		return string(out)
+
+	default:
+		return e.Message
 	}
 
-	return string(out)
 }
 
 func init() {
@@ -73,6 +95,20 @@ func init() {
 	// Prefix text prevents the message from being parsed as JSON.
 	// A timestamp is added when shipping logs to Cloud Logging.
 	log.SetFlags(0)
+}
+
+// SetLoggerFormat adjusts the format Entry uses when calling String() on it
+func SetLoggerFormat(logFormat LogFormat) error {
+	switch logFormat {
+	case JSON:
+		currentLogFormat = JSON
+	case HUMAN:
+		currentLogFormat = HUMAN
+	default:
+		return fmt.Errorf("invalid log format: log_format=%v", logFormat)
+	}
+
+	return nil
 }
 
 // SetLoggerLevel takes the string version of the name and sets the current level
