@@ -1,15 +1,16 @@
 package scanner
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	gitleaksconfig "github.com/zricethezav/gitleaks/v8/config"
 
 	"github.com/leaktk/scanner/pkg/config"
 )
@@ -19,58 +20,284 @@ const mockConfig = `
 paths = ['''testdata''']
 
 [[rules]]
-description = "Find the foo"
-regex = '''foo'''
+description = "test-rule"
+regex = '''test-rule'''
 `
 
-type mockHTTPClient struct {
+func TestPatternsFetchGitleaksConfig(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "GET", r.Method)
+			assert.Equal(t, "/patterns/gitleaks/x.y.z", r.URL.Path)
+			w.WriteHeader(http.StatusOK)
+			_, err := io.WriteString(w, mockConfig)
+			assert.NoError(t, err)
+		}))
+		ts.Start()
+		defer ts.Close()
+
+		cfg := &config.Patterns{
+			Server: config.PatternServer{
+				URL: ts.URL,
+			},
+			Gitleaks: config.Gitleaks{
+				Version: "x.y.z",
+			},
+		}
+		client := &http.Client{}
+		p := NewPatterns(cfg, client)
+
+		rawConfig, err := p.fetchGitleaksConfig()
+		assert.NoError(t, err)
+		assert.Contains(t, rawConfig, "test-rule")
+	})
+
+	t.Run("InvalidURL", func(t *testing.T) {
+		cfg := &config.Patterns{
+			Server: config.PatternServer{
+				URL: "invalid-url",
+			},
+			Gitleaks: config.Gitleaks{
+				Version: "x.y.z",
+			},
+		}
+		client := &http.Client{}
+		p := NewPatterns(cfg, client)
+
+		_, err := p.fetchGitleaksConfig()
+		assert.Error(t, err)
+	})
+
+	t.Run("HTTPError", func(t *testing.T) {
+		ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		ts.Start()
+		defer ts.Close()
+
+		cfg := &config.Patterns{
+			Server: config.PatternServer{
+				URL: ts.URL,
+			},
+			Gitleaks: config.Gitleaks{
+				Version: "x.y.z",
+			},
+		}
+		client := &http.Client{}
+		p := NewPatterns(cfg, client)
+
+		_, err := p.fetchGitleaksConfig()
+		assert.Error(t, err)
+	})
+
+	t.Run("WithAuthToken", func(t *testing.T) {
+		ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "GET", r.Method)
+			assert.Equal(t, "/patterns/gitleaks/x.y.z", r.URL.Path)
+			assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+			w.WriteHeader(http.StatusOK)
+			_, err := io.WriteString(w, mockConfig)
+			assert.NoError(t, err)
+		}))
+		ts.Start()
+		defer ts.Close()
+
+		cfg := &config.Patterns{
+			Server: config.PatternServer{
+				URL:       ts.URL,
+				AuthToken: "test-token",
+			},
+			Gitleaks: config.Gitleaks{
+				Version: "x.y.z",
+			},
+		}
+		client := &http.Client{}
+		p := NewPatterns(cfg, client)
+
+		rawConfig, err := p.fetchGitleaksConfig()
+		assert.NoError(t, err)
+		assert.Contains(t, rawConfig, "test-rule")
+	})
 }
 
-func (c *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	return &http.Response{
-		Body: io.NopCloser(bytes.NewReader([]byte(mockConfig))),
-	}, nil
+func TestGitleaksConfigModTimeExceeds(t *testing.T) {
+	t.Run("FileExistsAndOlderThanLimit", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		tempFilePath := filepath.Join(tempDir, "gitleaks.toml")
+		err = os.WriteFile(tempFilePath, []byte{}, 0644)
+		assert.NoError(t, err)
+
+		// Set the file's modification time to 10 seconds ago
+		err = os.Chtimes(tempFilePath, time.Now().Add(-10*time.Second), time.Now().Add(-10*time.Second))
+		assert.NoError(t, err)
+
+		// Create a Patterns instance with the temporary file path
+		patterns := &Patterns{
+			config: &config.Patterns{
+				Gitleaks: config.Gitleaks{
+					ConfigPath: tempFilePath,
+				},
+			},
+		}
+
+		// Test with a modTimeLimit of 5 seconds
+		assert.True(t, patterns.gitleaksConfigModTimeExceeds(5))
+
+		// Test with a modTimeLimit of 15 seconds
+		assert.False(t, patterns.gitleaksConfigModTimeExceeds(15))
+	})
+
+	t.Run("FileDoesNotExist", func(t *testing.T) {
+		// Create a Patterns instance with a non-existent file path
+		patterns := &Patterns{
+			config: &config.Patterns{
+				Gitleaks: config.Gitleaks{
+					ConfigPath: "/path/to/nonexistent/file.toml",
+				},
+			},
+		}
+
+		// Test with any modTimeLimit
+		assert.True(t, patterns.gitleaksConfigModTimeExceeds(5))
+		assert.True(t, patterns.gitleaksConfigModTimeExceeds(15))
+	})
+
+	t.Run("FileExistsButErrorOnStat", func(t *testing.T) {
+		// Create a Patterns instance with a file path that causes an error on Stat
+		patterns := &Patterns{
+			config: &config.Patterns{
+				Gitleaks: config.Gitleaks{
+					ConfigPath: "/dev/null",
+				},
+			},
+		}
+
+		// Test with any modTimeLimit
+		assert.True(t, patterns.gitleaksConfigModTimeExceeds(5))
+		assert.True(t, patterns.gitleaksConfigModTimeExceeds(15))
+	})
 }
 
-func assertPathExists(t *testing.T, path string) {
-	_, err := os.Stat(path)
-	assert.Nil(t, err, fmt.Sprintf("the path %v does not exist", path))
+func TestParseGitleaksConfig(t *testing.T) {
+	t.Run("ValidConfig", func(t *testing.T) {
+		cfg, err := ParseGitleaksConfig(mockConfig)
+		assert.NoError(t, err)
+		assert.NotNil(t, cfg)
+		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+	})
+
+	t.Run("InvalidConfig", func(t *testing.T) {
+		rawConfig := `
+invalid_key = "value"
+`
+		_, err := ParseGitleaksConfig(rawConfig)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no rules found in config")
+	})
+
+	t.Run("EmptyConfig", func(t *testing.T) {
+		rawConfig := ""
+		_, err := ParseGitleaksConfig(rawConfig)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no rules found in config")
+	})
 }
 
-func assertPathNotExists(t *testing.T, path string) {
-	_, err := os.Stat(path)
-	assert.NotNil(t, err, fmt.Sprintf("the path %v does exists", path))
-}
+func TestPatternsGitleaks(t *testing.T) {
+	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method)
+		assert.Equal(t, "/patterns/gitleaks/x.y.z", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		_, err := io.WriteString(w, mockConfig)
+		assert.NoError(t, err)
+	}))
 
-func TestGitLeaksPatterns(t *testing.T) {
-	cfg := &config.DefaultConfig().Scanner.Patterns
+	ts.Start()
+	defer ts.Close()
 
-	tmpDir, err := os.MkdirTemp("", "leaktk-test.")
-	assert.Nil(t, err)
-	cfg.Gitleaks.ConfigPath = filepath.Clean(filepath.Join(tmpDir, "gitleaks.toml"))
+	tempDir, err := os.MkdirTemp("", "")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tempDir)
 
-	client := &mockHTTPClient{}
-	patterns := NewPatterns(cfg, client)
+	configFilePath := filepath.Join(tempDir, "gitleaks.toml")
 
-	// Test fetch when autofetch is off
-	assertPathNotExists(t, cfg.Gitleaks.ConfigPath)
-	cfg.Autofetch = false
-	gitleaks, err := patterns.Gitleaks()
-	assert.NotNil(t, err)
+	getGitLeaksConfig := func(autoFetch bool, refreshAfter, expiredAfter, modTime uint32) (*gitleaksconfig.Config, error) {
+		err := os.WriteFile(configFilePath, []byte(mockConfig), 0644)
+		assert.NoError(t, err)
 
-	// Test fetch missing patterns
-	assertPathNotExists(t, cfg.Gitleaks.ConfigPath)
-	cfg.Autofetch = true
-	gitleaks, err = patterns.Gitleaks()
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(gitleaks.Rules))
-	assertPathExists(t, cfg.Gitleaks.ConfigPath)
+		// Set the file's modification time to 15 seconds ago
+		err = os.Chtimes(configFilePath, time.Now().Add(time.Duration(-modTime)*time.Second), time.Now().Add(time.Duration(-modTime)*time.Second))
+		assert.NoError(t, err)
 
-	// TODO:
-	// test loading patterns from the in memory cache before a timeout
-	// test loading patterns from the file system before a timeout
-	// test that patterns are refetched after the timeout
+		cfg := &config.Patterns{
+			Server: config.PatternServer{
+				URL: ts.URL,
+			},
+			Autofetch:    autoFetch,
+			RefreshAfter: refreshAfter,
+			ExpiredAfter: expiredAfter,
+			Gitleaks: config.Gitleaks{
+				ConfigPath: configFilePath,
+				Version:    "x.y.z",
+			},
+		}
 
-	// Clean up the tmpDir
-	assert.Nil(t, os.RemoveAll(tmpDir))
+		return NewPatterns(cfg, &http.Client{}).Gitleaks()
+	}
+
+	t.Run("AutofetchEnabledAndConfigExpired", func(t *testing.T) {
+		cfg, err := getGitLeaksConfig(true, 5, 10, 15)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, cfg)
+		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+
+		// Verify the config file was updated
+		data, err := os.ReadFile(configFilePath)
+		assert.NoError(t, err)
+		assert.Equal(t, mockConfig, string(data))
+	})
+
+	t.Run("AutofetchEnabledAndConfigNotExpired", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		cfg, err := getGitLeaksConfig(true, 5, 15, 10)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, cfg)
+		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+
+		// Verify the config file was updated
+		data, err := os.ReadFile(configFilePath)
+		assert.NoError(t, err)
+		assert.Equal(t, mockConfig, string(data))
+	})
+
+	t.Run("AutofetchDisabledAndConfigExpired", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		_, err = getGitLeaksConfig(false, 5, 10, 15)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "gitleaks config is expired and autofetch is disabled")
+	})
+
+	t.Run("AutofetchDisabledAndConfigNotExpired", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		cfg, err := getGitLeaksConfig(false, 5, 15, 10)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, cfg)
+		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+	})
 }

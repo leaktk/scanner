@@ -64,6 +64,10 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 		return "", err
 	}
 
+	if response.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status code: %d", response.StatusCode)
+	}
+
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
@@ -146,5 +150,10 @@ func ParseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
 	}
 
 	cfg, err := vc.Translate()
+
+	if len(cfg.Rules) == 0 {
+		return nil, fmt.Errorf("no rules found in config")
+	}
+
 	return &cfg, err
 }
