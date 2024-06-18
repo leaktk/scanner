@@ -23,10 +23,7 @@ func TestGitleaksScan(t *testing.T) {
 	err := logger.SetLoggerLevel("CRITICAL")
 	assert.NoError(t, err)
 
-	tempDir, err := os.MkdirTemp("", "")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tempDir)
-
+	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "gitleaks.toml")
 	err = os.WriteFile(configPath, []byte(mockGitleaksTestConfig), 0644)
 	assert.NoError(t, err)

@@ -83,9 +83,7 @@ func (b *mockBackend) Scan(resource resource.Resource) ([]*Result, error) {
 }
 
 func TestScanner(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	tempDir := t.TempDir()
 
 	cfg := &config.Config{
 		Scanner: config.Scanner{

@@ -38,6 +38,15 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		}
 
 		return NewGitRepo(resource, &gitRepoOptions), nil
+
+	case "JSONData":
+		var jsonDataOptions JSONDataOptions
+
+		if err := json.Unmarshal(options, &jsonDataOptions); err != nil {
+			return nil, err
+		}
+
+		return NewJSONData(resource, &jsonDataOptions), nil
 	default:
 		return nil, fmt.Errorf("unsupported kind: kind=%q", kind)
 	}
