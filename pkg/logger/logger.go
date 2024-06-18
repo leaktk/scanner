@@ -5,7 +5,14 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/rs/zerolog"
 )
+
+func init() {
+	// Disable logging for gitleaks
+	zerolog.SetGlobalLevel(zerolog.Disabled)
+}
 
 // LogLevel is used to determine which log severities should actually log
 type LogLevel int

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// mockResource implements a dummy resource
 type mockResource struct {
 	resource.BaseResource
 	cloneErr     error
@@ -57,6 +58,8 @@ func (m *mockResource) Since() string {
 func (m *mockResource) String() string {
 	return ""
 }
+
+// mockBackend implements a dummy scanner backend
 
 type mockBackend struct {
 }

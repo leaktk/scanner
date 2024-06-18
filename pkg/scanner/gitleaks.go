@@ -83,7 +83,18 @@ func (g *Gitleaks) shallowCommits(scanResource resource.Resource) []string {
 		data, err := os.ReadFile(filepath.Clean(shallowFilePath))
 
 		if err == nil {
-			return strings.Split(string(data), "\n")
+			var shallowCommits []string
+
+			for _, shallowCommit := range strings.Split(string(data), "\n") {
+				// Skip empty lines
+				if len(shallowCommit) == 0 {
+					continue
+				}
+
+				shallowCommits = append(shallowCommits, shallowCommit)
+			}
+
+			return shallowCommits
 		}
 	}
 
