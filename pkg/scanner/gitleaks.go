@@ -2,17 +2,19 @@ package scanner
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/zricethezav/gitleaks/v8/detect"
+	"github.com/zricethezav/gitleaks/v8/report"
 	"github.com/zricethezav/gitleaks/v8/sources"
 
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
 )
+
+const bufSize = 256 * 1024
 
 // Gitleaks wraps gitleaks as a scanner backend
 type Gitleaks struct {
@@ -77,66 +79,86 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	return detector, nil
 }
 
-func (g *Gitleaks) shallowCommits(scanResource resource.Resource) []string {
-	if gitRepo, ok := scanResource.(*resource.GitRepo); ok {
-		shallowFilePath := filepath.Join(gitRepo.GitDirPath(), "shallow")
-		data, err := os.ReadFile(filepath.Clean(shallowFilePath))
-
-		if err == nil {
-			var shallowCommits []string
-
-			for _, shallowCommit := range strings.Split(string(data), "\n") {
-				// Skip empty lines
-				if len(shallowCommit) == 0 {
-					continue
-				}
-
-				shallowCommits = append(shallowCommits, shallowCommit)
-			}
-
-			return shallowCommits
-		}
-	}
-
-	return []string{}
-}
-
-// Scan does the gitleaks scan on the resource
-func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
+// gitScan handles when the resource is a gitRepo type
+func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo) ([]report.Finding, error) {
 	gitLogOpts := []string{"--full-history", "--all"}
 
-	if len(scanResource.Since()) > 0 {
+	if len(gitRepo.Since()) > 0 {
 		gitLogOpts = append(gitLogOpts, "--since")
-		gitLogOpts = append(gitLogOpts, scanResource.Since())
+		gitLogOpts = append(gitLogOpts, gitRepo.Since())
 	}
 
 	// Should be the last set of args
-	if shallowCommits := g.shallowCommits(scanResource); len(shallowCommits) > 0 {
+	if shallowCommits := gitRepo.ShallowCommits(); len(shallowCommits) > 0 {
 		gitLogOpts = append(gitLogOpts, "--not")
 		gitLogOpts = append(gitLogOpts, shallowCommits...)
 	}
 
-	gitCmd, err := sources.NewGitLogCmd(scanResource.ClonePath(), strings.Join(gitLogOpts, " "))
+	gitCmd, err := sources.NewGitLogCmd(gitRepo.ClonePath(), strings.Join(gitLogOpts, " "))
 
 	if err != nil {
 		return nil, err
 	}
+
+	return detector.DetectGit(gitCmd)
+}
+
+// walkScan is the default way to scan most resources
+func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Resource) ([]report.Finding, error) {
+	var findings []report.Finding
+
+	err := scanResource.Walk(func(path string, data []byte) error {
+		newFindings := detector.Detect(detect.Fragment{
+			FilePath: path,
+			Raw:      string(data),
+		})
+
+		findings = append(findings, newFindings...)
+		return nil
+	})
+
+	return findings, err
+}
+
+// Scan does the gitleaks scan on the resource
+func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
+	var findings []report.Finding
+	var err error
+	var resultKind string
 
 	detector, err := g.newDetector(scanResource)
 	if err != nil {
 		return nil, err
 	}
 
-	findings, err := detector.DetectGit(gitCmd)
+	switch scanResource := scanResource.(type) {
+	case *resource.GitRepo:
+		findings, err = g.gitScan(detector, scanResource)
+		resultKind = GitCommitResultKind
+	case *resource.JSONData:
+		findings, err = g.walkScan(detector, scanResource)
+		resultKind = JSONDataResultKind
+	default:
+		findings, err = g.walkScan(detector, scanResource)
+		resultKind = GeneralResultKind
+	}
+
+	if err != nil {
+		logger.Error("gitleaks error: error=%q", err)
+	}
+
 	results := make([]*Result, len(findings))
 
+	// TODO: Make finding mapping more generic
+	// - How the ID is calculated
+	// - The Kind
 	for i, finding := range findings {
 		results[i] = &Result{
 			// Be careful changing how this is generated, this could result in
 			// duplicate alerts
 			ID: ResultID(
 				// What: Uniquely identify the kind of thing that's being scanned
-				GitCommitResultKind,
+				resultKind,
 				scanResource.String(),
 
 				// Where: Uniquely identify where in that resource it was being scanned
@@ -150,7 +172,7 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 				// How: Uniquely identify what was used to find it
 				finding.RuleID,
 			),
-			Kind:    GitCommitResultKind,
+			Kind:    resultKind,
 			Secret:  finding.Secret,
 			Match:   finding.Match,
 			Entropy: finding.Entropy,

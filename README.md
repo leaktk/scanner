@@ -214,7 +214,6 @@ Error (if "error" is present, the scan failed)
 
 ## TODO
 
-1. Add JSON scan kind
 1. Finish and test steps to make it usable inside PwnedAlert
 1. Make sure features in the internal scanner are upstreamed here
 1. Delete exsting rust projets from crates.io

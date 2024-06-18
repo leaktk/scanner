@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/leaktk/scanner/pkg/logger"
@@ -162,4 +163,54 @@ func (r *GitRepo) ReadFile(path string) ([]byte, error) {
 func (r *GitRepo) GitDirPath() string {
 	// Since --mirror implies --bare, the GitDirPath is the ClonePath
 	return r.ClonePath()
+}
+
+// ShallowCommits returns a list of shallow commits in a git repo
+func (r *GitRepo) ShallowCommits() []string {
+	shallowFilePath := filepath.Join(r.GitDirPath(), "shallow")
+	data, err := os.ReadFile(filepath.Clean(shallowFilePath))
+
+	var shallowCommits []string
+
+	if err == nil {
+		for _, shallowCommit := range strings.Split(string(data), "\n") {
+			// Skip empty lines
+			if len(shallowCommit) == 0 {
+				continue
+			}
+
+			shallowCommits = append(shallowCommits, shallowCommit)
+		}
+
+		return shallowCommits
+	}
+
+	return shallowCommits
+}
+
+// Walk the files in HEAD
+func (r *GitRepo) Walk(fn WalkFunc) error {
+	cmd := exec.Command("git", "-C", r.ClonePath(), "ls-tree", "-r", "--name-only", "--full-tree", "HEAD") // #nosec G204
+	output, err := cmd.Output()
+
+	if err != nil {
+		return fmt.Errorf("could not list files: %q", err)
+	}
+
+	for _, path := range strings.Split(string(output), "\n") {
+		if len(path) == 0 {
+			continue
+		}
+
+		data, err := r.ReadFile(path)
+		if err == nil {
+			return err
+		}
+
+		if err := fn(path, data); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -25,6 +25,14 @@ type JSONDataOptions struct {
 	// Currently none needed but here for future cases
 }
 
+// NewJSONData returns a configured git repo resource for the scanner to scan
+func NewJSONData(raw string, options *JSONDataOptions) *JSONData {
+	return &JSONData{
+		raw:     raw,
+		options: options,
+	}
+}
+
 // Kind of resource (always returns JSONData here)
 func (r *JSONData) Kind() string {
 	return "JSONData"
@@ -143,10 +151,33 @@ func (r *JSONData) ReadFile(path string) ([]byte, error) {
 	}
 }
 
-// NewJSONData returns a configured git repo resource for the scanner to scan
-func NewJSONData(raw string, options *JSONDataOptions) *JSONData {
-	return &JSONData{
-		raw:     raw,
-		options: options,
+func (r *JSONData) walkRecusrive(path string, current any, fn WalkFunc) error {
+	switch obj := current.(type) {
+	case map[string]any:
+		for key, value := range obj {
+			subPath := filepath.Join(path, key)
+
+			if err := r.walkRecusrive(subPath, value, fn); err != nil {
+				return err
+			}
+		}
+		return nil
+	case []any:
+		for i, value := range obj {
+			subPath := filepath.Join(path, strconv.Itoa(i))
+
+			if err := r.walkRecusrive(subPath, value, fn); err != nil {
+				return err
+			}
+		}
+		return nil
+	case nil: // Handle nil
+		return fn(path, []byte{})
+	default: // Handle bool, float64, and string
+		return fn(path, []byte(fmt.Sprintf("%v", obj)))
 	}
+}
+
+func (r *JSONData) Walk(fn WalkFunc) error {
+	return r.walkRecusrive("/", r.data, fn)
 }

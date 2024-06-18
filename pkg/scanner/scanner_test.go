@@ -59,6 +59,10 @@ func (m *mockResource) String() string {
 	return ""
 }
 
+func (m *mockResource) Walk(fn resource.WalkFunc) error {
+	return fn("/", []byte{})
+}
+
 // mockBackend implements a dummy scanner backend
 
 type mockBackend struct {

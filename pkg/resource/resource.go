@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
+type WalkFunc func(path string, data []byte) error
+
 // Resource provides a standard interface for acting with resources in the
 // scanner
 type Resource interface {
@@ -21,6 +23,8 @@ type Resource interface {
 	SetDepth(depth uint16)
 	Since() string
 	String() string
+	// Walk is the main way to pick through resource data (except for GitRepo)
+	Walk(WalkFunc) error
 }
 
 // NewResource handles building out the resource from kind, the resource string

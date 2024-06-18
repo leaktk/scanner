@@ -13,6 +13,8 @@ import (
 // GithubPullRequest, etc
 const (
 	GitCommitResultKind = "GitCommit"
+	JSONDataResultKind  = "JSONData"
+	GeneralResultKind   = "General"
 )
 
 type (
