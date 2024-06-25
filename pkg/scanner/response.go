@@ -1,10 +1,7 @@
 package scanner
 
 import (
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
-	"strings"
 
 	"github.com/leaktk/scanner/pkg/logger"
 )
@@ -86,10 +83,4 @@ func (r *Response) String() string {
 	}
 
 	return string(out)
-}
-
-// ResultID takes components and joins them together for making a unique
-// result ID
-func ResultID(parts ...string) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(parts, "|"))))
 }

@@ -6,10 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/fs"
+	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
 )
@@ -146,7 +145,7 @@ func (s *Scanner) listenForScanRequests() {
 		}
 
 		s.responses <- &Response{
-			ID:      uuid.New().String(),
+			ID:      id.ID(),
 			Results: results,
 			Request: RequestDetails{
 				ID:       request.ID,

@@ -9,9 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/uuid"
-
 	"github.com/leaktk/scanner/pkg/config"
+	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/scanner"
 )
@@ -180,7 +179,7 @@ func scanCommand() *cobra.Command {
 	}
 
 	flags := scanCommand.Flags()
-	flags.StringP("id", "", uuid.New().String(), "an ID for tying responses to requests")
+	flags.StringP("id", "", id.ID(), "an ID for tying responses to requests")
 	flags.StringP("kind", "k", "GitRepo", scanKindDescription)
 	flags.StringP("resource", "r", "", "what will be scanned (what goes here depends on kind)")
 	flags.StringP("options", "o", "{}", scanOptionsDescription)

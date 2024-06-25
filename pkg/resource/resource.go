@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/leaktk/scanner/pkg/id"
 )
 
 // WalkFunc is the func signature for functions passed into the various
@@ -66,7 +66,7 @@ type BaseResource struct {
 // ID returns a path-safe, unique id for this resource
 func (r *BaseResource) ID() string {
 	if len(r.id) == 0 {
-		r.id = uuid.New().String()
+		r.id = id.ID()
 	}
 
 	return r.id

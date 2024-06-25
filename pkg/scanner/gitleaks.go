@@ -10,6 +10,7 @@ import (
 	"github.com/zricethezav/gitleaks/v8/sources"
 
 	"github.com/leaktk/scanner/pkg/fs"
+	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
 )
@@ -149,14 +150,11 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 
 	results := make([]*Result, len(findings))
 
-	// TODO: Make finding mapping more generic
-	// - How the ID is calculated
-	// - The Kind
 	for i, finding := range findings {
 		results[i] = &Result{
 			// Be careful changing how this is generated, this could result in
 			// duplicate alerts
-			ID: ResultID(
+			ID: id.ID(
 				// What: Uniquely identify the kind of thing that's being scanned
 				resultKind,
 				scanResource.String(),
