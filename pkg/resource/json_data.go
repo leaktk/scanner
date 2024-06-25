@@ -178,6 +178,7 @@ func (r *JSONData) walkRecusrive(path string, current any, fn WalkFunc) error {
 	}
 }
 
+// Walk traverses the JSON data structure like it's a directory tree
 func (r *JSONData) Walk(fn WalkFunc) error {
-	return r.walkRecusrive("/", r.data, fn)
+	return r.walkRecusrive("", r.data, fn)
 }

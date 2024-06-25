@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// WalkFunc is the func signature for functions passed into the various
+// resource Walk methods.
 type WalkFunc func(path string, data []byte) error
 
 // Resource provides a standard interface for acting with resources in the

@@ -188,7 +188,9 @@ func (r *GitRepo) ShallowCommits() []string {
 	return shallowCommits
 }
 
-// Walk the files in HEAD
+// Walk traverses the HEAD of a git repo like it's a directory tree. This
+// exists this way so even a bare repo can be crawled if needed. To crawl
+// different branches, change HEAD.
 func (r *GitRepo) Walk(fn WalkFunc) error {
 	cmd := exec.Command("git", "-C", r.ClonePath(), "ls-tree", "-r", "--name-only", "--full-tree", "HEAD") // #nosec G204
 	output, err := cmd.Output()
