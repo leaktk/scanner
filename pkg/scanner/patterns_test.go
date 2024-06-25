@@ -36,16 +36,12 @@ func TestPatternsFetchGitleaksConfig(t *testing.T) {
 		ts.Start()
 		defer ts.Close()
 
-		cfg := &config.Patterns{
-			Server: config.PatternServer{
-				URL: ts.URL,
-			},
-			Gitleaks: config.Gitleaks{
-				Version: "x.y.z",
-			},
-		}
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Server.URL = ts.URL
+		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
+
 		client := &http.Client{}
-		p := NewPatterns(cfg, client)
+		p := NewPatterns(&cfg.Scanner.Patterns, client)
 
 		rawConfig, err := p.fetchGitleaksConfig()
 		assert.NoError(t, err)
@@ -53,16 +49,12 @@ func TestPatternsFetchGitleaksConfig(t *testing.T) {
 	})
 
 	t.Run("InvalidURL", func(t *testing.T) {
-		cfg := &config.Patterns{
-			Server: config.PatternServer{
-				URL: "invalid-url",
-			},
-			Gitleaks: config.Gitleaks{
-				Version: "x.y.z",
-			},
-		}
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Server.URL = "invalid-url"
+		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
+
 		client := &http.Client{}
-		p := NewPatterns(cfg, client)
+		p := NewPatterns(&cfg.Scanner.Patterns, client)
 
 		_, err := p.fetchGitleaksConfig()
 		assert.Error(t, err)
@@ -75,16 +67,12 @@ func TestPatternsFetchGitleaksConfig(t *testing.T) {
 		ts.Start()
 		defer ts.Close()
 
-		cfg := &config.Patterns{
-			Server: config.PatternServer{
-				URL: ts.URL,
-			},
-			Gitleaks: config.Gitleaks{
-				Version: "x.y.z",
-			},
-		}
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Server.URL = ts.URL
+		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
+
 		client := &http.Client{}
-		p := NewPatterns(cfg, client)
+		p := NewPatterns(&cfg.Scanner.Patterns, client)
 
 		_, err := p.fetchGitleaksConfig()
 		assert.Error(t, err)
@@ -102,17 +90,13 @@ func TestPatternsFetchGitleaksConfig(t *testing.T) {
 		ts.Start()
 		defer ts.Close()
 
-		cfg := &config.Patterns{
-			Server: config.PatternServer{
-				URL:       ts.URL,
-				AuthToken: "test-token",
-			},
-			Gitleaks: config.Gitleaks{
-				Version: "x.y.z",
-			},
-		}
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Server.URL = ts.URL
+		cfg.Scanner.Patterns.Server.AuthToken = "test-token"
+		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
+
 		client := &http.Client{}
-		p := NewPatterns(cfg, client)
+		p := NewPatterns(&cfg.Scanner.Patterns, client)
 
 		rawConfig, err := p.fetchGitleaksConfig()
 		assert.NoError(t, err)
@@ -133,12 +117,11 @@ func TestGitleaksConfigModTimeExceeds(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Create a Patterns instance with the temporary file path
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = tempFilePath
+
 		patterns := &Patterns{
-			config: &config.Patterns{
-				Gitleaks: config.Gitleaks{
-					ConfigPath: tempFilePath,
-				},
-			},
+			config: &cfg.Scanner.Patterns,
 		}
 
 		// Test with a modTimeLimit of 5 seconds
@@ -149,13 +132,12 @@ func TestGitleaksConfigModTimeExceeds(t *testing.T) {
 	})
 
 	t.Run("FileDoesNotExist", func(t *testing.T) {
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = "/path/to/nonexistent/file.toml"
+
 		// Create a Patterns instance with a non-existent file path
 		patterns := &Patterns{
-			config: &config.Patterns{
-				Gitleaks: config.Gitleaks{
-					ConfigPath: "/path/to/nonexistent/file.toml",
-				},
-			},
+			config: &cfg.Scanner.Patterns,
 		}
 
 		// Test with any modTimeLimit
@@ -165,12 +147,11 @@ func TestGitleaksConfigModTimeExceeds(t *testing.T) {
 
 	t.Run("FileExistsButErrorOnStat", func(t *testing.T) {
 		// Create a Patterns instance with a file path that causes an error on Stat
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = "/dev/null"
+
 		patterns := &Patterns{
-			config: &config.Patterns{
-				Gitleaks: config.Gitleaks{
-					ConfigPath: "/dev/null",
-				},
-			},
+			config: &cfg.Scanner.Patterns,
 		}
 
 		// Test with any modTimeLimit
@@ -219,7 +200,7 @@ func TestPatternsGitleaks(t *testing.T) {
 	tempDir := t.TempDir()
 	configFilePath := filepath.Join(tempDir, "gitleaks.toml")
 
-	getGitLeaksConfig := func(autoFetch bool, refreshAfter, expiredAfter, modTime uint32) (*gitleaksconfig.Config, error) {
+	getGitLeaksConfig := func(autofetch bool, refreshAfter, expiredAfter, modTime uint32) (*gitleaksconfig.Config, error) {
 		err := os.WriteFile(configFilePath, []byte(mockConfig), 0644)
 		assert.NoError(t, err)
 
@@ -227,20 +208,15 @@ func TestPatternsGitleaks(t *testing.T) {
 		err = os.Chtimes(configFilePath, time.Now().Add(time.Duration(-modTime)*time.Second), time.Now().Add(time.Duration(-modTime)*time.Second))
 		assert.NoError(t, err)
 
-		cfg := &config.Patterns{
-			Server: config.PatternServer{
-				URL: ts.URL,
-			},
-			Autofetch:    autoFetch,
-			RefreshAfter: refreshAfter,
-			ExpiredAfter: expiredAfter,
-			Gitleaks: config.Gitleaks{
-				ConfigPath: configFilePath,
-				Version:    "x.y.z",
-			},
-		}
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Server.URL = ts.URL
+		cfg.Scanner.Patterns.Autofetch = autofetch
+		cfg.Scanner.Patterns.RefreshAfter = refreshAfter
+		cfg.Scanner.Patterns.ExpiredAfter = expiredAfter
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = configFilePath
+		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
 
-		return NewPatterns(cfg, &http.Client{}).Gitleaks()
+		return NewPatterns(&cfg.Scanner.Patterns, &http.Client{}).Gitleaks()
 	}
 
 	t.Run("AutofetchEnabledAndConfigExpired", func(t *testing.T) {

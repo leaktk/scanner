@@ -88,18 +88,14 @@ func (b *mockBackend) Scan(resource resource.Resource) ([]*Result, error) {
 
 func TestScanner(t *testing.T) {
 	tempDir := t.TempDir()
-
-	cfg := &config.Config{
-		Scanner: config.Scanner{
-			MaxCloneQueueSize: 10,
-			CloneWorkers:      2,
-			MaxScanQueueSize:  10,
-			ScanWorkers:       2,
-			CloneTimeout:      10,
-			MaxScanDepth:      5,
-			Workdir:           tempDir,
-		},
-	}
+	cfg := config.DefaultConfig()
+	cfg.Scanner.CloneTimeout = 10
+	cfg.Scanner.CloneWorkers = 2
+	cfg.Scanner.MaxCloneQueueSize = 10
+	cfg.Scanner.MaxScanDepth = 5
+	cfg.Scanner.MaxScanQueueSize = 10
+	cfg.Scanner.ScanWorkers = 2
+	cfg.Scanner.Workdir = tempDir
 
 	scanner := NewScanner(cfg)
 	defer scanner.Close()

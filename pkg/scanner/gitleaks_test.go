@@ -27,14 +27,12 @@ func TestGitleaksScan(t *testing.T) {
 	configPath := filepath.Join(tempDir, "gitleaks.toml")
 	err = os.WriteFile(configPath, []byte(mockGitleaksTestConfig), 0644)
 	assert.NoError(t, err)
+	cfg := config.DefaultConfig()
+	cfg.Scanner.Patterns.Gitleaks.ConfigPath = configPath
 
 	// Configured patterns
 	patterns := NewPatterns(
-		&config.Patterns{
-			Gitleaks: config.Gitleaks{
-				ConfigPath: configPath,
-			},
-		},
+		&cfg.Scanner.Patterns,
 		// There shouldn't be a need for a HTTP client since the patterns are fresh
 		nil,
 	)
