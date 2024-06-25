@@ -142,12 +142,12 @@ func loadPatternServerAuthToken() string {
 	}
 
 	path := localPatternServerAuthTokenPath()
-	if _, err := os.Stat(path); err == nil {
+	if fs.FileExists(path) {
 		return loadPatternServerAuthTokenFromFile(path)
 	}
 
 	path = filepath.Join(nixGlobalConfigDir, "pattern-server-auth-token")
-	if _, err := os.Stat(path); err == nil {
+	if fs.FileExists(path) {
 		return loadPatternServerAuthTokenFromFile(path)
 	}
 
@@ -229,12 +229,12 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 	}
 
 	path = filepath.Join(leaktkConfigDir(), "config.toml")
-	if _, err := os.Stat(path); err == nil {
+	if fs.FileExists(path) {
 		return LoadConfigFromFile(path)
 	}
 
 	path = filepath.Join(nixGlobalConfigDir, "config.toml")
-	if _, err := os.Stat(path); err == nil {
+	if fs.FileExists(path) {
 		return LoadConfigFromFile(path)
 	}
 

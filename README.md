@@ -7,8 +7,8 @@ The scanner can run in listening mode to handle a stream of requests or it can
 run single scans.
 
 The scanner leverages
-[gitleaks](https://github.com/gitleaks/gitleaks)
-internally because gitleaks is an awesome tool, and we already have quite a few
+[Gitleaks](https://github.com/gitleaks/gitleaks)
+internally because Gitleaks is an awesome tool, and we already have quite a few
 [patterns built up](https://github.com/leaktk/patterns)
 for it.
 
@@ -38,199 +38,155 @@ format for requests and responses.
 
 ## Config File Format
 
-The [example config](./examples/config.toml) has the default values set and
-comments explaining what each option does.
+The [config.go](./pkg/config/config.go) contains an example of the default
+config values and [examples/config.toml](./examples/config.toml) contains
+a commented version of the config file explaining what the settings mean.
 
 The order of precedence for config paths:
 
+1. The `LEAKTK_CONFIG_PATH` env var
 1. `--config <some path>`
 1. `${XDG_CONFIG_HOME}/leatktk/config.toml` if it exists
 1. `/etc/leaktk/config.toml` if it exists
 1. default config
 
+There are also several env vars that take precedence over the other config
+settings if they're set:
+
+- `LEAKTK_LOGGER_LEVEL` - set the level of the logger
+- `LEAKTK_PATTERN_SERVER_AUTH_TOKEN` - the pattern server token
+- `LEAKTK_PATTERN_SERVER_URL` - the pattern server URL
+- `LEAKTK_SCANNER_AUTOFETCH` - whether the scanner can auto fetch patterns or
+  any other items it may need to do the scan (except for the resource being
+  scanned)
+
 ## Scan Request Format
 
 Notes about the formats below:
 
-* Scan requests should be sent as JSON Lines.
+* Scan requests should be sent as [JSON lines](https://jsonlines.org/).
 * The requests below are pretty printed to make them easier to read.
 * Only the values in the `"options"` sections are optional.
 
-**WARNING**: Sanitize the input before passing it to the scanner. Work will
-be done to harden it a bit more, but don't run this as something taking user
-input on a host running this as a service.
-
-### Git
-
-Scan git repos
+### GitRepo
 
 ```json
 {
-  "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c",
-  "kind": "git",
-  "target": "https://github.com/leaktk/fake-leaks.git",
+  "id": "db0c21127a6a849fdf8eeae65d753275f3a26a33649171fa34af458030744999",
+  "kind": "GitRepo",
+  "resource": "https://github.com/leaktk/fake-leaks.git",
   "options": {
-      "branch": "main",
-      "config": ["http.sslVerify=true"],
-      "depth": 5,
-      "since": "2020-01-01",
-      "single_branch": true
+    "branch": "main",
+    "depth": 1,
+    "proxy": "http://squid.example.com:3128",
+    "since": "2020-01-01",
   }
 }
 ```
+
+The `options` above are not required and some combined (e.g. `depth` and `since`)
+may cause issues. Refer to the details below to better understand the options
+and [git's docs](https://git-scm.com/) for knowing what can be combined.
 
 #### Options
 
 **branch**
 
-Sets `--branch` during git clone. If you wish to only scan this branch in a
-local scan, set `single_branch` to true as well.
+Sets `--branch` and `--single-branch` during git clone.
 
-* Type: `String`
-* Default: Excluded
-* Supported by local scan: yes
-* Supported by remote scan: yes
-
-**config**
-
-Is a list of key=value strings that get passed to git using the `--config`
-flag.
-
-* Type: `Vec<String>`
-* Default: Excluded
-* Supported by local scan: no
-* Supported by remote scan: yes
+* Type: `string`
+* Default: excluded
 
 **depth**
 
 Sets `--depth` during a git clone and can limit the commits during a local
 scan if `single_branch` is set to true.
 
-* Type: `u32`
-* Default: Excluded
-* Supported by local scan: partial
-* Supported by remote scan: yes
-
-**local**
-
-Skips the clone and `target` is treated as a path.
-
-* Type: `bool`
-* Default: `false`
-* Defines if it is a local or remote scan
+* Type: `uint16`
+* Default: excluded
 
 **since**
 
-Is a date formatted `yyyy-mm-dd` used for filtering commits.
+Is a date formatted `yyyy-mm-dd` used for filtering commits. Sets
+`--shallow-since` during a clone.
 
-* Type: `String`
-* Default: Excluded
-* Supported by local scan: yes
-* Supported by remote scan: yes
+* Type: `string`
+* Default: excluded
 
-**single_branch**
+**proxy**
 
-Sets the branch to clone and the scope of the gitleaks scan.
+A URL for a http proxy. Sets `--config http-proxy=<proxy-url>` during the
+clone.
 
-* Type: `bool`
-* Default: `false`
-* Supported by local scan: yes
-* Supported by remote scan: yes
-
-**staged**
-
-Scan staged changes (implies `uncommitted` and is useful for pre-commit hooks).
-
-* Type: `bool`
-* Default: `false`
-* Supported by local scan: yes
-* Supported by remote scan: no
-
-**uncommitted**
-
-Scan uncommitted changes (implied by `staged`)
-
-* Type: `bool`
-* Default: `false`
-* Supported by local scan: yes
-* Supported by remote scan: no
+* Type: `string`
+* Default: excluded
 
 ## Scan Results Format
 
 The scan result format is in jsonl here are formatted examples of a single
 line by kind.
 
-### Git
+### GitRepo
 
 Success
 
 ```json
 {
-  "id": "dd4f7ac3-134f-489a-b0a9-0830ab98e271",
+  "id": "8343516f29a9c80cc7862e01799f446d5fb93088d1681f8c5181b211488a94db",
   "request": {
-    "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c"
+    "id": "6d56db314f87371d0c2da1b1bcf90c9594e0bf793280e6ddd896d69881e6099b",
+    "kind": "GitRepo",
+    "resource": "http://github.com/leaktk/fake-leaks.git"
   },
   "results": [
     {
-      "context": "<the match>",
-      "target": "<the part of the match the rule was trying to find>",
-      "entropy": 3.2002888,
+      "id": "c80efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7",
+      "kind": "GitCommit",
+      "secret": "-----BEGIN EC PRIVATE KEY-----\n...snip...\n-----END EC PRIVATE KEY-----",
+      "match": "-----BEGIN EC PRIVATE KEY-----\n...snip...\n-----END EC PRIVATE KEY-----",
+      "entropy": 5.763853,
+      "date": "2023-08-04T12:21:12Z",
       "rule": {
-        "id": "some-rule-id",
-        "description": "A human readable description of the rule",
+        "id": "private-key",
+        "description": "Private Key",
         "tags": [
+          "group:leaktk-testing",
           "alert:repo-owner",
-          "type:secret",
+          "type:secret"
         ]
       },
-      "source": {
-        "kind": "git",
-        "target": "https://github.com/leaktk/fake-leaks.git",
-        "path": "relative/path/to/the/file",
-        "lines": {
-          "start": 1,
-          "end": 1
+      "contact": {
+        "name": "The Committer",
+        "email": "user@example.com"
+      },
+      "location": {
+        "version": "d5bcb89de5311aaa688cb23d8d2d78cf7cd74f1f",
+        "path": "keys/tls/another-key.key",
+        "start": {
+          "line": 1,
+          "column": 1
         },
-        "commit": {
-          "id": "<commit-sha>",
-          "author": {
-            "name": "John Smith",
-            "email": "jsmith@example.com"
-          },
-          "date": "2022-08-29T15:32:48Z",
-          "message": "<commit message>"
+        "end": {
+          "line": 6,
+          "column": 29
         }
+      },
+      "notes": {
+        "message": "Add another key"
       }
     }
   ]
 }
 ```
 
-Error (if "error" is present, the scan failed)
-
-```json
-{
-  "id": "57920e78-b89d-4dbd-ac59-8d9750eb0515",
-  "request": {
-    "id": "1bc1dc91-3699-41cf-9486-b74f0897ae4c"
-  },
-  "error": "<some error message>",
-  "results": []
-}
-```
-
 ## TODO
 
-1. Finish and test steps to make it usable inside PwnedAlert
+1. Finish and test steps to make it usable inside `leaktk-monitor` (aka PwnedAlert)
 1. Make sure features in the internal scanner are upstreamed here
-1. Delete exsting rust projets from crates.io
-1. Identify non-recoverable errors and have them log and exit
+1. Support local scans
+1. Delete existing rust projects from crates.io
 1. Make sure it fully supports Linux and Mac
-1. Unittest and refactor what's currently here
-1. Proper error handling in the code to keep things clean, consistent and scalable
-1. Group gitleaks code into a single object as the source of truth
-1. Figure out what to do with shallow commits on shallow-since scans
-1. Figure out a fast way for depth limiting when single\_branch is set to false where it gives n commits from each branch
+1. Start integrating this into a pre-commit hooks project
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
 1. Explore base64 support (i.e. decoding it when spotted and scanning the contents)
