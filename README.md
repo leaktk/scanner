@@ -240,9 +240,7 @@ scan.
           "column": 116
         }
       },
-      "notes": {
-        "message": ""
-      }
+      "notes": {}
     }
   ]
 }

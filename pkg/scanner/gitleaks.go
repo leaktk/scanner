@@ -151,6 +151,13 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 	results := make([]*Result, len(findings))
 
 	for i, finding := range findings {
+		notes := map[string]string{}
+
+		switch scanResource.(type) {
+		case *resource.GitRepo:
+			notes["message"] = finding.Message
+		}
+
 		results[i] = &Result{
 			// Be careful changing how this is generated, this could result in
 			// duplicate alerts
@@ -175,9 +182,7 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 			Match:   finding.Match,
 			Entropy: finding.Entropy,
 			Date:    finding.Date,
-			Notes: map[string]string{
-				"message": finding.Message,
-			},
+			Notes:   notes,
 			Contact: Contact{
 				Name:  finding.Author,
 				Email: finding.Email,
