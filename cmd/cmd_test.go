@@ -25,6 +25,5 @@ func TestScanCommandToRequest(t *testing.T) {
 	assert.Equal(t, 64, len(request.ID))
 	// Kind should default to GitRepo
 	assert.Equal(t, request.Resource.Kind(), "GitRepo")
-
-	// TODO: test options
+	assert.Equal(t, request.Resource.String(), "https://github.com/leaktk/fake-leaks.git")
 }
