@@ -3,7 +3,9 @@ package scanner
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
+	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
 )
 
@@ -28,7 +30,8 @@ func (r *Request) UnmarshalJSON(data []byte) error {
 	}
 
 	if err := json.Unmarshal(data, &temp); err != nil {
-		return err
+		logger.Debug("Request:\n%v", data)
+		return fmt.Errorf("could not unmarshal Request: error=%q", err)
 	}
 
 	requestResource, err := resource.NewResource(temp.Kind, temp.Resource, temp.Options)

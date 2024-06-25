@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/leaktk/scanner/pkg/logger"
 )
 
 // JSONData provides a way to interact with a json data as a resource
@@ -52,7 +54,8 @@ func (r *JSONData) Clone(path string) error {
 
 	// Load the raw json into the data variable
 	if err := json.Unmarshal([]byte(r.raw), &r.data); err != nil {
-		return err
+		logger.Debug("JSONData:\n%v", r.raw)
+		return fmt.Errorf("could not unmarshal JSONData: error=%q", err)
 	}
 
 	// Support droping specific files in the "repo" to configure scanner backends

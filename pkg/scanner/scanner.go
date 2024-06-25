@@ -81,6 +81,8 @@ func (s *Scanner) start() {
 
 // Watch the clone queue for requests
 func (s *Scanner) listenForCloneRequests() {
+	// This should always send things to the scan queue, even if the clone fails.
+	// This ensures that things waiting on respones can mark them as done
 	for request := range s.cloneQueue {
 		reqResource := request.Resource
 

@@ -1,4 +1,5 @@
-{"id":"1ca55c27-a0e1-42b6-91b4-1911017dd2a8","kind":"GitRepo","resource":"https://github.com/leaktk/fake-leaks.git"}
-{"id":"200b2352-f924-4953-a5ae-aebfc512979a","kind":"GitRepo","resource":"https://github.com/leaktk/fake-leaks.git","options":{"depth":5}}
-{"id":"300b2352-f924-4953-a5ae-aebfc512979a","kind":"GitRepo","resource":"https://github.com/leaktk/fake-leaks.git","options":{"since":"2020-01-01","branch":"main"}}
-{"id":"4ca55c27-a0e1-42b6-91b4-1911017dd2a8","kind":"GitRepo","resource":"https://github.com/leaktk/not-a-real-repo.git"}
+{"id":"180efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"GitRepo",  "resource":"https://github.com/leaktk/fake-leaks.git"}
+{"id":"280efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"GitRepo",  "resource":"https://github.com/leaktk/fake-leaks.git","options":{"depth":5}}
+{"id":"380efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"GitRepo",  "resource":"https://github.com/leaktk/fake-leaks.git","options":{"since":"2020-01-01","branch":"main"}}
+{"id":"480efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"GitRepo",  "resource":"https://github.com/leaktk/not-a-real-repo.git"}
+{"id":"580efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"JSONData", "resource":"{\"some\":{\"key\": \"-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----\"}}"}

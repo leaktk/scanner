@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/id"
@@ -188,6 +189,8 @@ func scanCommand() *cobra.Command {
 }
 
 func runListen(cmd *cobra.Command, args []string) {
+	var wg sync.WaitGroup
+
 	stdinScanner := bufio.NewScanner(os.Stdin)
 	stdinScanner.Buffer(make([]byte, maxRequestSize), maxRequestSize)
 	leakScanner := scanner.NewScanner(cfg)
@@ -197,6 +200,7 @@ func runListen(cmd *cobra.Command, args []string) {
 	go func() {
 		for response := range leakScanner.Responses() {
 			fmt.Println(response)
+			wg.Done()
 		}
 	}()
 
@@ -215,12 +219,15 @@ func runListen(cmd *cobra.Command, args []string) {
 			continue
 		}
 
+		wg.Add(1)
 		leakScanner.Send(&request)
 	}
 
 	if err := stdinScanner.Err(); err != nil {
 		logger.Error("%v", err)
 	}
+
+	wg.Wait()
 }
 
 func listenCommand() *cobra.Command {

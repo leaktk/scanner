@@ -24,6 +24,7 @@ leaktk-scanner listen < ./examples/requests.jsonl
 
 # Run a single scan
 leaktk-scanner scan --resource 'https://github.com/leaktk/fake-leaks.git'
+leaktk-scanner scan --kind JSONData --resource '{"key": "-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----"}'
 
 # See more options
 leaktk-scanner help
@@ -38,9 +39,9 @@ format for requests and responses.
 
 ## Config File Format
 
-The [config.go](./pkg/config/config.go) contains an example of the default
-config values and [examples/config.toml](./examples/config.toml) contains
-a commented version of the config file explaining what the settings mean.
+The [config.go](./pkg/config/config.go) file sets the default config values and
+[examples/config.toml](./examples/config.toml) contains a commented version of
+the config file explaining what the settings mean.
 
 The order of precedence for config paths:
 
@@ -60,7 +61,7 @@ settings if they're set:
   any other items it may need to do the scan (except for the resource being
   scanned)
 
-## Scan Request Format
+## Request/Response formats
 
 Notes about the formats below:
 
@@ -69,6 +70,8 @@ Notes about the formats below:
 * Only the values in the `"options"` sections are optional.
 
 ### GitRepo
+
+#### Request
 
 ```json
 {
@@ -88,7 +91,7 @@ The `options` above are not required and some combined (e.g. `depth` and `since`
 may cause issues. Refer to the details below to better understand the options
 and [git's docs](https://git-scm.com/) for knowing what can be combined.
 
-#### Options
+#### Request Options
 
 **branch**
 
@@ -115,20 +118,13 @@ Is a date formatted `yyyy-mm-dd` used for filtering commits. Sets
 
 **proxy**
 
-A URL for a http proxy. Sets `--config http-proxy=<proxy-url>` during the
+A URL for a http proxy. Sets `--config http.proxy` during the
 clone.
 
 * Type: `string`
 * Default: excluded
 
-## Scan Results Format
-
-The scan result format is in jsonl here are formatted examples of a single
-line by kind.
-
-### GitRepo
-
-Success
+#### Response
 
 ```json
 {
@@ -178,6 +174,82 @@ Success
   ]
 }
 ```
+
+
+### JSONData
+
+#### Request
+
+```json
+{
+  "id": "580efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7",
+  "kind": "JSONData",
+  "resource": "{\"some\": {\"key\": \"-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----\"}}"
+}
+```
+
+Note: the `resource` here is a string containing escaped JSON data
+
+#### Request Options
+
+JSONData currently doesn't have any options but it does support including
+Gitleaks config files (e.g. `.gitleaks.toml`, `.gitleaksignore`,
+`.gitleaksbaseline`) as top level keys that will be considered during the
+scan.
+
+#### Response
+
+```json
+{
+  "id": "c88057777737115851ad94b91461d09b2ce704484813557895ba0d6d827d4ed8",
+  "request": {
+    "id": "580efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7",
+    "kind": "JSONData",
+    "resource": "{\"some\":{\"key\": \"-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----\"}}"
+  },
+  "results": [
+    {
+      "id": "66456b43e1efac03f9448ece59a65b0e2bf304b55506507a8aa07727e3900522",
+      "kind": "JSONData",
+      "secret": "-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----",
+      "match": "-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----",
+      "entropy": 4.490795,
+      "date": "",
+      "rule": {
+        "id": "private-key",
+        "description": "Private Key",
+        "tags": [
+          "group:leaktk-testing",
+          "alert:repo-owner",
+          "type:secret"
+        ]
+      },
+      "contact": {
+        "name": "",
+        "email": ""
+      },
+      "location": {
+        "version": "",
+        "path": "some/key",
+        "start": {
+          "line": 0,
+          "column": 1
+        },
+        "end": {
+          "line": 0,
+          "column": 116
+        }
+      },
+      "notes": {
+        "message": ""
+      }
+    }
+  ]
+}
+```
+
+Note: the `path` here is formatted like a file path. For arrays, the element's
+index is used.
 
 ## TODO
 

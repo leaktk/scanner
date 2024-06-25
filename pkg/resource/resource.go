@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/leaktk/scanner/pkg/id"
+	"github.com/leaktk/scanner/pkg/logger"
 )
 
 // WalkFunc is the func signature for functions passed into the various
@@ -39,8 +40,11 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 	case "GitRepo":
 		var gitRepoOptions GitRepoOptions
 
-		if err := json.Unmarshal(options, &gitRepoOptions); err != nil {
-			return nil, err
+		if len(options) > 0 {
+			if err := json.Unmarshal(options, &gitRepoOptions); err != nil {
+				logger.Debug("GitOptions:\n%v", options)
+				return nil, fmt.Errorf("could not unmarshal GitOptions: error=%q", err)
+			}
 		}
 
 		return NewGitRepo(resource, &gitRepoOptions), nil
@@ -48,8 +52,11 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 	case "JSONData":
 		var jsonDataOptions JSONDataOptions
 
-		if err := json.Unmarshal(options, &jsonDataOptions); err != nil {
-			return nil, err
+		if len(options) > 0 {
+			if err := json.Unmarshal(options, &jsonDataOptions); err != nil {
+				logger.Debug("JSONDataOptions:\n%v", options)
+				return nil, fmt.Errorf("could not unmarshal JSONDataOptions: error=%q", err)
+			}
 		}
 
 		return NewJSONData(resource, &jsonDataOptions), nil
