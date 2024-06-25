@@ -3,8 +3,8 @@
 Provides a consistent API around some existing scanning tools to integrate them
 with the rest of the tool kit.
 
-This scanner can be ran either as an ad-hoc scan or in listening mode for easy
-scripting.
+The scanner can run in listening mode to handle a stream of requests or it can
+run single scans.
 
 The scanner leverages
 [gitleaks](https://github.com/gitleaks/gitleaks)
@@ -14,12 +14,19 @@ for it.
 
 ## Status
 
-Just getting started.
+Updating patterns to support this version.
 
 ## Usage
 
 ```sh
-leaktk-scanner --config ./examples/config.toml < ./examples/requests.jsonl
+# Listen for requests
+leaktk-scanner listen < ./examples/requests.jsonl
+
+# Run a single scan
+leaktk-scanner scan --resource 'https://github.com/leaktk/fake-leaks.git'
+
+# See more options
+leaktk-scanner help
 ```
 
 When in listening mode the scanner listens on stdin, responds on stdout, and

@@ -62,6 +62,41 @@ type (
 	}
 )
 
+// Make sure that any config returned to the code goes through this function
+func setMissingValues(cfg *Config) *Config {
+	envLoggerLevel := os.Getenv("LEAKTK_LOGGER_LEVEL")
+	if len(envLoggerLevel) > 0 {
+		cfg.Logger.Level = envLoggerLevel
+	}
+
+	urlFromEnvVar := os.Getenv("LEAKTK_PATTERN_SERVER_URL")
+	if len(urlFromEnvVar) != 0 {
+		cfg.Scanner.Patterns.Server.URL = urlFromEnvVar
+	}
+
+	cfg.Scanner.Patterns.Autofetch = stringToBool(
+		os.Getenv("LEAKTK_SCANNER_AUTOFETCH"),
+		cfg.Scanner.Patterns.Autofetch,
+	)
+
+	// It's better to have the auth token out of the config file to make it
+	// easier to write via the login command and to minimize secrets in the
+	// config file. But it's still supported in the config file in case it's
+	// desirable to generate one big config file for server based deployments.
+	if authToken := loadPatternServerAuthToken(); len(authToken) != 0 {
+		cfg.Scanner.Patterns.Server.AuthToken = authToken
+	}
+
+	if len(cfg.Scanner.Patterns.Gitleaks.ConfigPath) == 0 {
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = filepath.Join(
+			cfg.Scanner.Workdir, "patterns", "gitleaks",
+			cfg.Scanner.Patterns.Gitleaks.Version,
+		)
+	}
+
+	return cfg
+}
+
 func leaktkConfigDir() string {
 	path := filepath.Join(xdg.ConfigHome, "leaktk")
 
@@ -173,42 +208,7 @@ func LoadConfigFromFile(path string) (*Config, error) {
 		return nil, err
 	}
 
-	// The following items take precedence over the config file
-
-	envLoggerLevel := os.Getenv("LEAKTK_LOGGER_LEVEL")
-	if len(envLoggerLevel) > 0 {
-		cfg.Logger.Level = envLoggerLevel
-	}
-
-	urlFromEnvVar := os.Getenv("LEAKTK_PATTERN_SERVER_URL")
-	if len(urlFromEnvVar) != 0 {
-		cfg.Scanner.Patterns.Server.URL = urlFromEnvVar
-	}
-
-	// It's better to have the auth token out of the config file to make it
-	// easier to write via the login command and to minimize secrets in the
-	// config file. But it's still supported in the config file in case it's
-	// desirable to generate one big config file for server based deployments.
-	authToken := loadPatternServerAuthToken()
-	if len(authToken) != 0 {
-		cfg.Scanner.Patterns.Server.AuthToken = authToken
-	}
-
-	cfg.Scanner.Patterns.Autofetch = stringToBool(
-		os.Getenv("LEAKTK_SCANNER_AUTOFETCH"),
-		cfg.Scanner.Patterns.Autofetch,
-	)
-
-	// The folowing items are defaults built from other settings
-
-	if len(cfg.Scanner.Patterns.Gitleaks.ConfigPath) == 0 {
-		cfg.Scanner.Patterns.Gitleaks.ConfigPath = filepath.Join(
-			cfg.Scanner.Workdir, "patterns", "gitleaks",
-			cfg.Scanner.Patterns.Gitleaks.Version,
-		)
-	}
-
-	return cfg, err
+	return setMissingValues(cfg), err
 }
 
 // LocateAndLoadConfig looks through the possible places for the config
@@ -238,7 +238,7 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 		return LoadConfigFromFile(path)
 	}
 
-	return DefaultConfig(), nil
+	return setMissingValues(DefaultConfig()), nil
 }
 
 // SavePatternServerAuthToken saves the token in the path where it should go
