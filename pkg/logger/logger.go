@@ -23,15 +23,15 @@ type LogFormat int
 const (
 	// NOTSET will log everything
 	NOTSET LogLevel = 0
-	// DEBUG will enable these logs and higer
+	// DEBUG will enable these logs and higher
 	DEBUG LogLevel = 10
-	// INFO will enable these logs and higer
+	// INFO will enable these logs and higher
 	INFO LogLevel = 20
-	// WARNING will enable these logs and higer
+	// WARNING will enable these logs and higher
 	WARNING LogLevel = 30
-	// ERROR will enable these logs and higer
+	// ERROR will enable these logs and higher
 	ERROR LogLevel = 40
-	// CRITICAL will enable these logs and higer
+	// CRITICAL will enable these logs and higher
 	CRITICAL LogLevel = 50
 )
 
