@@ -23,6 +23,10 @@ paths = ['''testdata''']
 description = "test-rule"
 regex = '''test-rule'''
 `
+const mockAllowlistOnlyConfig = `
+[allowlist]
+paths = ['''testdata''']
+`
 
 func TestPatternsFetchGitleaksConfig(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
@@ -168,20 +172,23 @@ func TestParseGitleaksConfig(t *testing.T) {
 		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
 	})
 
+	t.Run("AllowlistOnlyConfig", func(t *testing.T) {
+		cfg, err := ParseGitleaksConfig(mockAllowlistOnlyConfig)
+		assert.NoError(t, err)
+		assert.NotNil(t, cfg)
+		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+	})
+
 	t.Run("InvalidConfig", func(t *testing.T) {
-		rawConfig := `
-invalid_key = "value"
-`
+		rawConfig := "\ninvalid_key = \"value\"\n"
 		_, err := ParseGitleaksConfig(rawConfig)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "no rules found in config")
 	})
 
 	t.Run("EmptyConfig", func(t *testing.T) {
 		rawConfig := ""
 		_, err := ParseGitleaksConfig(rawConfig)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "no rules found in config")
 	})
 }
 

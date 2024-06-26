@@ -140,6 +140,16 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 	return p.gitleaksConfig, nil
 }
 
+func allowListEmpty(cfg *gitleaksconfig.Config) bool {
+	al := &cfg.Allowlist
+
+	return !(len(al.Commits) > 0 ||
+		len(al.Description) > 0 ||
+		len(al.Paths) > 0 ||
+		len(al.Regexes) > 0 ||
+		len(al.StopWords) > 0)
+}
+
 // ParseGitleaksConfig takes a gitleaks config string and returns a config object
 func ParseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
 	var vc gitleaksconfig.ViperConfig
@@ -151,8 +161,8 @@ func ParseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
 
 	cfg, err := vc.Translate()
 
-	if len(cfg.Rules) == 0 {
-		return nil, fmt.Errorf("no rules found in config")
+	if len(cfg.Rules) == 0 && allowListEmpty(&cfg) {
+		return nil, fmt.Errorf("invalid config")
 	}
 
 	return &cfg, err
