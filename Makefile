@@ -35,3 +35,10 @@ test: format gosec golint
 
 install: build
 	install ./leaktk-scanner $(DESTDIR)$(PREFIX)/bin/leaktk-scanner
+
+security-report:
+	trivy fs .
+
+update:
+	go get -u ./...
+	go mod tidy

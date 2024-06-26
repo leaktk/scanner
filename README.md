@@ -9,7 +9,7 @@ run single scans.
 The scanner leverages
 [Gitleaks](https://github.com/gitleaks/gitleaks)
 internally because Gitleaks is an awesome tool, and we already have quite a few
-[patterns built up](https://github.com/leaktk/patterns)
+[patterns](https://github.com/leaktk/patterns)
 for it.
 
 ## Status
@@ -30,9 +30,10 @@ leaktk-scanner scan --kind JSONData --resource '{"key": "-----BEGIN PRIVATE KEY-
 leaktk-scanner help
 ```
 
-When in listening mode the scanner listens on stdin, responds on stdout, and
-logs to stderr. It reads one request per line and sends a response per line in
-jsonl.
+When in `listen` mode, the scanner listens on stdin, responds on stdout, and
+logs to stderr. It reads one request per line and sends one response per line
+in jsonl. The scanner should always generate a response to each request even if
+there were errors during the scan.
 
 The "Scan Request Format" and "Scan Results Format" sections describe the
 format for requests and responses.
@@ -66,7 +67,7 @@ settings if they're set:
 Notes about the formats below:
 
 * Scan requests should be sent as [JSON lines](https://jsonlines.org/).
-* The requests below are pretty printed to make them easier to read.
+* The examples below are pretty printed to make them easier to read.
 * Only the values in the `"options"` sections are optional.
 
 ### GitRepo
@@ -130,7 +131,7 @@ clone.
 {
   "id": "8343516f29a9c80cc7862e01799f446d5fb93088d1681f8c5181b211488a94db",
   "request": {
-    "id": "6d56db314f87371d0c2da1b1bcf90c9594e0bf793280e6ddd896d69881e6099b",
+    "id": "db0c21127a6a849fdf8eeae65d753275f3a26a33649171fa34af458030744999",
     "kind": "GitRepo",
     "resource": "http://github.com/leaktk/fake-leaks.git"
   },
@@ -178,6 +179,8 @@ clone.
 
 ### JSONData
 
+This allows you to scan various JSON structures for secrets.
+
 #### Request
 
 ```json
@@ -188,14 +191,15 @@ clone.
 }
 ```
 
-Note: the `resource` here is a string containing escaped JSON data
+Note: the `resource` here is a string containing escaped JSON data.
 
 #### Request Options
 
-JSONData currently doesn't have any options but it does support including
+JSONData currently doesn't have any options, but it does support including
 Gitleaks config files (e.g. `.gitleaks.toml`, `.gitleaksignore`,
 `.gitleaksbaseline`) as top level keys that will be considered during the
-scan.
+scan. The [examples/requests.jsonl](./examples/requests.jsonl) has an
+example of including a `.gitleaks.toml` with a JSONData scan.
 
 #### Response
 
@@ -251,9 +255,10 @@ index is used.
 
 ## TODO
 
-1. Support local scans
 1. Delete existing rust projects from crates.io
-1. Make sure it fully supports Linux and Mac
+1. Build up patterns for this version of gitleaks and test in PwnedAlert
+1. Support local scans
+1. Confirm full Mac support
 1. Start integrating this into a pre-commit hooks project
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
