@@ -263,3 +263,4 @@ index is used.
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
 1. Explore base64 support (i.e. decoding it when spotted and scanning the contents)
+1. Add `leaktk-scanner sanitize` to redact things from stdin for use in pipelines
