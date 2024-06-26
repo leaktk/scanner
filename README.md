@@ -176,7 +176,6 @@ clone.
 }
 ```
 
-
 ### JSONData
 
 This allows you to scan various JSON structures for secrets.
@@ -253,10 +252,83 @@ example of including a `.gitleaks.toml` with a JSONData scan.
 Note: the `path` here is formatted like a file path. For arrays, the element's
 index is used.
 
+### Files
+
+This allows you to scan files and directories.
+
+#### Request
+
+```json
+{
+  "id": "1c7387179582ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420",
+  "kind": "Files",
+  "resource": "/path/to/fake-leaks/keys/tls"
+}
+```
+
+Note: the `resource` can be either a single file or a directory.
+
+#### Request Options
+
+Files currently doesn't have any options but all the Gitleaks config files
+(e.g. `.gitleaks.toml`, `.gitleaksignore`, `.gitleaksbaseline`) are supported.
+
+#### Response
+
+```json
+{
+  "id": "bde3a15ca81cf6503b9c9e1a450a3bbdfa09567e77f787a6cf4a56ed3b115f87",
+  "request": {
+    "id": "1c7387179582ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420",
+    "kind": "Files",
+    "resource": "/path/to/fake-leaks/keys/tls"
+  },
+  "results": [
+    {
+      "id": "9376e604a7e8c4f5259ceb47f8a29c57e77c07668e317fa8c177de5e56fbe029",
+      "kind": "General",
+      "secret": "-----BEGIN EC PRIVATE KEY-----\n...snip...\n-----END EC PRIVATE KEY-----",
+      "match": "-----BEGIN EC PRIVATE KEY-----\n...snip...\n-----END EC PRIVATE KEY-----",
+      "entropy": 5.763853,
+      "date": "",
+      "rule": {
+        "id": "private-key",
+        "description": "Private Key",
+        "tags": [
+          "group:leaktk-testing",
+          "alert:repo-owner",
+          "type:secret"
+        ]
+      },
+      "contact": {
+        "name": "",
+        "email": ""
+      },
+      "location": {
+        "version": "",
+        "path": "another-key.key",
+        "start": {
+          "line": 0,
+          "column": 1
+        },
+        "end": {
+          "line": 5,
+          "column": 29
+        }
+      },
+      "notes": {}
+    }
+  ]
+}
+```
+
+Note: the `path` is relative to the resource provided. If the resource is the
+path to the file itself, then path will be empty.
+
 ## TODO
 
 1. Delete existing rust projects from crates.io
-1. Build up patterns for this version of gitleaks and test in PwnedAlert
+1. Build up patterns for this version of Gitleaks and test in PwnedAlert
 1. Support local scans
 1. Confirm full Mac support
 1. Start integrating this into a pre-commit hooks project

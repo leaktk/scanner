@@ -82,7 +82,7 @@ func (r *Files) ReadFile(path string) ([]byte, error) {
 func (r *Files) Walk(fn WalkFunc) error {
 	// Handle if path is a file
 	if fs.FileExists(r.path) {
-		data, err := r.ReadFile(r.path)
+		data, err := r.ReadFile("")
 		if err != nil {
 			return err
 		}
@@ -101,12 +101,18 @@ func (r *Files) Walk(fn WalkFunc) error {
 			return nil
 		}
 
-		data, err := r.ReadFile(path)
+		relPath, err := filepath.Rel(r.path, path)
+		if err != nil {
+			logger.Error("could generate relative path: path=%q error=%q", path, err)
+			return nil
+		}
+
+		data, err := r.ReadFile(relPath)
 		if err != nil {
 			logger.Error("could not read file: path=%q error=%q", path, err)
 			return nil
 		}
 
-		return fn(path, data)
+		return fn(relPath, data)
 	})
 }
