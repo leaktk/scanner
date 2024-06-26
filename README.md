@@ -251,8 +251,6 @@ index is used.
 
 ## TODO
 
-1. Finish and test steps to make it usable inside `leaktk-monitor` (aka PwnedAlert)
-1. Make sure features in the internal scanner are upstreamed here
 1. Support local scans
 1. Delete existing rust projects from crates.io
 1. Make sure it fully supports Linux and Mac

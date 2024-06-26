@@ -69,11 +69,11 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 		clonedConfig, err := ParseGitleaksConfig(string(rawClonedConfig))
 
 		if err != nil {
+			logger.Error("could not load cloned .gitleaks.toml: resource_id=%q error=%q", scanResource.ID(), err)
+		} else {
 			detector.Config.Allowlist.Commits = append(detector.Config.Allowlist.Commits, clonedConfig.Allowlist.Commits...)
 			detector.Config.Allowlist.Paths = append(detector.Config.Allowlist.Paths, clonedConfig.Allowlist.Paths...)
 			detector.Config.Allowlist.Regexes = append(detector.Config.Allowlist.Regexes, clonedConfig.Allowlist.Regexes...)
-		} else {
-			logger.Error("could not load cloned .gitleaks.toml: resource_id=%q error=%q", scanResource.ID(), err)
 		}
 	}
 
