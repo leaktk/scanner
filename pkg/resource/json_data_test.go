@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,36 +25,36 @@ func TestJSONDataReadFile(t *testing.T) {
 				err:   false,
 			},
 			{
-				path:  "baz/0",
+				path:  filepath.Join("baz", "0"),
 				value: "bop",
 				err:   false,
 			},
 			{
-				path:  "//////baz/0",
+				path:  filepath.Join("/", "/", "/", "/", "/", "baz", "0"),
 				value: "bop",
 				err:   false,
 			},
 			{
-				path:  "/baz/1",
+				path:  filepath.Join("/baz", "1"),
 				value: "true",
 				err:   false,
 			},
 			{
-				path:  "/baz/2",
+				path:  filepath.Join("/baz", "2"),
 				value: "1",
 				err:   false,
 			},
 			{
-				path:  "/baz/3",
+				path:  filepath.Join("/baz", "3"),
 				value: "2.3",
 				err:   false,
 			},
 			{
-				path:  "/baz/4",
+				path:  filepath.Join("/baz", "4"),
 				value: "",
 				err:   false,
 			}, {
-				path:  "/baz/5/hello",
+				path:  filepath.Join("/baz", "5", "hello"),
 				value: "there",
 				err:   false,
 			},
@@ -62,11 +63,11 @@ func TestJSONDataReadFile(t *testing.T) {
 				err:  true,
 			},
 			{
-				path: "baz/10",
+				path: filepath.Join("baz", "10"),
 				err:  true,
 			},
 			{
-				path: "baz/fish",
+				path: filepath.Join("baz", "fish"),
 				err:  true,
 			},
 			{
