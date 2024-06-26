@@ -30,35 +30,35 @@ type (
 
 	// Scanner provides scanner specific config
 	Scanner struct {
+		CloneTimeout      uint16   `toml:"clone_timeout"`
+		CloneWorkers      uint16   `toml:"clone_workers"`
 		MaxCloneQueueSize uint16   `toml:"max_clone_queue_size"`
 		MaxScanDepth      uint16   `toml:"max_scan_depth"`
 		MaxScanQueueSize  uint16   `toml:"max_scan_queue_size"`
-		CloneWorkers      uint16   `toml:"clone_workers"`
 		Patterns          Patterns `toml:"patterns"`
 		ScanWorkers       uint16   `toml:"scan_workers"`
 		Workdir           string   `toml:"workdir"`
-		CloneTimeout      uint16   `toml:"clone_timeout"`
 	}
 
 	// Patterns provides configuration for managing pattern updates
 	Patterns struct {
-		RefreshAfter uint32        `toml:"refresh_after"`
-		ExpiredAfter uint32        `toml:"expired_after"`
-		Server       PatternServer `toml:"server"`
 		Autofetch    bool          `toml:"autofetch"`
+		ExpiredAfter uint32        `toml:"expired_after"`
 		Gitleaks     Gitleaks      `toml:"gitleaks"`
-	}
-
-	// PatternServer provides pattern server configuration settings for the scanner
-	PatternServer struct {
-		URL       string `toml:"url"`
-		AuthToken string `toml:"auth_token"`
+		RefreshAfter uint32        `toml:"refresh_after"`
+		Server       PatternServer `toml:"server"`
 	}
 
 	// Gitleaks holds version and config information for the Gitleaks scanner
 	Gitleaks struct {
 		Version    string `toml:"version"`
 		ConfigPath string `toml:"config_path"`
+	}
+
+	// PatternServer provides pattern server configuration settings for the scanner
+	PatternServer struct {
+		AuthToken string `toml:"auth_token"`
+		URL       string `toml:"url"`
 	}
 )
 
@@ -183,13 +183,13 @@ func DefaultConfig() *Config {
 			Workdir:           filepath.Join(leaktkCacheDir(), "scanner"),
 			Patterns: Patterns{
 				Autofetch:    true,
-				RefreshAfter: 60 * 60 * 12,      // 12 hours
 				ExpiredAfter: 60 * 60 * 12 * 14, // 7 days
-				Server: PatternServer{
-					URL: "https://raw.githubusercontent.com/leaktk/patterns/main/target",
-				},
+				RefreshAfter: 60 * 60 * 12,      // 12 hours
 				Gitleaks: Gitleaks{
 					Version: "8.18.2",
+				},
+				Server: PatternServer{
+					URL: "https://raw.githubusercontent.com/leaktk/patterns/main/target",
 				},
 			},
 		},
