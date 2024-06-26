@@ -51,5 +51,4 @@ func TestPathExists(t *testing.T) {
 		noFile := filepath.Join(tmpFile, "foo/bar/baz")
 		assert.False(t, PathExists(noFile))
 	})
-
 }

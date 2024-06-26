@@ -45,7 +45,7 @@ func TestGitleaksScan(t *testing.T) {
 			Depth:  1000,
 		})
 
-		err = gitRepo.Clone(filepath.Join(tempDir, "repo"))
+		err = gitRepo.Clone(filepath.Join(tempDir, "clone"))
 		assert.NoError(t, err)
 
 		results, err := NewGitleaks(patterns).Scan(gitRepo)

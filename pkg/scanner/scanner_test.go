@@ -7,18 +7,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/resource"
-	"github.com/stretchr/testify/assert"
 )
 
 // mockResource implements a dummy resource
 type mockResource struct {
-	resource.BaseResource
 	cloneErr     error
-	depth        uint16
 	clonePath    string
 	cloneTimeout time.Duration
+	depth        uint16
+	resource.BaseResource
 }
 
 func (m *mockResource) Kind() string {

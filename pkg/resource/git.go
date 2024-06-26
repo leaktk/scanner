@@ -27,12 +27,12 @@ func init() {
 
 // GitRepoOptions stores options specific to GitRepo scan requests
 type GitRepoOptions struct {
+	// Only scan this branch
+	Branch string `json:"branch"`
 	// Only scan this many commits (reduced if larger than the max scan depth)
 	Depth uint16 `json:"depth"`
 	// Only scan since this date
 	Since string `json:"since"`
-	// Only scan this branch
-	Branch string `json:"branch"`
 	// Work through a proxy for this request
 	Proxy string `json:"proxy"`
 }
@@ -43,9 +43,9 @@ type GitRepo struct {
 	BaseResource
 
 	clonePath    string
+	cloneTimeout time.Duration
 	cloneURL     string
 	options      *GitRepoOptions
-	cloneTimeout time.Duration
 }
 
 // NewGitRepo returns a configured git repo resource for the scanner to scan
@@ -196,7 +196,7 @@ func (r *GitRepo) Walk(fn WalkFunc) error {
 	output, err := cmd.Output()
 
 	if err != nil {
-		return fmt.Errorf("could not list files: %q", err)
+		return fmt.Errorf("could not list files: error=%q", err)
 	}
 
 	for _, path := range strings.Split(string(output), "\n") {

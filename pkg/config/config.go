@@ -119,11 +119,11 @@ func leaktkCacheDir() string {
 
 func loadPatternServerAuthTokenFromFile(path string) string {
 	path = filepath.Clean(path)
-	logger.Debug("loading pattern-server-auth-token from %v", path)
+	logger.Debug("loading pattern-server-auth-token: path=%q", path)
 	authTokenBytes, err := os.ReadFile(path)
 
 	if err != nil {
-		logger.Fatal("loadPatternServerAuthTokenFromFile: %v", err)
+		logger.Fatal("could not load pattern server auth token: error=%q", err)
 	}
 
 	return strings.TrimSpace(string(authTokenBytes))
@@ -245,7 +245,7 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 func SavePatternServerAuthToken(authToken string) error {
 	path := localPatternServerAuthTokenPath()
 
-	if err := os.WriteFile(path, []byte(authToken), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(strings.TrimSpace(authToken)), 0600); err != nil {
 		return err
 	}
 

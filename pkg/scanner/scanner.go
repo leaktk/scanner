@@ -15,15 +15,15 @@ import (
 
 // Scanner holds the config and state for the scanner processes
 type Scanner struct {
+	backends     []Backend
 	cloneQueue   chan *Request
 	cloneTimeout time.Duration
 	cloneWorkers uint16
 	maxScanDepth uint16
+	resourceDir  string
 	responses    chan *Response
 	scanQueue    chan *Request
 	scanWorkers  uint16
-	resourceDir  string
-	backends     []Backend
 }
 
 // NewScanner returns a initialized and listening scanner instance that should
@@ -34,10 +34,10 @@ func NewScanner(cfg *config.Config) *Scanner {
 		cloneTimeout: time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
 		cloneWorkers: cfg.Scanner.CloneWorkers,
 		maxScanDepth: cfg.Scanner.MaxScanDepth,
+		resourceDir:  filepath.Join(cfg.Scanner.Workdir, "resources"),
 		responses:    make(chan *Response),
 		scanQueue:    make(chan *Request, cfg.Scanner.MaxScanQueueSize),
 		scanWorkers:  cfg.Scanner.ScanWorkers,
-		resourceDir:  filepath.Join(cfg.Scanner.Workdir, "resources"),
 		backends: []Backend{
 			NewGitleaks(NewPatterns(&cfg.Scanner.Patterns, &http.Client{})),
 		},

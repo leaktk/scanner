@@ -24,32 +24,6 @@ var Version = ""
 // Commit id set by the build
 var Commit = ""
 
-const scanKindDescription = `what kind of resource is being scanned
-
-supported values:
-
-- GitRepo: If this is provided, resource should be something git can clone or
-  a file path to scan the repo
-
-- Path: If this is provided, resource should be a local file path that should
-  be scanned
-
-`
-
-const scanOptionsDescription = `additional options to pass to the scan
-format:
-
---options '{json...}'
-
-Check out the README for supported options:
-
-https://github.com/leaktk/scanner/blob/main/README.md
-
-Note: You may want to run 'leaktk-scanner version' to make sure the README
-aligns with the version you're using.
-
-`
-
 var cfg *config.Config
 
 func initLogger() {
@@ -126,27 +100,27 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 
 	id, err := flags.GetString("id")
 	if err != nil || len(id) == 0 {
-		return nil, errors.New("missing required field: id")
+		return nil, errors.New("missing required field: field=\"id\"")
 	}
 
 	kind, err := flags.GetString("kind")
 	if err != nil || len(kind) == 0 {
-		return nil, errors.New("missing required field: kind")
+		return nil, errors.New("missing required field: field=\"kind\"")
 	}
 
 	resource, err := flags.GetString("resource")
 	if err != nil || len(resource) == 0 {
-		return nil, errors.New("missing required field: resource")
+		return nil, errors.New("missing required field: field=\"resource\"")
 	}
 
 	rawOptions, err := flags.GetString("options")
 	if err != nil {
-		return nil, fmt.Errorf("there was an issue with the options flag (%v)", err)
+		return nil, fmt.Errorf("there was an issue with the options flag: error=%q", err)
 	}
 
 	options := make(map[string]any)
 	if err := json.Unmarshal([]byte(rawOptions), &options); err != nil {
-		return nil, fmt.Errorf("could not parse options (%v)", err)
+		return nil, fmt.Errorf("could not parse options: error=%q", err)
 	}
 
 	requestData, err := json.Marshal(
@@ -159,14 +133,14 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("json.Marshal: %v", err)
+		return nil, fmt.Errorf("could not marshal requestData: error=%q", err)
 	}
 
 	var request scanner.Request
 
 	err = json.Unmarshal(requestData, &request)
 	if err != nil {
-		return nil, fmt.Errorf("json.Unmarshal: %v", err)
+		return nil, fmt.Errorf("could not unmarshal requestData: error=%q", err)
 	}
 
 	return &request, nil
@@ -181,9 +155,9 @@ func scanCommand() *cobra.Command {
 
 	flags := scanCommand.Flags()
 	flags.StringP("id", "", id.ID(), "an ID for tying responses to requests")
-	flags.StringP("kind", "k", "GitRepo", scanKindDescription)
+	flags.StringP("kind", "k", "GitRepo", "the kind of resource being scaned")
 	flags.StringP("resource", "r", "", "what will be scanned (what goes here depends on kind)")
-	flags.StringP("options", "o", "{}", scanOptionsDescription)
+	flags.StringP("options", "o", "{}", "additional request options formatted as JSON")
 
 	return scanCommand
 }
@@ -210,7 +184,7 @@ func runListen(cmd *cobra.Command, args []string) {
 		err := json.Unmarshal(stdinScanner.Bytes(), &request)
 
 		if err != nil {
-			logger.Error("%v: request_id=%q", err, request.ID)
+			logger.Error("could not unmarshal request: error=%q", err)
 			continue
 		}
 
@@ -224,9 +198,10 @@ func runListen(cmd *cobra.Command, args []string) {
 	}
 
 	if err := stdinScanner.Err(); err != nil {
-		logger.Error("%v", err)
+		logger.Error("error reading from stdin: error=%q", err)
 	}
 
+	// Wait for all of the scans to complete and responses to be sent
 	wg.Wait()
 }
 

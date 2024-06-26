@@ -59,16 +59,14 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 	}
 
 	response, err := p.client.Do(request)
-
 	if err != nil {
 		return "", err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", response.StatusCode)
+		return "", fmt.Errorf("unexpected status code: status_code=%d", response.StatusCode)
 	}
-
-	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -104,7 +102,7 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 
 		p.gitleaksConfig, err = ParseGitleaksConfig(rawConfig)
 		if err != nil {
-			logger.Debug("fetched config:\n%s\n", rawConfig)
+			logger.Debug("fetched config:\n%s", rawConfig)
 			return p.gitleaksConfig, fmt.Errorf("could not parse config: error=%q", err)
 		}
 
@@ -140,10 +138,12 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 	return p.gitleaksConfig, nil
 }
 
-func allowListEmpty(cfg *gitleaksconfig.Config) bool {
+func invalidConfig(cfg *gitleaksconfig.Config) bool {
 	al := &cfg.Allowlist
 
-	return !(len(al.Commits) > 0 ||
+	// Make sure something the scanner can use is set
+	return !(len(cfg.Rules) > 0 ||
+		len(al.Commits) > 0 ||
 		len(al.Description) > 0 ||
 		len(al.Paths) > 0 ||
 		len(al.Regexes) > 0 ||
@@ -161,7 +161,7 @@ func ParseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
 
 	cfg, err := vc.Translate()
 
-	if len(cfg.Rules) == 0 && allowListEmpty(&cfg) {
+	if invalidConfig(&cfg) {
 		return nil, fmt.Errorf("invalid config")
 	}
 

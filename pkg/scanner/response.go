@@ -9,9 +9,9 @@ import (
 // In the future we might have things like GitCommitMessage
 // GithubPullRequest, etc
 const (
+	GeneralResultKind   = "General"
 	GitCommitResultKind = "GitCommit"
 	JSONDataResultKind  = "JSONData"
-	GeneralResultKind   = "General"
 )
 
 type (
@@ -79,7 +79,7 @@ type (
 func (r *Response) String() string {
 	out, err := json.Marshal(r)
 	if err != nil {
-		logger.Error("json.Marshal: %v", err)
+		logger.Error("could not marshal response: error=%q", err)
 	}
 
 	return string(out)

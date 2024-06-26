@@ -13,7 +13,7 @@ func TestScanCommandToRequest(t *testing.T) {
 	request, err := scanCommandToRequest(cmd)
 	assert.Nil(t, request)
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "missing required field: resource")
+	assert.Equal(t, err.Error(), "missing required field: field=\"resource\"")
 
 	// Setting resource for the rest of the tests
 	cmd.Flags().Set("resource", "https://github.com/leaktk/fake-leaks.git")

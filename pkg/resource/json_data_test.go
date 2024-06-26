@@ -30,7 +30,7 @@ func TestJSONData(t *testing.T) {
 			err:   false,
 		},
 		{
-			path:  filepath.Join("/", "/", "/", "/", "/", "baz", "0"),
+			path:  filepath.Join("/", "baz", "0"),
 			value: "bop",
 			err:   false,
 		},

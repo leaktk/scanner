@@ -15,8 +15,6 @@ import (
 	"github.com/leaktk/scanner/pkg/resource"
 )
 
-const bufSize = 256 * 1024
-
 // Gitleaks wraps gitleaks as a scanner backend
 type Gitleaks struct {
 	patterns *Patterns
@@ -50,17 +48,19 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	detector.Redact = 0
 	detector.Verbose = false
 
+	// TODO: move this to scanResource.ReadFile and have JSONData.Clone not write files to disk
 	gitleaksIgnorePath := filepath.Join(scanResource.ClonePath(), ".gitleaksignore")
 	if fs.FileExists(gitleaksIgnorePath) {
 		if err = detector.AddGitleaksIgnore(gitleaksIgnorePath); err != nil {
-			return nil, fmt.Errorf("could not call AddGitleaksIgnore (%v)", err)
+			return nil, fmt.Errorf("could not add gitleaks ignore: error=%q", err)
 		}
 	}
 
+	// TODO: move this to scanResource.ReadFile and have JSONData.Clone not write files to disk
 	gitleaksBaselinePath := filepath.Join(scanResource.ClonePath(), ".gitleaksbaseline")
 	if fs.FileExists(gitleaksBaselinePath) {
 		if err = detector.AddBaseline(gitleaksBaselinePath, scanResource.ClonePath()); err != nil {
-			return nil, fmt.Errorf("could not call AddBaseline (%v)", err)
+			return nil, fmt.Errorf("could not add baseline: error=%q", err)
 		}
 	}
 
@@ -99,7 +99,6 @@ func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo)
 	}
 
 	gitCmd, err := sources.NewGitLogCmd(gitRepo.ClonePath(), strings.Join(gitLogOpts, " "))
-
 	if err != nil {
 		return nil, err
 	}
