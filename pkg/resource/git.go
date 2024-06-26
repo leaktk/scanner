@@ -158,7 +158,7 @@ func (r *GitRepo) ReadFile(path string) ([]byte, error) {
 	return exec.Command("git", "-C", r.ClonePath(), "show", object).Output() // #nosec G204
 }
 
-// GitDirPath returns the path to the git dir so that other things don'g need
+// GitDirPath returns the path to the git dir so that other things don't need
 // to know how the repo was cloned
 func (r *GitRepo) GitDirPath() string {
 	// Since --mirror implies --bare, the GitDirPath is the ClonePath
