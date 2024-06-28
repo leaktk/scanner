@@ -96,9 +96,11 @@ func (s *Scanner) listenForCloneRequests() {
 			reqResource.SetDepth(s.maxScanDepth)
 		}
 
-		logger.Info("starting clone: reqsource_id=%q", reqResource.ID())
-		if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
-			logger.Error("clone error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+		if reqResource.ClonePath() == "" {
+			logger.Info("starting clone: reqsource_id=%q", reqResource.ID())
+			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
+				logger.Error("clone error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+			}
 		}
 
 		// Now that it's cloned send it on to the scan queue
