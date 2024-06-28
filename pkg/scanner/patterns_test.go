@@ -207,7 +207,7 @@ func TestPatternsGitleaks(t *testing.T) {
 	tempDir := t.TempDir()
 	configFilePath := filepath.Join(tempDir, "gitleaks.toml")
 
-	getGitLeaksConfig := func(autofetch bool, refreshAfter, expiredAfter, modTime uint32) (*gitleaksconfig.Config, error) {
+	getGitleaksConfig := func(autofetch bool, refreshAfter, expiredAfter, modTime uint32) (*gitleaksconfig.Config, error) {
 		err := os.WriteFile(configFilePath, []byte(mockConfig), 0644)
 		assert.NoError(t, err)
 
@@ -227,7 +227,7 @@ func TestPatternsGitleaks(t *testing.T) {
 	}
 
 	t.Run("AutofetchEnabledAndConfigExpired", func(t *testing.T) {
-		cfg, err := getGitLeaksConfig(true, 5, 10, 15)
+		cfg, err := getGitleaksConfig(true, 5, 10, 15)
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
 		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
@@ -239,7 +239,7 @@ func TestPatternsGitleaks(t *testing.T) {
 	})
 
 	t.Run("AutofetchEnabledAndConfigNotExpired", func(t *testing.T) {
-		cfg, err := getGitLeaksConfig(true, 5, 15, 10)
+		cfg, err := getGitleaksConfig(true, 5, 15, 10)
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
 		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
@@ -251,13 +251,13 @@ func TestPatternsGitleaks(t *testing.T) {
 	})
 
 	t.Run("AutofetchDisabledAndConfigExpired", func(t *testing.T) {
-		_, err := getGitLeaksConfig(false, 5, 10, 15)
+		_, err := getGitleaksConfig(false, 5, 10, 15)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "gitleaks config is expired and autofetch is disabled")
 	})
 
 	t.Run("AutofetchDisabledAndConfigNotExpired", func(t *testing.T) {
-		cfg, err := getGitLeaksConfig(false, 5, 15, 10)
+		cfg, err := getGitleaksConfig(false, 5, 15, 10)
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
 		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
