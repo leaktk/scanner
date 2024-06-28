@@ -27,7 +27,7 @@ type JSONDataOptions struct {
 	// Currently none needed but here for future cases
 }
 
-// NewJSONData returns a configured git repo resource for the scanner to scan
+// NewJSONData returns a configured JSONData resource for the scanner to scan
 func NewJSONData(raw string, options *JSONDataOptions) *JSONData {
 	return &JSONData{
 		raw:     raw,

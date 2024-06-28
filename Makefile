@@ -33,7 +33,7 @@ test: format gosec golint
 	go vet ./...
 	go test ./...
 
-install: build
+install:
 	install ./leaktk-scanner $(DESTDIR)$(PREFIX)/bin/leaktk-scanner
 
 security-report:

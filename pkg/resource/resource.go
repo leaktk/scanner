@@ -60,6 +60,17 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		}
 
 		return NewJSONData(resource, &jsonDataOptions), nil
+	case "Files":
+		var filesOptions FilesOptions
+
+		if len(options) > 0 {
+			if err := json.Unmarshal(options, &filesOptions); err != nil {
+				logger.Debug("FilesOptions:\n%v", options)
+				return nil, fmt.Errorf("could not unmarshal FilesOptions: error=%q", err)
+			}
+		}
+
+		return NewFiles(resource, &filesOptions), nil
 	default:
 		return nil, fmt.Errorf("unsupported kind: kind=%q", kind)
 	}
