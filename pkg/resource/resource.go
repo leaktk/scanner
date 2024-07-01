@@ -3,6 +3,7 @@ package resource
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/leaktk/scanner/pkg/id"
@@ -11,7 +12,7 @@ import (
 
 // WalkFunc is the func signature for functions passed into the various
 // resource Walk methods.
-type WalkFunc func(path string, data []byte) error
+type WalkFunc func(path string, reader io.Reader) error
 
 // Resource provides a standard interface for acting with resources in the
 // scanner

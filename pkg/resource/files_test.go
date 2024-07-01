@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +31,9 @@ func TestFiles(t *testing.T) {
 	})
 
 	t.Run("Walk", func(t *testing.T) {
-		files.Walk(func(path string, data []byte) error {
+		files.Walk(func(path string, reader io.Reader) error {
+			data, err := io.ReadAll(reader)
+			assert.NoError(t, err)
 			assert.Equal(t, path, filepath.Join("foo", "test-file"))
 			assert.Equal(t, string(testFileData), string(data))
 			return nil

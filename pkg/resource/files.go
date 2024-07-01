@@ -82,18 +82,25 @@ func (r *Files) ReadFile(path string) ([]byte, error) {
 func (r *Files) Walk(fn WalkFunc) error {
 	// Handle if path is a file
 	if fs.FileExists(r.path) {
-		data, err := r.ReadFile("")
+		file, err := os.Open(r.path)
 		if err != nil {
 			return err
 		}
+		defer file.Close()
 
 		// path is empty because it's not in a directory
-		return fn("", data)
+		return fn("", file)
 	}
 
 	return filepath.WalkDir(r.path, func(path string, d iofs.DirEntry, err error) error {
+		relPath, err := filepath.Rel(r.path, path)
 		if err != nil {
-			logger.Error("could not walk path: path=%q error=%q", path, err)
+			logger.Error("could generate relative path: path=%q error=%q", path, err)
+			return nil
+		}
+
+		if err != nil {
+			logger.Error("could not walk path: path=%q error=%q", relPath, err)
 			return nil
 		}
 
@@ -101,18 +108,23 @@ func (r *Files) Walk(fn WalkFunc) error {
 			return nil
 		}
 
-		relPath, err := filepath.Rel(r.path, path)
+		info, err := d.Info()
 		if err != nil {
-			logger.Error("could generate relative path: path=%q error=%q", path, err)
 			return nil
 		}
 
-		data, err := r.ReadFile(relPath)
-		if err != nil {
-			logger.Error("could not read file: path=%q error=%q", path, err)
+		if info.Mode()&os.ModeSymlink != 0 {
+			logger.Info("skipping symlink: path=%q", relPath)
 			return nil
 		}
 
-		return fn(relPath, data)
+		file, err := os.Open(filepath.Clean(path))
+		if err != nil {
+			logger.Error("could not open file: path=%q error=%q", relPath, err)
+			return nil
+		}
+		defer file.Close()
+
+		return fn(relPath, file)
 	})
 }

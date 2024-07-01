@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -61,7 +62,7 @@ func (m *mockResource) String() string {
 }
 
 func (m *mockResource) Walk(fn resource.WalkFunc) error {
-	return fn("/", []byte{})
+	return fn("/", bytes.NewReader([]byte{}))
 }
 
 // mockBackend implements a dummy scanner backend

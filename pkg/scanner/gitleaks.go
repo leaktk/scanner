@@ -2,9 +2,11 @@ package scanner
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
+	"github.com/h2non/filetype"
 	"github.com/zricethezav/gitleaks/v8/detect"
 	"github.com/zricethezav/gitleaks/v8/report"
 	"github.com/zricethezav/gitleaks/v8/sources"
@@ -13,6 +15,11 @@ import (
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
+)
+
+const (
+	// Source: https://github.com/gitleaks/gitleaks/blob/master/detect/detect.go#L24C2-L24C45
+	chunkSize = 20 * 1_000 // 10kb
 )
 
 // Gitleaks wraps gitleaks as a scanner backend
@@ -110,13 +117,49 @@ func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo)
 func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Resource) ([]report.Finding, error) {
 	var findings []report.Finding
 
-	err := scanResource.Walk(func(path string, data []byte) error {
-		newFindings := detector.Detect(detect.Fragment{
-			FilePath: path,
-			Raw:      string(data),
-		})
+	err := scanResource.Walk(func(path string, reader io.Reader) error {
+		// Source: https://github.com/gitleaks/gitleaks/blob/master/detect/directory.go
+		buf := make([]byte, chunkSize)
+		totalLines := 0
 
-		findings = append(findings, newFindings...)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil && err != io.EOF {
+				logger.Error("could not read file: path=%q", path)
+				break
+			}
+			if n == 0 {
+				break
+			}
+
+			// TODO: optimization could be introduced here
+			mimetype, err := filetype.Match(buf[:n])
+			if err != nil {
+				logger.Error("could not determine file type: path=%q", path)
+				break
+			}
+			if mimetype.MIME.Type == "application" {
+				logger.Error("skipping binary file: path=%q", path)
+				return nil
+			}
+
+			// Count the number of newlines in this chunk
+			linesInChunk := strings.Count(string(buf[:n]), "\n")
+
+			totalLines += linesInChunk
+			fragment := detect.Fragment{
+				Raw:      string(buf[:n]),
+				FilePath: path,
+			}
+
+			for _, finding := range detector.Detect(fragment) {
+				// need to add 1 since line counting starts at 1
+				finding.StartLine += (totalLines - linesInChunk) + 1
+				finding.EndLine += (totalLines - linesInChunk) + 1
+				findings = append(findings, finding)
+			}
+		}
+
 		return nil
 	})
 

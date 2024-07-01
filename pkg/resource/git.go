@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -209,7 +210,7 @@ func (r *GitRepo) Walk(fn WalkFunc) error {
 			return err
 		}
 
-		if err := fn(path, data); err != nil {
+		if err := fn(path, bytes.NewReader(data)); err != nil {
 			return err
 		}
 	}

@@ -2,6 +2,7 @@ package resource
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 	"testing"
 
@@ -109,7 +110,9 @@ func TestJSONData(t *testing.T) {
 		}
 
 		// Walk the tests to make sure the items are present
-		jsonData.Walk(func(path string, data []byte) error {
+		jsonData.Walk(func(path string, reader io.Reader) error {
+			data, err := io.ReadAll(reader)
+			assert.NoError(t, err)
 			expected, exists := toCheck[path]
 
 			if exists {

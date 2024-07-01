@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -175,9 +176,9 @@ func (r *JSONData) walkRecusrive(path string, current any, fn WalkFunc) error {
 		}
 		return nil
 	case nil: // Handle nil
-		return fn(path, []byte{})
+		return fn(path, bytes.NewReader([]byte{}))
 	default: // Handle bool, float64, and string
-		return fn(path, []byte(fmt.Sprintf("%v", obj)))
+		return fn(path, bytes.NewReader([]byte(fmt.Sprintf("%v", obj))))
 	}
 }
 
