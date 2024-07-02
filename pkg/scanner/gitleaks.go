@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	// Source: https://github.com/gitleaks/gitleaks/blob/master/detect/detect.go#L24C2-L24C45
-	chunkSize = 20 * 1_000 // 10kb
+	chunkSize = 1024 * 1024 // 1 MiB
 )
 
 // Gitleaks wraps gitleaks as a scanner backend
@@ -126,8 +125,9 @@ func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Res
 			n, err := reader.Read(buf)
 			if err != nil && err != io.EOF {
 				logger.Error("could not read file: path=%q", path)
-				break
+				return nil
 			}
+
 			if n == 0 {
 				break
 			}
@@ -136,16 +136,15 @@ func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Res
 			mimetype, err := filetype.Match(buf[:n])
 			if err != nil {
 				logger.Error("could not determine file type: path=%q", path)
-				break
+				return nil
 			}
 			if mimetype.MIME.Type == "application" {
 				logger.Error("skipping binary file: path=%q", path)
-				return nil
+				return nil // skip binary files
 			}
 
 			// Count the number of newlines in this chunk
 			linesInChunk := strings.Count(string(buf[:n]), "\n")
-
 			totalLines += linesInChunk
 			fragment := detect.Fragment{
 				Raw:      string(buf[:n]),
