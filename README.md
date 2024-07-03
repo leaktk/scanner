@@ -325,6 +325,81 @@ Files currently doesn't have any options but all the Gitleaks config files
 Note: the `path` is relative to the resource provided. If the resource is the
 path to the file itself, then path will be empty.
 
+### URL
+
+This allows you to pull remote content to scan. It also has basic awareness
+of the response `Content-Type`. If the response has a content type of
+`application/json` it will be parsed as a `JSONData` request. Else it will
+be parsed as a `Files` request.
+
+#### Request
+
+```json
+{
+  "id": "1c7387179582ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420",
+  "kind": "URL",
+  "resource": "https://raw.githubusercontent.com/leaktk/fake-leaks/main/keys/tls/server.key"
+}
+```
+
+#### Request Options
+
+URL currently doesn't have any options.
+
+#### Response
+
+```json
+{
+  "id": "a1ef32d00c609b370d2181ea46babbbdd19deeeea68918cc676a8f12d1fc7e3b",
+  "request": {
+    "id": "1c7387179582ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420",
+    "kind": "URL",
+    "resource": "https://raw.githubusercontent.com/leaktk/fake-leaks/main/keys/tls/server.key"
+  },
+  "results": [
+    {
+      "id": "6c14f496a2111dfeecbfff4a61587b0b1866788a6112b420f80071f8cded0153",
+      "kind": "General",
+      "secret": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
+      "match": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
+      "entropy": 6.0285063,
+      "date": "",
+      "rule": {
+        "id": "private-key",
+        "description": "Private Key",
+        "tags": [
+          "group:leaktk-testing",
+          "alert:repo-owner",
+          "type:secret"
+        ]
+      },
+      "contact": {
+        "name": "",
+        "email": ""
+      },
+      "location": {
+        "version": "",
+        "path": "",
+        "start": {
+          "line": 2,
+          "column": 2
+        },
+        "end": {
+          "line": 29,
+          "column": 26
+        }
+      },
+      "notes": {}
+    }
+  ]
+}
+```
+
+Note: the `path` will be blank when using a `Files` type scan and it will
+use the same logic as `JSONData` when the response's content type is
+`application/json` (i.e. it will be the path down the traversed keys).
+
+
 ## TODO
 
 1. Delete existing rust projects from crates.io
@@ -336,3 +411,4 @@ path to the file itself, then path will be empty.
 1. Support `.github/secret_scanning.yml` files
 1. Explore base64 support (i.e. decoding it when spotted and scanning the contents)
 1. Add `leaktk-scanner sanitize` to redact things from stdin for use in pipelines
+1. Have options for URL and JSONData to allow them to recursively pull other URLs when they see them (e.g. `follow_urls bool`, `depth uint16`) and make sure it can't loop
