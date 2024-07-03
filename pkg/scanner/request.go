@@ -36,7 +36,7 @@ func (r *Request) UnmarshalJSON(data []byte) error {
 
 	requestResource, err := resource.NewResource(temp.Kind, temp.Resource, temp.Options)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not create resource: error=%q", err)
 	}
 
 	r.ID = temp.ID
