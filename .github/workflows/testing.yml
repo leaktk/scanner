@@ -1,6 +1,7 @@
 name: Testing & Linting
 
 on:
+  workflow_call:
   push:
     branches:
       - 'main'
@@ -14,6 +15,7 @@ jobs:
   test:
     name: Running tests on ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
