@@ -152,7 +152,7 @@ func TestGitleaksConfigModTimeExceeds(t *testing.T) {
 	t.Run("FileExistsButErrorOnStat", func(t *testing.T) {
 		// Create a Patterns instance with a file path that causes an error on Stat
 		cfg := config.DefaultConfig()
-		cfg.Scanner.Patterns.Gitleaks.ConfigPath = "/dev/null"
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = "/dev/zero"
 
 		patterns := &Patterns{
 			config: &cfg.Scanner.Patterns,

@@ -88,7 +88,7 @@ func (p *Patterns) gitleaksConfigModTimeExceeds(modTimeLimit uint32) bool {
 
 // Gitleaks returns a Gitleaks config object if it's able to
 func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
-	// Lock since this this updates the value of p.gitleaksConfig on the fly
+	// Lock since this updates the value of p.gitleaksConfig on the fly
 	// and updates files on the filesystem
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
