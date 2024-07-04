@@ -1,0 +1,36 @@
+name: Testing & Linting
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - 'main'
+
+jobs:
+
+  test:
+    name: Running tests on ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v ./...
