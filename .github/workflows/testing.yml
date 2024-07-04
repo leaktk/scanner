@@ -1,5 +1,13 @@
 name: Testing & Linting
 
+defaults:
+  run:
+    shell: bash
+
+env:
+  GO_VERSION: '1.20'
+  GO111MODULE: on
+
 on:
   workflow_call:
   push:
@@ -11,6 +19,23 @@ on:
       - 'main'
 
 jobs:
+  go-mod:
+    name: Running go mod check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Check go mod
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod
+          git diff --exit-code go.sum
 
   test:
     name: Running tests on ${{ matrix.os }}
@@ -27,12 +52,41 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: '1.20'
+        go-version: ${{ env.GO_VERSION }}
 
     - name: Build
       run: go build -v ./...
 
     - name: Test
       run: go test -v ./...
+  
+  gosec:
+    name: Running gosec security checks on ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        args: ./...
+
+  golangci-lint:
+    name: Running linting on ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Lint
+      uses: golangci/golangci-lint-action@v6.0.1
+      with:
+        version: latest
