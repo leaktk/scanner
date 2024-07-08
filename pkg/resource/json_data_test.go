@@ -31,31 +31,31 @@ func TestJSONData(t *testing.T) {
 			err:   false,
 		},
 		{
-			path:  filepath.Join("/", "baz", "0"),
+			path:  filepath.Join("baz", "0"),
 			value: "bop",
 			err:   false,
 		},
 		{
-			path:  filepath.Join("/baz", "1"),
+			path:  filepath.Join("baz", "1"),
 			value: "true",
 			err:   false,
 		},
 		{
-			path:  filepath.Join("/baz", "2"),
+			path:  filepath.Join("baz", "2"),
 			value: "1",
 			err:   false,
 		},
 		{
-			path:  filepath.Join("/baz", "3"),
+			path:  filepath.Join("baz", "3"),
 			value: "2.3",
 			err:   false,
 		},
 		{
-			path:  filepath.Join("/baz", "4"),
+			path:  filepath.Join("baz", "4"),
 			value: "",
 			err:   false,
 		}, {
-			path:  filepath.Join("/baz", "5", "hello"),
+			path:  filepath.Join("baz", "5", "hello"),
 			value: "there",
 			err:   false,
 		},
