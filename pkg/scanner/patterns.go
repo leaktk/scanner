@@ -80,7 +80,7 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 // `modTimeLimit` seconds
 func (p *Patterns) gitleaksConfigModTimeExceeds(modTimeLimit uint32) bool {
 	if fileInfo, err := os.Stat(p.config.Gitleaks.ConfigPath); err == nil {
-		return uint32(time.Now().Sub(fileInfo.ModTime()).Seconds()) > modTimeLimit
+		return uint32(time.Since(fileInfo.ModTime()).Seconds()) > modTimeLimit
 	}
 
 	return true

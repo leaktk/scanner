@@ -31,7 +31,7 @@ func TestFiles(t *testing.T) {
 	})
 
 	t.Run("Walk", func(t *testing.T) {
-		files.Walk(func(path string, reader io.Reader) error {
+		_ = files.Walk(func(path string, reader io.Reader) error {
 			data, err := io.ReadAll(reader)
 			assert.NoError(t, err)
 			assert.Equal(t, path, filepath.Join("foo", "test-file"))

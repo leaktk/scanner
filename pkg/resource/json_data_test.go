@@ -110,7 +110,7 @@ func TestJSONData(t *testing.T) {
 		}
 
 		// Walk the tests to make sure the items are present
-		jsonData.Walk(func(path string, reader io.Reader) error {
+		_ = jsonData.Walk(func(path string, reader io.Reader) error {
 			data, err := io.ReadAll(reader)
 			assert.NoError(t, err)
 			expected, exists := toCheck[path]

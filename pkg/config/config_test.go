@@ -13,11 +13,8 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 	cfg, err := LoadConfigFromFile("../../testdata/partial-config.toml")
 
 	if err != nil {
-		t.Errorf("Load returned an error %v", err)
-	}
-
-	if cfg == nil {
-		t.Error("Got a nil config")
+		// If there are config issues fail fast
+		assert.FailNowf(t, "Failed to load config file", "Load returned an error %s", err)
 	}
 
 	// Check values
