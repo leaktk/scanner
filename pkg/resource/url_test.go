@@ -41,7 +41,7 @@ func TestURL(t *testing.T) {
 		err = urlResource.Clone(t.TempDir())
 		assert.NoError(t, err)
 
-		urlResource.Walk(func(path string, reader io.Reader) error {
+		_ = urlResource.Walk(func(path string, reader io.Reader) error {
 			data, err := io.ReadAll(reader)
 			assert.NoError(t, err)
 			assert.Equal(t, path, "")
@@ -55,7 +55,7 @@ func TestURL(t *testing.T) {
 		err = urlResource.Clone(t.TempDir())
 		assert.NoError(t, err)
 
-		urlResource.Walk(func(path string, reader io.Reader) error {
+		_ = urlResource.Walk(func(path string, reader io.Reader) error {
 			data, err := io.ReadAll(reader)
 			assert.NoError(t, err)
 			assert.Equal(t, path, "data")

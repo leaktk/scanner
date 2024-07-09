@@ -93,14 +93,14 @@ func (r *Files) Walk(fn WalkFunc) error {
 	}
 
 	return filepath.WalkDir(r.path, func(path string, d iofs.DirEntry, err error) error {
-		relPath, err := filepath.Rel(r.path, path)
 		if err != nil {
-			logger.Error("could generate relative path: path=%q error=%q", path, err)
+			logger.Error("could not walk path: path=%q error=%q", path, err)
 			return nil
 		}
 
+		relPath, err := filepath.Rel(r.path, path)
 		if err != nil {
-			logger.Error("could not walk path: path=%q error=%q", relPath, err)
+			logger.Error("could generate relative path: path=%q error=%q", path, err)
 			return nil
 		}
 

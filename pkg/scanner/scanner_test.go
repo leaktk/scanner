@@ -33,7 +33,7 @@ func (m *mockResource) ReadFile(path string) ([]byte, error) {
 
 func (m *mockResource) Clone(path string) error {
 	m.clonePath = path
-	os.MkdirAll(m.clonePath, 0700)
+	_ = os.MkdirAll(m.clonePath, 0700)
 	return m.cloneErr
 }
 
