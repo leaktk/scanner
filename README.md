@@ -402,13 +402,11 @@ use the same logic as `JSONData` when the response's content type is
 
 ## TODO
 
-1. Delete existing rust projects from crates.io
-1. Build up patterns for this version of Gitleaks and test in PwnedAlert
 1. Support local scans
+1. Explore base64 support (i.e. decoding it when spotted and scanning the contents)
 1. Confirm full Mac support
 1. Start integrating this into a pre-commit hooks project
+1. Add `leaktk-scanner sanitize` to redact things from stdin for use in pipelines
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
-1. Explore base64 support (i.e. decoding it when spotted and scanning the contents)
-1. Add `leaktk-scanner sanitize` to redact things from stdin for use in pipelines
 1. Have options for URL and JSONData to allow them to recursively pull other URLs when they see them (e.g. `follow_urls bool`, `depth uint16`) and make sure it can't loop
