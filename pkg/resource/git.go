@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -81,9 +82,14 @@ func (r *GitRepo) Clone(path string) error {
 	// The --[no-]single-branch flags are still needed with mirror due to how
 	// things like --depth and --shallow-since behave
 	if len(r.options.Branch) > 0 {
-		cloneArgs = append(cloneArgs, "--single-branch")
-		cloneArgs = append(cloneArgs, "--branch")
-		cloneArgs = append(cloneArgs, r.options.Branch)
+		if r.RemoteRefExists(r.options.Branch) {
+			cloneArgs = append(cloneArgs, "--single-branch")
+			cloneArgs = append(cloneArgs, "--branch")
+			cloneArgs = append(cloneArgs, r.options.Branch)
+		} else {
+			logger.Warning("ignoring invalid branch: branch=%q", r.options.Branch)
+			cloneArgs = append(cloneArgs, "--no-single-branch")
+		}
 	} else {
 		cloneArgs = append(cloneArgs, "--no-single-branch")
 	}
@@ -216,4 +222,36 @@ func (r *GitRepo) Walk(fn WalkFunc) error {
 	}
 
 	return nil
+}
+
+// RemoteRefExists checks the remote repository to see if the ref exists
+func (r *GitRepo) RemoteRefExists(ref string) bool {
+	cmd := exec.Command("git", "ls-remote", "--exit-code", "--quiet", r.String(), ref) // #nosec G204
+	return cmd.Run() == nil
+}
+
+// Refs returns the unique OIDs in a repo
+func (r *GitRepo) Refs() []string {
+	cmd := exec.Command("git", "-C", r.ClonePath(), "show-ref", "--hash") // #nosec G204
+	out, err := cmd.Output()
+	refs := []string{}
+
+	if err != nil {
+		logger.Error("could not list refs: error=%q", err)
+		return refs
+	}
+
+	for _, ref := range bytes.Split(out, []byte{'\n'}) {
+		refStr := strings.TrimSpace(string(ref))
+
+		if len(refStr) == 0 {
+			continue
+		}
+
+		if !slices.Contains(refs, refStr) {
+			refs = append(refs, refStr)
+		}
+	}
+
+	return refs
 }
