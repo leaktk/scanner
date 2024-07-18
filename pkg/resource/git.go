@@ -27,12 +27,6 @@ func init() {
 	}
 }
 
-// remoteRefExists checks a remote git repository to make sure the ref exists
-func remoteRefExists(url, ref string) bool {
-	cmd := exec.Command("git", "ls-remote", "--exit-code", "--quiet", url, ref)
-	return cmd.Run() == nil
-}
-
 // GitRepoOptions stores options specific to GitRepo scan requests
 type GitRepoOptions struct {
 	// Only scan this branch
@@ -88,7 +82,7 @@ func (r *GitRepo) Clone(path string) error {
 	// The --[no-]single-branch flags are still needed with mirror due to how
 	// things like --depth and --shallow-since behave
 	if len(r.options.Branch) > 0 {
-		if remoteRefExists(r.String(), r.options.Branch) {
+		if r.RemoteRefExists(r.options.Branch) {
 			cloneArgs = append(cloneArgs, "--single-branch")
 			cloneArgs = append(cloneArgs, "--branch")
 			cloneArgs = append(cloneArgs, r.options.Branch)
@@ -228,6 +222,12 @@ func (r *GitRepo) Walk(fn WalkFunc) error {
 	}
 
 	return nil
+}
+
+// RemoteRefExists checks the remote repository to see if the ref exists
+func (r *GitRepo) RemoteRefExists(ref string) bool {
+	cmd := exec.Command("git", "ls-remote", "--exit-code", "--quiet", r.String(), ref) // #nosec G204
+	return cmd.Run() == nil
 }
 
 // Refs returns the unique OIDs in a repo
