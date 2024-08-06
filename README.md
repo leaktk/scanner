@@ -403,7 +403,7 @@ use the same logic as `JSONData` when the response's content type is
 ## TODO
 
 1. Support local scans
-1. Explore base64 support (i.e. decoding it when spotted and scanning the contents)
+1. Explore [base64 support](https://github.com/gitleaks/gitleaks/issues/807) (i.e. decoding it when spotted and scanning the contents)
 1. Confirm full Mac support
 1. Start integrating this into a pre-commit hooks project
 1. Add `leaktk-scanner sanitize` to redact things from stdin for use in pipelines
