@@ -11,6 +11,7 @@ import (
 	"github.com/zricethezav/gitleaks/v8/sources"
 )
 
+// DetectFiles runs dections against a set of paths
 func (d *Detector) DetectFiles(paths <-chan sources.ScanTarget) ([]report.Finding, error) {
 	for pa := range paths {
 		p := pa

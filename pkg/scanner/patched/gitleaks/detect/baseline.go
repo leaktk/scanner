@@ -9,6 +9,7 @@ import (
 	"github.com/zricethezav/gitleaks/v8/report"
 )
 
+// IsNew detects if a finding is new against a baseline
 func IsNew(finding report.Finding, baseline []report.Finding) bool {
 	// Explicitly testing each property as it gives significantly better performance in comparison to cmp.Equal(). Drawback is that
 	// the code requires maintenance if/when the Finding struct changes
@@ -36,6 +37,7 @@ func IsNew(finding report.Finding, baseline []report.Finding) bool {
 	return true
 }
 
+// LoadBaseline loads the baseline file
 func LoadBaseline(baselinePath string) ([]report.Finding, error) {
 	bytes, err := os.ReadFile(baselinePath) // #nosec G304
 	if err != nil {
@@ -51,6 +53,7 @@ func LoadBaseline(baselinePath string) ([]report.Finding, error) {
 	return previousFindings, nil
 }
 
+// AddBaseline sets the baseline on the detector
 func (d *Detector) AddBaseline(baselinePath string, source string) error {
 	if baselinePath != "" {
 		absoluteSource, err := filepath.Abs(source)

@@ -132,6 +132,7 @@ func NewDetectorDefaultConfig() (*Detector, error) {
 	return NewDetector(cfg), nil
 }
 
+// AddGitleaksIgnore setups up the gitleaksignore on the detector
 func (d *Detector) AddGitleaksIgnore(gitleaksIgnorePath string) error {
 	log.Debug().Msgf("found .gitleaksignore file: %s", gitleaksIgnorePath)
 	file, err := os.Open(gitleaksIgnorePath) // #nosec G304
