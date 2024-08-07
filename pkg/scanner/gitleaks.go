@@ -17,9 +17,11 @@ import (
 
 	// TODO: get these things upstreamed
 	// Issue: https://github.com/gitleaks/gitleaks/issues/807
-	// Changes to the code begin after commit: 934fe98
+	// Changes to the code begin after commit: d4b76cc
 	// Search for -----BEGIN ISSUE 807 CHANGES----- to find the bits that
 	// have actually changed from the upstream
+	// also search for things with "patched" in the repo to find things to
+	// remove once this is over
 	"github.com/leaktk/scanner/pkg/scanner/patched/gitleaks/detect"
 )
 
