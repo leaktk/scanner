@@ -327,6 +327,66 @@ func TestDetect(t *testing.T) {
 			},
 			expectedFindings: []report.Finding{},
 		},
+		// -----BEGIN ISSUE 807 CHANGES-----
+		{
+			cfgName: "base64_encoded",
+			fragment: Fragment{
+				Raw: `# Decoded
+-----BEGIN PRIVATE KEY-----
+435f/bRUBHrbHqLY/xS3I7Oth+8rgG+0tBwfMcbk05Sgxq6QUzSYIQAop+WvsTwk2sR+C38g0Mnb
+u+QDkg0spw==
+-----END PRIVATE KEY-----
+
+# Encoded
+key: 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCjQzNWYvYlJVQkhyYkhxTFkveFMzSTdPdGgrOHJnRyswdEJ3Zk1jYmswNVNneHE2UVV6U1lJUUFvcCtXdnNUd2syc1IrQzM4ZzBNbmIKdStRRGtnMHNwdz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K'`,
+				FilePath: "tmp.go",
+			},
+			expectedFindings: []report.Finding{
+				{ // Plain text key captured by normal rule
+					Description: "Private Key",
+					Secret:      "-----BEGIN PRIVATE KEY-----\n435f/bRUBHrbHqLY/xS3I7Oth+8rgG+0tBwfMcbk05Sgxq6QUzSYIQAop+WvsTwk2sR+C38g0Mnb\nu+QDkg0spw==\n-----END PRIVATE KEY-----",
+					Match:       "-----BEGIN PRIVATE KEY-----\n435f/bRUBHrbHqLY/xS3I7Oth+8rgG+0tBwfMcbk05Sgxq6QUzSYIQAop+WvsTwk2sR+C38g0Mnb\nu+QDkg0spw==\n-----END PRIVATE KEY-----",
+					File:        "tmp.go",
+					Line:        "\n-----BEGIN PRIVATE KEY-----\n435f/bRUBHrbHqLY/xS3I7Oth+8rgG+0tBwfMcbk05Sgxq6QUzSYIQAop+WvsTwk2sR+C38g0Mnb\nu+QDkg0spw==\n-----END PRIVATE KEY-----",
+					RuleID:      "private-key",
+					Tags:        []string{"key", "private"},
+					StartLine:   1,
+					EndLine:     4,
+					StartColumn: 2,
+					EndColumn:   26,
+					Entropy:     5.350665,
+				},
+				{ // Encoded key captured by plain text rule using the decoder
+					Description: "Private Key",
+					Secret:      "-----BEGIN PRIVATE KEY-----\n435f/bRUBHrbHqLY/xS3I7Oth+8rgG+0tBwfMcbk05Sgxq6QUzSYIQAop+WvsTwk2sR+C38g0Mnb\nu+QDkg0spw==\n-----END PRIVATE KEY-----",
+					Match:       "-----BEGIN PRIVATE KEY-----\n435f/bRUBHrbHqLY/xS3I7Oth+8rgG+0tBwfMcbk05Sgxq6QUzSYIQAop+WvsTwk2sR+C38g0Mnb\nu+QDkg0spw==\n-----END PRIVATE KEY-----",
+					File:        "tmp.go",
+					Line:        "\nkey: '-----BEGIN PRIVATE KEY-----\n435f/bRUBHrbHqLY/xS3I7Oth+8rgG+0tBwfMcbk05Sgxq6QUzSYIQAop+WvsTwk2sR+C38g0Mnb\nu+QDkg0spw==\n-----END PRIVATE KEY-----",
+					RuleID:      "private-key",
+					Tags:        []string{"key", "private"},
+					StartLine:   7,        // Should be the the bounds of the b64 data
+					EndLine:     7,        // Should be the the bounds of the b64 data
+					StartColumn: 8,        // Should be the the bounds of the b64 data
+					EndColumn:   199,      // Should be the the bounds of the b64 data
+					Entropy:     5.350665, // Should be the entropy of the match itself
+				},
+				{ // Encoded key captured by custom b64 regex rule
+					Description: "Private Key",
+					Secret:      "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCjQzNWYvYlJVQkhyYkhxTFkveFMzSTdPdGgrOHJnRyswdEJ3Zk1jYmswNVNneHE2UVV6U1lJUUFvcCtXdnNUd2syc1IrQzM4ZzBNbmIKdStRRGtnMHNwdz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K",
+					Match:       "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCjQzNWYvYlJVQkhyYkhxTFkveFMzSTdPdGgrOHJnRyswdEJ3Zk1jYmswNVNneHE2UVV6U1lJUUFvcCtXdnNUd2syc1IrQzM4ZzBNbmIKdStRRGtnMHNwdz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K",
+					File:        "tmp.go",
+					Line:        "# Decoded\n-----BEGIN PRIVATE KEY-----\n435f/bRUBHrbHqLY/xS3I7Oth+8rgG+0tBwfMcbk05Sgxq6QUzSYIQAop+WvsTwk2sR+C38g0Mnb\nu+QDkg0spw==\n-----END PRIVATE KEY-----\n\n# Encoded\nkey: 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCjQzNWYvYlJVQkhyYkhxTFkveFMzSTdPdGgrOHJnRyswdEJ3Zk1jYmswNVNneHE2UVV6U1lJUUFvcCtXdnNUd2syc1IrQzM4ZzBNbmIKdStRRGtnMHNwdz09Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K'",
+					RuleID:      "b64-encoded-private-key",
+					Tags:        []string{"key", "private"},
+					StartLine:   7,
+					EndLine:     7,
+					StartColumn: 8,
+					EndColumn:   199,
+					Entropy:     5.3861146,
+				},
+			},
+		},
+		// -----END ISSUE 807 CHANGES-----
 	}
 
 	for _, tt := range tests {

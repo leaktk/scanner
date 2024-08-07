@@ -1,0 +1,21 @@
+# -----BEGIN ISSUE 807 CHANGES-----
+[[rules]]
+  id = 'private-key'
+  description = 'Private Key'
+  regex = '''(?i)-----BEGIN[ A-Z0-9_-]{0,100}PRIVATE KEY(?: BLOCK)?-----[\s\S-]*?-----END[ A-Z0-9_-]{0,100}PRIVATE KEY(?: BLOCK)?-----'''
+  tags = ['key', 'private']
+  keywords = [
+      '-----begin',
+  ]
+
+[[rules]]
+  id = 'b64-encoded-private-key'
+  description = 'Private Key'
+  regex = '''(?:LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t|0tLS0tQkVHSU4gUFJJVkFURSBLRVktLS0tL|tLS0tLUJFR0lOIFBSSVZBVEUgS0VZLS0tLS)[a-zA-Z0-9+\/]+={0,3}'''
+  tags = ['key', 'private']
+  keywords = [
+    'ls0tls1crudjtibquklwqvrfietfws0tls0t',
+    '0tls0tqkvhsu4gufjjvkfursblrvktls0tl',
+    'tls0tlujfr0loifbssvzbveugs0vzls0tls',
+  ]
+# -----END ISSUE 807 CHANGES-----

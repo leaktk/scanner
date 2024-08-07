@@ -1,4 +1,5 @@
-package decoders
+package detect
+// -----BEGIN ISSUE 807 CHANGES-----
 
 import (
 	"crypto/rand"
@@ -140,3 +141,4 @@ func BenchmarkFromChunkLarge(b *testing.B) {
 		DecodeBase64(data)
 	}
 }
+// -----END ISSUE 807 CHANGES-----

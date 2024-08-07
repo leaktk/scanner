@@ -1,4 +1,5 @@
-package decoders
+package detect
+// -----BEGIN ISSUE 807 CHANGES-----
 
 import (
 	"bytes"
@@ -126,3 +127,4 @@ func appendB64Substring(data []byte, start, count int, substrings []string, endC
 	}
 	return substrings
 }
+// -----END ISSUE 807 CHANGES-----
