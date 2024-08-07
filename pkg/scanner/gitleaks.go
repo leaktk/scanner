@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/h2non/filetype"
-	"github.com/zricethezav/gitleaks/v8/detect"
 	"github.com/zricethezav/gitleaks/v8/report"
 	"github.com/zricethezav/gitleaks/v8/sources"
 
@@ -15,6 +14,10 @@ import (
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
+
+	// TODO: get these things upstreamed
+	// Issue: https://github.com/gitleaks/gitleaks/issues/807
+	"github.com/leaktk/scanner/pkg/scanner/patched/gitleaks/detect"
 )
 
 const (
