@@ -74,7 +74,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # pin@v4
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@55a47f37740ea50048d4396051e2a60c794bec1d # pin@master
+        uses: securego/gosec@56f943b802579b69d96f0999a7943c588e600ae7 # pin@master
         with:
           args: ./...
 
