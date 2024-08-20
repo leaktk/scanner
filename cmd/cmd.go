@@ -85,7 +85,7 @@ func runScan(cmd *cobra.Command, args []string) {
 	request, err := scanCommandToRequest(cmd)
 
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal("could not generate scan request: error=%q", err.Error())
 	}
 
 	leakScanner := scanner.NewScanner(cfg)
