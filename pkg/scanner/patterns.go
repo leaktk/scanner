@@ -154,6 +154,12 @@ func invalidConfig(cfg *gitleaksconfig.Config) bool {
 func ParseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
 	var vc gitleaksconfig.ViperConfig
 
+	defer func() {
+		if recover() != nil {
+			logger.Error("Gitleaks config is invalid. Recovering")
+		}
+	}()
+
 	_, err := toml.Decode(rawConfig, &vc)
 	if err != nil {
 		return nil, err

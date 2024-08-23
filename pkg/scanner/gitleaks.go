@@ -74,7 +74,7 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	if err == nil {
 		clonedConfig, err := ParseGitleaksConfig(string(rawClonedConfig))
 
-		if err != nil {
+		if err != nil || clonedConfig == nil {
 			logger.Error("could not load cloned .gitleaks.toml: resource_id=%q error=%q", scanResource.ID(), err)
 		} else {
 			logger.Debug("loading cloned .gitleaks.toml")
