@@ -151,10 +151,16 @@ func invalidConfig(cfg *gitleaksconfig.Config) bool {
 }
 
 // ParseGitleaksConfig takes a gitleaks config string and returns a config object
-func ParseGitleaksConfig(rawConfig string) (*gitleaksconfig.Config, error) {
+func ParseGitleaksConfig(rawConfig string) (glc *gitleaksconfig.Config, err error) {
 	var vc gitleaksconfig.ViperConfig
 
-	_, err := toml.Decode(rawConfig, &vc)
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("gitleaks config is invalid: error=%q", r)
+		}
+	}()
+
+	_, err = toml.Decode(rawConfig, &vc)
 	if err != nil {
 		return nil, err
 	}
