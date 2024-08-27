@@ -99,7 +99,7 @@ func (s *Scanner) listenForCloneRequests() {
 		if reqResource.ClonePath() == "" {
 			logger.Info("starting clone: request_id=%q", request.ID)
 			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
-				logger.Error("clone error: resource_id=%q error=%q", request.ID, err.Error())
+				logger.Error("clone error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		}
 
