@@ -131,7 +131,7 @@ func (s *Scanner) listenForScanRequests() {
 
 		if fs.PathExists(reqResource.ClonePath()) {
 			for _, backend := range s.backends {
-				logger.Info("starting scan: reqsource_id=%q scanner_backend=%q", request.ID, backend.Name())
+				logger.Info("starting scan: request_id=%q scanner_backend=%q", request.ID, backend.Name())
 
 				backendResults, err := backend.Scan(reqResource)
 				if err != nil {
