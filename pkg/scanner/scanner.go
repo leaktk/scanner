@@ -142,7 +142,7 @@ func (s *Scanner) listenForScanRequests() {
 				}
 			}
 			if err := s.removeResourceFiles(reqResource); err != nil {
-				logger.Error("resource file cleanup error: resource_id=%q error=%q", request.ID, err.Error())
+				logger.Error("resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		} else {
 			logger.Error("skipping scan due to missing clone path: resource_id=%q", request.ID)
