@@ -92,14 +92,14 @@ func (s *Scanner) listenForCloneRequests() {
 		}
 
 		if s.maxScanDepth > 0 && reqResource.Depth() > s.maxScanDepth {
-			logger.Warning("reducing scan depth: resource_id=%q old_depth=%v new_depth=%v", reqResource.ID(), reqResource.Depth(), s.maxScanDepth)
+			logger.Warning("reducing scan depth: request_id=%q old_depth=%v new_depth=%v", request.ID, reqResource.Depth(), s.maxScanDepth)
 			reqResource.SetDepth(s.maxScanDepth)
 		}
 
 		if reqResource.ClonePath() == "" {
-			logger.Info("starting clone: reqsource_id=%q", reqResource.ID())
+			logger.Info("starting clone: request_id=%q", request.ID)
 			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
-				logger.Error("clone error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+				logger.Error("clone error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		}
 
@@ -131,21 +131,21 @@ func (s *Scanner) listenForScanRequests() {
 
 		if fs.PathExists(reqResource.ClonePath()) {
 			for _, backend := range s.backends {
-				logger.Info("starting scan: reqsource_id=%q scanner_backend=%q", reqResource.ID(), backend.Name())
+				logger.Info("starting scan: request_id=%q scanner_backend=%q", request.ID, backend.Name())
 
 				backendResults, err := backend.Scan(reqResource)
 				if err != nil {
-					logger.Error("scan error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+					logger.Error("scan error: request_id=%q error=%q", request.ID, err.Error())
 				}
 				if backendResults != nil {
 					results = append(results, backendResults...)
 				}
 			}
 			if err := s.removeResourceFiles(reqResource); err != nil {
-				logger.Error("resource file cleanup error: resource_id=%q error=%q", reqResource.ID(), err.Error())
+				logger.Error("resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		} else {
-			logger.Error("skipping scan due to missing clone path: resource_id=%q", reqResource.ID())
+			logger.Error("skipping scan due to missing clone path: request_id=%q", request.ID)
 		}
 
 		s.responses <- &Response{
