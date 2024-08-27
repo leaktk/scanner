@@ -135,7 +135,7 @@ func (s *Scanner) listenForScanRequests() {
 
 				backendResults, err := backend.Scan(reqResource)
 				if err != nil {
-					logger.Error("scan error: resource_id=%q error=%q", request.ID, err.Error())
+					logger.Error("scan error: request_id=%q error=%q", request.ID, err.Error())
 				}
 				if backendResults != nil {
 					results = append(results, backendResults...)
