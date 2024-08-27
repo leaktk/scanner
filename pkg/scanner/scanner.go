@@ -92,7 +92,7 @@ func (s *Scanner) listenForCloneRequests() {
 		}
 
 		if s.maxScanDepth > 0 && reqResource.Depth() > s.maxScanDepth {
-			logger.Warning("reducing scan depth: resource_id=%q old_depth=%v new_depth=%v", request.ID, reqResource.Depth(), s.maxScanDepth)
+			logger.Warning("reducing scan depth: request_id=%q old_depth=%v new_depth=%v", request.ID, reqResource.Depth(), s.maxScanDepth)
 			reqResource.SetDepth(s.maxScanDepth)
 		}
 
