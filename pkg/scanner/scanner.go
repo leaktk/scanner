@@ -145,7 +145,7 @@ func (s *Scanner) listenForScanRequests() {
 				logger.Error("resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		} else {
-			logger.Error("skipping scan due to missing clone path: resource_id=%q", request.ID)
+			logger.Error("skipping scan due to missing clone path: request_id=%q", request.ID)
 		}
 
 		s.responses <- &Response{
