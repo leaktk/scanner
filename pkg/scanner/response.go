@@ -2,7 +2,6 @@ package scanner
 
 import (
 	"encoding/json"
-
 	"github.com/leaktk/scanner/pkg/logger"
 )
 
@@ -18,6 +17,7 @@ type (
 	// Response from the scanner with the scan results
 	Response struct {
 		ID      string         `json:"id"`
+		Errors  []LeakTKError  `json:"errors"`
 		Request RequestDetails `json:"request"`
 		Results []*Result      `json:"results"`
 	}

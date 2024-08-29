@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -100,6 +101,11 @@ func (s *Scanner) listenForCloneRequests() {
 			logger.Info("starting clone: request_id=%q", request.ID)
 			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
 				logger.Error("clone error: request_id=%q error=%q", request.ID, err.Error())
+				request.Errors = append(request.Errors, LeakTKError{
+					Fatal:   true,
+					Code:    CloneError,
+					Message: err.Error(),
+				})
 			}
 		}
 
@@ -136,6 +142,11 @@ func (s *Scanner) listenForScanRequests() {
 				backendResults, err := backend.Scan(reqResource)
 				if err != nil {
 					logger.Error("scan error: request_id=%q error=%q", request.ID, err.Error())
+					request.Errors = append(request.Errors, LeakTKError{
+						Fatal:   true,
+						Code:    ScanError,
+						Message: err.Error(),
+					})
 				}
 				if backendResults != nil {
 					results = append(results, backendResults...)
@@ -143,14 +154,27 @@ func (s *Scanner) listenForScanRequests() {
 			}
 			if err := s.removeResourceFiles(reqResource); err != nil {
 				logger.Error("resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
+				request.Errors = append(request.Errors, LeakTKError{
+					Fatal:   false,
+					Code:    ResourceCleanupError,
+					Message: err.Error(),
+				})
 			}
 		} else {
 			logger.Error("skipping scan due to missing clone path: request_id=%q", request.ID)
+			request.Errors = append(request.Errors, LeakTKError{
+				Fatal:   true,
+				Code:    CloneError,
+				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
+			})
 		}
-
+		for _, e := range request.Errors {
+			fmt.Println(e)
+		}
 		s.responses <- &Response{
 			ID:      id.ID(),
 			Results: results,
+			Errors:  request.Errors,
 			Request: RequestDetails{
 				ID:       request.ID,
 				Kind:     request.Resource.Kind(),
