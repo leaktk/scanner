@@ -403,6 +403,86 @@ Note: the `path` will be blank when using a `Files` type scan and it will
 use the same logic as `JSONData` when the response's content type is
 `application/json` (i.e. it will be the path down the traversed keys).
 
+### Container
+
+This allows you to pull a remote, or local, container image to scan. It will
+be parsed as a `Files` request once the images are downloaded and prepared.
+
+#### Request
+
+```json
+{
+  "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
+  "kind": "Container",
+  "resource": "quay.io/jetstack/cert-manager-controller:v1.15.3"
+}
+```
+
+#### Request Options
+
+**local**
+
+Specifies that the provided resource is a local path, not remote. Defaults to false (remote),
+
+* Type: `bool`
+* Default: excluded (false)
+
+**exclusions**
+
+Sets a list of RootFS Layer hashes to exclude from scanning
+
+* Type: `[]string`
+* Default: excluded
+
+
+#### Response  
+TODO: Refine this.
+```json
+{
+  "id": "a1ef32d00c609b370d2181ea46b11111119deeeea68918cc676a8f12d1fc7e3b",
+  "request": {
+    "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
+    "kind": "Container",
+    "resource": "quay.io/jetstack/cert-manager-controller:v1.15.3y"
+  },
+  "results": [
+    {
+      "id": "6c14f496a2111dfeecbfff4a61587b0b1866788a6112b420f80071f8cded0153",
+      "kind": "General",
+      "secret": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
+      "match": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
+      "entropy": 6.0285063,
+      "date": "",
+      "rule": {
+        "id": "private-key",
+        "description": "Private Key",
+        "tags": [
+          "group:leaktk-testing",
+          "alert:repo-owner",
+          "type:secret"
+        ]
+      },
+      "contact": {
+        "name": "",
+        "email": ""
+      },
+      "location": {
+        "version": "",
+        "path": "",
+        "start": {
+          "line": 2,
+          "column": 2
+        },
+        "end": {
+          "line": 29,
+          "column": 26
+        }
+      },
+      "notes": {}
+    }
+  ]
+}
+```
 
 ## TODO
 
