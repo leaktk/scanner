@@ -1,6 +1,8 @@
 package resource
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"github.com/containers/image/v5/manifest"
@@ -11,6 +13,7 @@ import (
 	iofs "io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/containers/image/v5/docker"
@@ -22,7 +25,6 @@ type Container struct {
 	// Provide common helper functions
 	BaseResource
 	clonePath string
-	resource  Resource
 	location  string
 	options   *ContainerOptions
 }
@@ -63,70 +65,108 @@ func (r *Container) Clone(path string) error {
 
 	srcRef, err := docker.ParseReference("//" + r.location)
 	if err != nil {
-		logger.Error("Error parsing image reference: %v", err)
-		return err
+		return fmt.Errorf("Error parsing image reference: %v", err)
 	}
 
 	imageSource, err := srcRef.NewImageSource(ctx, sysCtx)
 	if err != nil {
-		logger.Error("Error creating image source: %v", err)
-		return err
+		return fmt.Errorf("could not create image source: %v", err)
 	}
 	defer imageSource.Close()
 
 	rawManifest, _, err := imageSource.GetManifest(ctx, nil)
 	if err != nil {
-		logger.Error("Error fetching manifest: %v", err)
-		return err
+		return fmt.Errorf("could not fetch manifest: %v", err)
 	}
 
 	imgManifest, err := manifest.Schema2FromManifest(rawManifest)
 	if err != nil {
-		logger.Error("Error parsing manifest: %v", err)
-		return err
-	}
-	cache := blobinfocache.DefaultCache(sysCtx)
-	layerDir := filepath.Join(path, "layers")
-	err = os.MkdirAll(layerDir, 0755)
-	if err != nil {
-		logger.Error("Error creating layer directory: %v", err)
-		return err
+		return fmt.Errorf("could not parse manifest: %v", err)
 	}
 
+	cache := blobinfocache.DefaultCache(sysCtx)
 	for _, layer := range imgManifest.LayersDescriptors {
-		fmt.Printf("Downloading layer %s\n", layer.Digest)
 		for _, skip := range r.options.Exclusions {
 			if skip == layer.Digest.String() {
-				println("Skipping layer")
+				logger.Debug("skipping layer %s", layer.Digest.String())
 				continue
 			}
 		}
+		logger.Debug("downloading layer %s", layer.Digest.String())
+
+		layerDir := filepath.Join(path, layer.Digest.Hex())
+		err = os.MkdirAll(layerDir, 0700)
+		if err != nil {
+			return fmt.Errorf("could not create layer directory: %v", err)
+		}
+
 		blobInfo := types.BlobInfo{
 			Digest: layer.Digest,
 			Size:   layer.Size,
 		}
 		layerBlob, _, err := imageSource.GetBlob(ctx, blobInfo, cache)
 		if err != nil {
-			logger.Error("Error downloading layer blob: %v", err)
-			return err
+			return fmt.Errorf("could not download layer blob: %v", err)
 		}
 		defer layerBlob.Close()
 
-		filePath := filepath.Join(layerDir, layer.Digest.Hex()+".tar.gz")
-		file, err := os.Create(filePath)
+		err = r.decompress(layerBlob, layer.Size)
 		if err != nil {
-			logger.Error("Error creating file: %v", err)
+			return fmt.Errorf("could not decompress layer: %v", err)
+		}
+	}
+	return nil
+}
+
+// The decompression process is a little more involved so separated out.
+func (r *Container) decompress(t io.Reader, size int64) error {
+	// The maximum file size should be less than 10x the layer size.
+	size = size * 10
+
+	gzReader, err := gzip.NewReader(t)
+	if err != nil {
+		return err
+	}
+	defer gzReader.Close()
+
+	tarReader := tar.NewReader(gzReader)
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+		if strings.Contains(header.Name, "..") {
+			logger.Error("skipping file as it contains traversal: %s ", header.Name)
+			continue
+		}
+		path := filepath.Join(r.clonePath, header.Name)
+		info := header.FileInfo()
+		if info.IsDir() {
+			if err = os.MkdirAll(path, 0700); err != nil {
+				return err
+			}
+			continue
+		}
+
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+		if err != nil {
 			return err
 		}
 		defer file.Close()
 
-		_, err = io.Copy(file, layerBlob)
-		if err != nil {
-			logger.Error("Error writing layer to file: %v", err)
-			return err
+		// Copy a maximum number of bytes (layer size * 10) so we do not get "bombs". It is unlikely that a file
+		// with significant entropy will be compressed more than 10x. We can review this.
+		_, err = io.CopyN(file, tarReader, size)
+		if err != nil && err == io.EOF {
+			logger.Error("copying file %s did not finish due to max file size: %v", file.Name(), err)
+			continue
 		}
-		println(filePath)
-
+		if err != nil {
+			return fmt.Errorf("could not copy file to disk: %v", err)
+		}
 	}
 	return nil
 }
