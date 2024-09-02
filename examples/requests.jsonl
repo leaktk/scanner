@@ -7,3 +7,4 @@
 {"id":"780efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"Files",    "resource":"README.md"}
 {"id":"880efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"URL",      "resource":"https://raw.githubusercontent.com/leaktk/fake-leaks/main/general-test"}
 {"id":"1c7387111111ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420", "kind":"Container","resource":"quay.io/wizzy/fake-leaks", "options": {"local": false, "exclusions": ["sha256:330ab73a545086144fd21782eb2d40c9e5de6e6614fd44d342e37aee6c77049a"]}}
+{"id":"1c7387111111ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420", "kind":"Container","resource":"quay.io/openshift-release-dev/ocp-release:4.13.49-multi", "options": {"local": false, "arch": "amd64"}}

@@ -4,9 +4,8 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/containers/image/v5/manifest"
-	"github.com/containers/image/v5/pkg/blobinfocache"
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
 	"io"
@@ -17,6 +16,8 @@ import (
 	"time"
 
 	"github.com/containers/image/v5/docker"
+	"github.com/containers/image/v5/manifest"
+	"github.com/containers/image/v5/pkg/blobinfocache"
 	"github.com/containers/image/v5/types"
 )
 
@@ -33,6 +34,7 @@ type Container struct {
 type ContainerOptions struct {
 	Local      bool     `json:"local"`
 	Exclusions []string `json:"exclusions"`
+	Arch       string   `json:"arch"`
 }
 
 // NewContainer returns a configured Container resource for the scanner to scan
@@ -56,27 +58,60 @@ func (r *Container) String() string {
 // Clone the resource to the desired local location and store the path
 func (r *Container) Clone(path string) error {
 	r.clonePath = path
+	if r.options.Local {
+		return r.cloneLocalResource(path, r.location)
+	}
+	return r.cloneRemoteResource(path, r.location)
+}
+
+func (r *Container) cloneLocalResource(clonePath string, location string) error {
+	// Do local stuff here - likely just decompress/untar?
+	return nil
+}
+
+func (r *Container) cloneRemoteResource(path string, resource string) error {
 
 	ctx := context.Background()
 
-	sysCtx := &types.SystemContext{
-		ArchitectureChoice: "amd64",
-	}
+	sysCtx := &types.SystemContext{}
 
-	srcRef, err := docker.ParseReference("//" + r.location)
+	imgRef, err := docker.ParseReference("//" + resource)
 	if err != nil {
 		return fmt.Errorf("Error parsing image reference: %v", err)
 	}
 
-	imageSource, err := srcRef.NewImageSource(ctx, sysCtx)
+	imageSource, err := imgRef.NewImageSource(ctx, sysCtx)
 	if err != nil {
 		return fmt.Errorf("could not create image source: %v", err)
 	}
 	defer imageSource.Close()
 
-	rawManifest, _, err := imageSource.GetManifest(ctx, nil)
+	rawManifest, manifestType, err := imageSource.GetManifest(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("could not fetch manifest: %v", err)
+	}
+
+	if manifestType == manifest.DockerV2ListMediaType { // multiple entries select first
+		var indexManifest manifest.Schema2List
+		index := 0
+		if err := json.Unmarshal(rawManifest, &indexManifest); err != nil {
+			return fmt.Errorf("could not unmarshal manifest: %v", err)
+		}
+		if r.options.Arch != "" {
+			for i, manifest := range indexManifest.Manifests {
+				if manifest.Platform.Architecture == r.options.Arch {
+					index = i
+					logger.Info("selected first %s container", r.options.Arch)
+					break
+				}
+			}
+		} else {
+			logger.Info("manifest contains multiple options, defaulted to first")
+		}
+		imgRef := imageSource.Reference().DockerReference().Name() + "@" + indexManifest.Manifests[index].Digest.String()
+
+		return r.cloneRemoteResource(path, imgRef)
+
 	}
 
 	imgManifest, err := manifest.Schema2FromManifest(rawManifest)
@@ -110,26 +145,32 @@ func (r *Container) Clone(path string) error {
 		}
 		defer layerBlob.Close()
 
-		err = r.decompress(layerBlob, layer.Size)
+		err = r.decompress(layerBlob, layer.MediaType, layer.Size)
 		if err != nil {
 			return fmt.Errorf("could not decompress layer: %v", err)
 		}
 	}
 	return nil
+
 }
 
 // The decompression process is a little more involved so separated out.
-func (r *Container) decompress(t io.Reader, size int64) error {
+func (r *Container) decompress(t io.Reader, mediaType string, size int64) error {
 	// The maximum file size should be less than 10x the layer size.
 	size = size * 10
 
-	gzReader, err := gzip.NewReader(t)
-	if err != nil {
-		return err
-	}
-	defer gzReader.Close()
+	var tarReader *tar.Reader
 
-	tarReader := tar.NewReader(gzReader)
+	if strings.Contains(strings.ToLower(mediaType), "gzip") {
+		gzReader, err := gzip.NewReader(t)
+		if err != nil {
+			return err
+		}
+		tarReader = tar.NewReader(gzReader)
+		defer gzReader.Close()
+	} else {
+		tarReader = tar.NewReader(t)
+	}
 
 	for {
 		header, err := tarReader.Next()
@@ -138,11 +179,11 @@ func (r *Container) decompress(t io.Reader, size int64) error {
 		} else if err != nil {
 			return err
 		}
-		if strings.Contains(header.Name, "..") {
-			logger.Error("skipping file as it contains traversal: %s ", header.Name)
+		path, err := sanitizePath(r.clonePath, header.Name)
+		if err != nil {
+			logger.Error("%s - skipped", err)
 			continue
 		}
-		path := filepath.Join(r.clonePath, header.Name)
 		info := header.FileInfo()
 		if info.IsDir() {
 			if err = os.MkdirAll(path, 0700); err != nil {
@@ -151,7 +192,7 @@ func (r *Container) decompress(t io.Reader, size int64) error {
 			continue
 		}
 
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600) // #nosec G304
 		if err != nil {
 			return err
 		}
@@ -159,13 +200,12 @@ func (r *Container) decompress(t io.Reader, size int64) error {
 
 		// Copy a maximum number of bytes (layer size * 10) so we do not get "bombs". It is unlikely that a file
 		// with significant entropy will be compressed more than 10x. We can review this.
-		_, err = io.CopyN(file, tarReader, size)
-		if err != nil && err == io.EOF {
-			logger.Error("copying file %s did not finish due to max file size: %v", file.Name(), err)
-			continue
-		}
-		if err != nil {
+		n, err := io.CopyN(file, tarReader, size)
+		if err != nil && err != io.EOF {
 			return fmt.Errorf("could not copy file to disk: %v", err)
+		}
+		if n >= size {
+			logger.Error("copying file %s did not finish due to max file size: %v", file.Name(), err)
 		}
 	}
 	return nil
@@ -251,4 +291,12 @@ func (r *Container) Walk(fn WalkFunc) error {
 
 		return fn(relPath, file)
 	})
+}
+
+func sanitizePath(destination string, filePath string) (string, error) {
+	destPath := filepath.Join(destination, filePath)
+	if !strings.HasPrefix(destPath, filepath.Clean(destination)) {
+		return "", fmt.Errorf("illegal file path: %s", filePath)
+	}
+	return destPath, nil
 }
