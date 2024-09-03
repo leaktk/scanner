@@ -168,9 +168,6 @@ func (s *Scanner) listenForScanRequests() {
 				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
 			})
 		}
-		for _, e := range request.Errors {
-			fmt.Println(e)
-		}
 		s.responses <- &Response{
 			ID:      id.ID(),
 			Results: results,
