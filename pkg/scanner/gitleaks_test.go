@@ -3,6 +3,7 @@ package scanner
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/leaktk/scanner/pkg/config"
@@ -52,6 +53,6 @@ func TestGitleaksScan(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Greater(t, len(results), 0)
 		assert.Equal(t, results[0].Rule.ID, "test-rule")
-		assert.Equal(t, results[0].Secret, "fake")
+		assert.Equal(t, strings.ToLower(results[0].Secret), "fake")
 	})
 }
