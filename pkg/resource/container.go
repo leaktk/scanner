@@ -205,7 +205,7 @@ func (r *Container) decompress(t io.Reader, mediaType string, size int64) error 
 			return fmt.Errorf("could not copy file to disk: %v", err)
 		}
 		if n >= size {
-			logger.Error("copying file %s did not finish due to max file size: %v", file.Name(), err)
+			logger.Warning("copying file %s did not finish due to max file size: %v", file.Name(), err)
 		}
 	}
 	return nil
