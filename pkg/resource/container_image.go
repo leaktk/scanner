@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/response"
 	"io"
 	iofs "io/fs"
 	"log"
@@ -85,7 +86,7 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 
 	imgRef, err := docker.ParseReference("//" + resource)
 	if err != nil {
-		return fmt.Errorf("Error parsing image reference: %v", err)
+		return fmt.Errorf("could not parse image reference: %v", err)
 	}
 
 	imageSource, err := imgRef.NewImageSource(ctx, sysCtx)
@@ -133,17 +134,20 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 
 	img, err := imgRef.NewImage(ctx, sysCtx)
 	if err != nil {
-		log.Fatalf("Error loading image to retrieve labels: %v", err)
+		log.Fatalf("could not load image to retrieve labels: %v", err)
 	}
 	defer img.Close()
 
 	config, err := img.OCIConfig(ctx)
 	if err != nil {
-		log.Fatalf("Error getting image config to retrieve labels: %v", err)
+		log.Fatalf("could not get image config to retrieve labels: %v", err)
 	}
 	r.labels = config.Config.Labels
 
 	configJson, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to create string from configjson: %v", err)
+	}
 	err = r.writeFile("config.json", configJson)
 	if err != nil {
 		return fmt.Errorf("failed to write config to clonepath: %v", err)
@@ -250,17 +254,18 @@ func (r *ContainerImage) decompress(t io.Reader, layer string, mediaType string,
 			logger.Error("%v", err)
 			continue
 		}
-		defer file.Close()
 
 		// Copy a maximum number of bytes (layer size * 10) so we do not get "bombs". It is unlikely that a file
 		// with significant entropy will be compressed more than 10x. We can review this.
 		n, err := io.CopyN(file, tarReader, size)
 		if err != nil && err != io.EOF {
+			file.Close()
 			return fmt.Errorf("could not copy file to disk: %v", err)
 		}
 		if n >= size {
 			logger.Warning("copying file %s did not finish due to max file size: %v", file.Name(), err)
 		}
+		file.Close()
 	}
 	return nil
 }
@@ -273,6 +278,24 @@ func (r *ContainerImage) ClonePath() string {
 // Depth returns the depth for things that have version control
 func (r *ContainerImage) Depth() uint16 {
 	return 0
+}
+
+// EnrichResult enriches the result with contextual information
+func (r *ContainerImage) EnrichResult(result *response.Result) *response.Result {
+
+	hash, file, found := strings.Cut(result.Location.Path, string(os.PathSeparator))
+	if found {
+		result.Location.Version = hash
+		result.Location.Path = file
+	}
+	result.Notes = r.labels
+	if result.Location.Version != "" {
+		// If there is no layer then it is a metadata file
+		result.Kind = response.ContainerMetdataResultKind
+	}
+	result.Kind = response.ContainerLayerResultKind
+	// check for author in manifest and config
+	return result
 }
 
 // SetDepth allows you to adjust the depth for the resource

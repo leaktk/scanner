@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/leaktk/scanner/pkg/resource"
 
 	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/resource"
 )
 
 // Request to the scanner to scan some resource

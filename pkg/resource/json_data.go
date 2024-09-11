@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/leaktk/scanner/pkg/response"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -83,6 +84,12 @@ func (r *JSONData) ClonePath() string {
 // Depth returns the depth for things that have version control
 func (r *JSONData) Depth() uint16 {
 	return 0
+}
+
+// EnrichResult enriches the result with contextual information
+func (r *JSONData) EnrichResult(result *response.Result) *response.Result {
+	result.Kind = response.JSONDataResultKind
+	return result
 }
 
 // SetDepth allows you to adjust the depth for the resource
