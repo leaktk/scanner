@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
@@ -14,7 +15,7 @@ type Request struct {
 	ID string
 	// Thing to scan (e.g. URL, snippet of text, etc)
 	Resource resource.Resource
-	Errors   []LeakTKError
+	Errors   []response.LeakTKError
 }
 
 // UnmarshalJSON sets r to a copy of data

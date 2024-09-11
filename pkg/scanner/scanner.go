@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,8 +11,8 @@ import (
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/response"
 	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/scanner/pkg/response"
 )
 
 // Scanner holds the config and state for the scanner processes
@@ -101,9 +102,9 @@ func (s *Scanner) listenForCloneRequests() {
 			logger.Info("starting clone: request_id=%q", request.ID)
 			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
 				logger.Error("clone error: request_id=%q error=%q", request.ID, err.Error())
-				request.Errors = append(request.Errors, LeakTKError{
+				request.Errors = append(request.Errors, response.LeakTKError{
 					Fatal:   true,
-					Code:    CloneError,
+					Code:    response.CloneError,
 					Message: err.Error(),
 				})
 			}
@@ -142,9 +143,9 @@ func (s *Scanner) listenForScanRequests() {
 				backendResults, err := backend.Scan(reqResource)
 				if err != nil {
 					logger.Error("scan error: request_id=%q error=%q", request.ID, err.Error())
-					request.Errors = append(request.Errors, LeakTKError{
+					request.Errors = append(request.Errors, response.LeakTKError{
 						Fatal:   true,
-						Code:    ScanError,
+						Code:    response.ScanError,
 						Message: err.Error(),
 					})
 				}
@@ -154,17 +155,17 @@ func (s *Scanner) listenForScanRequests() {
 			}
 			if err := s.removeResourceFiles(reqResource); err != nil {
 				logger.Error("resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
-				request.Errors = append(request.Errors, LeakTKError{
+				request.Errors = append(request.Errors, response.LeakTKError{
 					Fatal:   false,
-					Code:    ResourceCleanupError,
+					Code:    response.ResourceCleanupError,
 					Message: err.Error(),
 				})
 			}
 		} else {
 			logger.Error("skipping scan due to missing clone path: request_id=%q", request.ID)
-			request.Errors = append(request.Errors, LeakTKError{
+			request.Errors = append(request.Errors, response.LeakTKError{
 				Fatal:   true,
-				Code:    CloneError,
+				Code:    response.CloneError,
 				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
 			})
 		}
