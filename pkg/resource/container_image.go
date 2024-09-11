@@ -10,6 +10,7 @@ import (
 	"github.com/leaktk/scanner/pkg/logger"
 	"io"
 	iofs "io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +29,8 @@ type ContainerImage struct {
 	clonePath string
 	location  string
 	options   *ContainerImageOptions
+	manifest  *string
+	labels    map[string]string
 }
 
 // ContainerImageOptions are options for the ContainerImage resource
@@ -57,7 +60,12 @@ func (r *ContainerImage) String() string {
 
 // Clone the resource to the desired local location and store the path
 func (r *ContainerImage) Clone(path string) error {
+	err := os.MkdirAll(path, 0700)
+	if err != nil {
+		return fmt.Errorf("could not create clone directory: %v", err)
+	}
 	r.clonePath = path
+
 	if r.options.Local {
 		return r.cloneLocalResource(path, r.location)
 	}
@@ -90,6 +98,15 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 	if err != nil {
 		return fmt.Errorf("could not fetch manifest: %v", err)
 	}
+	if r.manifest == nil {
+		// We only want the first manifest as it includes all of them
+		err = r.writeFile("manifest.json", rawManifest)
+		if err != nil {
+			return fmt.Errorf("failed writing manifest to clonepath: %v", err)
+		}
+		stringManifest := string(rawManifest)
+		r.manifest = &stringManifest
+	}
 
 	if manifestType == manifest.DockerV2ListMediaType { // multiple entries select first
 		var indexManifest manifest.Schema2List
@@ -112,6 +129,24 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 
 		return r.cloneRemoteResource(path, imgRef)
 
+	}
+
+	img, err := imgRef.NewImage(ctx, sysCtx)
+	if err != nil {
+		log.Fatalf("Error loading image to retrieve labels: %v", err)
+	}
+	defer img.Close()
+
+	config, err := img.OCIConfig(ctx)
+	if err != nil {
+		log.Fatalf("Error getting image config to retrieve labels: %v", err)
+	}
+	r.labels = config.Config.Labels
+
+	configJson, err := json.MarshalIndent(config, "", "  ")
+	err = r.writeFile("config.json", configJson)
+	if err != nil {
+		return fmt.Errorf("failed to write config to clonepath: %v", err)
 	}
 
 	imgManifest, err := manifest.Schema2FromManifest(rawManifest)
@@ -143,15 +178,32 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 		if err != nil {
 			return fmt.Errorf("could not download layer blob: %v", err)
 		}
-		defer layerBlob.Close()
 
 		err = r.decompress(layerBlob, layer.Digest.Hex(), layer.MediaType, layer.Size)
 		if err != nil {
 			return fmt.Errorf("could not decompress layer: %v", err)
 		}
+		err = layerBlob.Close()
+		if err != nil {
+			return fmt.Errorf("could not close layer: %v", err)
+		}
 	}
-	return nil
 
+	return nil
+}
+
+func (r *ContainerImage) writeFile(filename string, content []byte) error {
+	file, err := os.OpenFile(filepath.Join(r.clonePath, filename), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600) // #nosec G304
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.Write(content)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // The decompression process is a little more involved so separated out.
@@ -182,7 +234,7 @@ func (r *ContainerImage) decompress(t io.Reader, layer string, mediaType string,
 		}
 		path, err := sanitizePath(path, header.Name)
 		if err != nil {
-			logger.Error("%s - skipped", err)
+			logger.Error("%v - skipped", err)
 			continue
 		}
 		info := header.FileInfo()
@@ -195,7 +247,8 @@ func (r *ContainerImage) decompress(t io.Reader, layer string, mediaType string,
 
 		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600) // #nosec G304
 		if err != nil {
-			return err
+			logger.Error("%v", err)
+			continue
 		}
 		defer file.Close()
 
