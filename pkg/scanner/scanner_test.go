@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/scanner/pkg/response"
 	"os"
 	"testing"
 	"time"
@@ -11,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/leaktk/scanner/pkg/config"
-	"github.com/leaktk/scanner/pkg/resource"
 )
 
 // mockResource implements a dummy resource
@@ -74,11 +75,11 @@ func (b *mockBackend) Name() string {
 	return "mock"
 }
 
-func (b *mockBackend) Scan(resource resource.Resource) ([]*Result, error) {
+func (b *mockBackend) Scan(resource resource.Resource) ([]*response.Result, error) {
 	mockResource, _ := resource.(*mockResource)
 
-	return []*Result{
-		&Result{
+	return []*response.Result{
+		&response.Result{
 			Notes: map[string]string{
 				"depth":         fmt.Sprint(resource.Depth()),
 				"clone_path":    resource.ClonePath(),

@@ -1,4 +1,4 @@
-package scanner
+package response
 
 import (
 	"encoding/json"
@@ -8,10 +8,11 @@ import (
 // In the future we might have things like GitCommitMessage
 // GithubPullRequest, etc
 const (
-	GeneralResultKind        = "General"
-	GitCommitResultKind      = "GitCommit"
-	JSONDataResultKind       = "JSONData"
-	ContainerLayerResultKind = "ContainerLayer"
+	GeneralResultKind          = "General"
+	GitCommitResultKind        = "GitCommit"
+	JSONDataResultKind         = "JSONData"
+	ContainerLayerResultKind   = "ContainerLayer"
+	ContainerMetdataResultKind = "ContainerMetdata"
 )
 
 type (

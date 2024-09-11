@@ -1,7 +1,6 @@
 package scanner
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/response"
 	"github.com/leaktk/scanner/pkg/resource"
 )
 
@@ -22,7 +22,7 @@ type Scanner struct {
 	cloneWorkers uint16
 	maxScanDepth uint16
 	resourceDir  string
-	responses    chan *Response
+	responses    chan *response.Response
 	scanQueue    chan *Request
 	scanWorkers  uint16
 }
@@ -36,7 +36,7 @@ func NewScanner(cfg *config.Config) *Scanner {
 		cloneWorkers: cfg.Scanner.CloneWorkers,
 		maxScanDepth: cfg.Scanner.MaxScanDepth,
 		resourceDir:  filepath.Join(cfg.Scanner.Workdir, "resources"),
-		responses:    make(chan *Response),
+		responses:    make(chan *response.Response),
 		scanQueue:    make(chan *Request, cfg.Scanner.MaxScanQueueSize),
 		scanWorkers:  cfg.Scanner.ScanWorkers,
 		backends: []Backend{
@@ -58,7 +58,7 @@ func (s *Scanner) Close() error {
 }
 
 // Responses returns a channel that can be used for subscribing to respones
-func (s *Scanner) Responses() <-chan *Response {
+func (s *Scanner) Responses() <-chan *response.Response {
 	return s.responses
 }
 
@@ -133,7 +133,7 @@ func (s *Scanner) listenForScanRequests() {
 	for request := range s.scanQueue {
 		reqResource := request.Resource
 
-		results := make([]*Result, 0)
+		results := make([]*response.Result, 0)
 
 		if fs.PathExists(reqResource.ClonePath()) {
 			for _, backend := range s.backends {
@@ -168,11 +168,12 @@ func (s *Scanner) listenForScanRequests() {
 				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
 			})
 		}
-		s.responses <- &Response{
+
+		s.responses <- &response.Response{
 			ID:      id.ID(),
 			Results: results,
 			Errors:  request.Errors,
-			Request: RequestDetails{
+			Request: response.RequestDetails{
 				ID:       request.ID,
 				Kind:     request.Resource.Kind(),
 				Resource: request.Resource.String(),

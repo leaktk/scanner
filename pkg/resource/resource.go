@@ -3,6 +3,7 @@ package resource
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/leaktk/scanner/pkg/response"
 	"io"
 	"time"
 
@@ -20,6 +21,7 @@ type Resource interface {
 	Clone(path string) error
 	ClonePath() string
 	Depth() uint16
+	EnrichResult(result *response.Result) *response.Result
 	ID() string
 	Kind() string
 	ReadFile(path string) ([]byte, error)
