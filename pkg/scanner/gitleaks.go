@@ -3,6 +3,7 @@ package scanner
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -183,6 +184,9 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 	case *resource.JSONData:
 		findings, err = g.walkScan(detector, scanResource)
 		resultKind = JSONDataResultKind
+	case *resource.ContainerImage:
+		findings, err = g.walkScan(detector, scanResource)
+		resultKind = ContainerLayerResultKind
 	default:
 		findings, err = g.walkScan(detector, scanResource)
 		resultKind = GeneralResultKind
@@ -200,6 +204,12 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 		switch scanResource.(type) {
 		case *resource.GitRepo:
 			notes["message"] = finding.Message
+		case *resource.ContainerImage:
+			hash, file, found := strings.Cut(finding.File, string(os.PathSeparator))
+			if found {
+				finding.Commit = hash
+				finding.File = file
+			}
 		}
 
 		results[i] = &Result{
