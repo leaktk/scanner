@@ -254,18 +254,17 @@ func (r *ContainerImage) decompress(t io.Reader, layer string, mediaType string,
 			logger.Error("%v", err)
 			continue
 		}
+		defer file.Close()
 
 		// Copy a maximum number of bytes (layer size * 10) so we do not get "bombs". It is unlikely that a file
 		// with significant entropy will be compressed more than 10x. We can review this.
 		n, err := io.CopyN(file, tarReader, size)
 		if err != nil && err != io.EOF {
-			file.Close()
 			return fmt.Errorf("could not copy file to disk: %v", err)
 		}
 		if n >= size {
 			logger.Warning("copying file %s did not finish due to max file size: %v", file.Name(), err)
 		}
-		file.Close()
 	}
 	return nil
 }

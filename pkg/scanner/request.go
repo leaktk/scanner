@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/scanner/pkg/response"
 )
 
 // Request to the scanner to scan some resource

@@ -46,6 +46,10 @@ func (m *mockResource) Depth() uint16 {
 	return m.depth
 }
 
+func (m *mockResource) EnrichResult(result *response.Result) *response.Result {
+	return result
+}
+
 func (m *mockResource) SetDepth(depth uint16) {
 	m.depth = depth
 }
