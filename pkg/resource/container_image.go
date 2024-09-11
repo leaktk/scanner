@@ -21,42 +21,42 @@ import (
 	"github.com/containers/image/v5/types"
 )
 
-// Container provides a pull and hold a container
-type Container struct {
+// ContainerImage provides a pull and hold a container
+type ContainerImage struct {
 	// Provide common helper functions
 	BaseResource
 	clonePath string
 	location  string
-	options   *ContainerOptions
+	options   *ContainerImageOptions
 }
 
-// ContainerOptions are options for the Container resource
-type ContainerOptions struct {
+// ContainerImageOptions are options for the ContainerImage resource
+type ContainerImageOptions struct {
 	Local      bool     `json:"local"`
 	Exclusions []string `json:"exclusions"`
 	Arch       string   `json:"arch"`
 }
 
-// NewContainer returns a configured Container resource for the scanner to scan
-func NewContainer(location string, options *ContainerOptions) *Container {
-	return &Container{
+// NewContainerImage returns a configured ContainerImage resource for the scanner to scan
+func NewContainerImage(location string, options *ContainerImageOptions) *ContainerImage {
+	return &ContainerImage{
 		location: location,
 		options:  options,
 	}
 }
 
-// Kind of resource (always returns Container here)
-func (r *Container) Kind() string {
-	return "Container"
+// Kind of resource (always returns ContainerImage here)
+func (r *ContainerImage) Kind() string {
+	return "ContainerImage"
 }
 
 // String representation of the resource
-func (r *Container) String() string {
+func (r *ContainerImage) String() string {
 	return r.location
 }
 
 // Clone the resource to the desired local location and store the path
-func (r *Container) Clone(path string) error {
+func (r *ContainerImage) Clone(path string) error {
 	r.clonePath = path
 	if r.options.Local {
 		return r.cloneLocalResource(path, r.location)
@@ -64,12 +64,12 @@ func (r *Container) Clone(path string) error {
 	return r.cloneRemoteResource(path, r.location)
 }
 
-func (r *Container) cloneLocalResource(clonePath string, location string) error {
+func (r *ContainerImage) cloneLocalResource(clonePath string, location string) error {
 	// Do local stuff here - likely just decompress/untar?
 	return nil
 }
 
-func (r *Container) cloneRemoteResource(path string, resource string) error {
+func (r *ContainerImage) cloneRemoteResource(path string, resource string) error {
 
 	ctx := context.Background()
 
@@ -98,8 +98,8 @@ func (r *Container) cloneRemoteResource(path string, resource string) error {
 			return fmt.Errorf("could not unmarshal manifest: %v", err)
 		}
 		if r.options.Arch != "" {
-			for i, manifest := range indexManifest.Manifests {
-				if manifest.Platform.Architecture == r.options.Arch {
+			for i, m := range indexManifest.Manifests {
+				if m.Platform.Architecture == r.options.Arch {
 					index = i
 					logger.Info("selected first %s container", r.options.Arch)
 					break
@@ -145,7 +145,7 @@ func (r *Container) cloneRemoteResource(path string, resource string) error {
 		}
 		defer layerBlob.Close()
 
-		err = r.decompress(layerBlob, layer.MediaType, layer.Size)
+		err = r.decompress(layerBlob, layer.Digest.Hex(), layer.MediaType, layer.Size)
 		if err != nil {
 			return fmt.Errorf("could not decompress layer: %v", err)
 		}
@@ -155,9 +155,10 @@ func (r *Container) cloneRemoteResource(path string, resource string) error {
 }
 
 // The decompression process is a little more involved so separated out.
-func (r *Container) decompress(t io.Reader, mediaType string, size int64) error {
+func (r *ContainerImage) decompress(t io.Reader, layer string, mediaType string, size int64) error {
 	// The maximum file size should be less than 10x the layer size.
 	size = size * 10
+	path := filepath.Join(r.ClonePath(), layer)
 
 	var tarReader *tar.Reader
 
@@ -179,7 +180,7 @@ func (r *Container) decompress(t io.Reader, mediaType string, size int64) error 
 		} else if err != nil {
 			return err
 		}
-		path, err := sanitizePath(r.clonePath, header.Name)
+		path, err := sanitizePath(path, header.Name)
 		if err != nil {
 			logger.Error("%s - skipped", err)
 			continue
@@ -212,38 +213,38 @@ func (r *Container) decompress(t io.Reader, mediaType string, size int64) error 
 }
 
 // ClonePath returns where this repo has been cloned if cloned else ""
-func (r *Container) ClonePath() string {
+func (r *ContainerImage) ClonePath() string {
 	return r.clonePath
 }
 
 // Depth returns the depth for things that have version control
-func (r *Container) Depth() uint16 {
+func (r *ContainerImage) Depth() uint16 {
 	return 0
 }
 
 // SetDepth allows you to adjust the depth for the resource
-func (r *Container) SetDepth(depth uint16) {
+func (r *ContainerImage) SetDepth(depth uint16) {
 	// no-op
 }
 
 // SetCloneTimeout lets you adjust the timeout before the clone aborts
-func (r *Container) SetCloneTimeout(timeout time.Duration) {
+func (r *ContainerImage) SetCloneTimeout(timeout time.Duration) {
 	// no-op
 }
 
 // Since returns the date after which things should be scanned for things
 // that have versions
-func (r *Container) Since() string {
+func (r *ContainerImage) Since() string {
 	return ""
 }
 
 // ReadFile provides a way to access values in the resource
-func (r *Container) ReadFile(path string) ([]byte, error) {
+func (r *ContainerImage) ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(filepath.Join(r.ClonePath(), filepath.Clean(path)))
 }
 
 // Walk traverses the resource like a directory tree
-func (r *Container) Walk(fn WalkFunc) error {
+func (r *ContainerImage) Walk(fn WalkFunc) error {
 	// Handle if path is a file
 	if fs.FileExists(r.ClonePath()) {
 		file, err := os.Open(r.ClonePath())
