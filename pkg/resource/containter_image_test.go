@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestContainer(t *testing.T) {
+func TestContainerImage(t *testing.T) {
 
 	t.Run("SanitizePath", func(t *testing.T) {
 		tmpDir := t.TempDir()
