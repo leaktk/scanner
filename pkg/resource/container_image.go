@@ -50,23 +50,30 @@ func NewContainerImage(location string, options *ContainerImageOptions) *Contain
 	}
 }
 
-// Author Attempts to identify author information returing name and email if found
+// Contact Attempts to identify author information returing name and email if found
+// The order was selected for most completeness with a preference to maintainer
 // Returns the name and email
-func (r *ContainerImage) Author() (name string, email string) {
-	if maintainer, ok := r.labels["maintainer"]; ok {
-		if match := extractRFC5322Mailbox(maintainer); match != nil {
-			name = match[0]
-			email = match[1]
-		} else {
-			name = maintainer
-		}
-	}
+func (r *ContainerImage) Contact() (name string, email string) {
 	if authors, ok := r.labels["org.opencontainers.image.authors"]; ok {
 		if match := extractRFC5322Mailbox(authors); match != nil {
 			name = match[0]
 			email = match[1]
 		} else {
 			name = authors
+		}
+	}
+	if author, ok := r.labels["author"]; ok {
+		name = strings.TrimSpace(author)
+	}
+	if e, ok := r.labels["email"]; ok {
+		email = strings.TrimSpace(e)
+	}
+	if maintainer, ok := r.labels["maintainer"]; ok {
+		if match := extractRFC5322Mailbox(maintainer); match != nil {
+			name = match[0]
+			email = match[1]
+		} else {
+			name = maintainer
 		}
 	}
 	if maintainer, ok := r.labels["org.opencontainers.image.maintainers"]; ok {
@@ -77,12 +84,7 @@ func (r *ContainerImage) Author() (name string, email string) {
 			name = maintainer
 		}
 	}
-	if author, ok := r.labels["author"]; ok {
-		name = strings.TrimSpace(author)
-	}
-	if e, ok := r.labels["email"]; ok {
-		email = strings.TrimSpace(e)
-	}
+	
 	return name, email
 }
 
@@ -342,7 +344,7 @@ func (r *ContainerImage) EnrichResult(result *response.Result) *response.Result 
 	}
 	result.Kind = response.ContainerLayerResultKind
 
-	result.Contact.Name, result.Contact.Email = r.Author()
+	result.Contact.Name, result.Contact.Email = r.Contact()
 
 	return result
 }
