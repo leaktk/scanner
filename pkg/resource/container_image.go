@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -47,6 +48,53 @@ func NewContainerImage(location string, options *ContainerImageOptions) *Contain
 		location: location,
 		options:  options,
 	}
+}
+
+// Author Attempts to identify author information returing name and email if found
+// Returns the name and email
+func (r *ContainerImage) Author() (name string, email string) {
+	if maintainer, ok := r.labels["maintainer"]; ok {
+		if match := extractRFC5322Mailbox(maintainer); match != nil {
+			name = match[0]
+			email = match[1]
+		} else {
+			name = maintainer
+		}
+	}
+	if authors, ok := r.labels["org.opencontainers.image.authors"]; ok {
+		if match := extractRFC5322Mailbox(authors); match != nil {
+			name = match[0]
+			email = match[1]
+		} else {
+			name = authors
+		}
+	}
+	if maintainer, ok := r.labels["org.opencontainers.image.maintainers"]; ok {
+		if match := extractRFC5322Mailbox(maintainer); match != nil {
+			name = match[0]
+			email = match[1]
+		} else {
+			name = maintainer
+		}
+	}
+	if author, ok := r.labels["author"]; ok {
+		name = strings.TrimSpace(author)
+	}
+	if e, ok := r.labels["email"]; ok {
+		email = strings.TrimSpace(e)
+	}
+	return name, email
+}
+
+// Extracts RFC5322 style Mailboxes ie. "John Smith <jsmith@example.com>"
+func extractRFC5322Mailbox(mailbox string) []string {
+	re := regexp.MustCompile(`^(.*)\s<([^>]+)>$`)
+
+	matches := re.FindStringSubmatch(mailbox)
+	if len(matches) > 2 {
+		return matches
+	}
+	return nil
 }
 
 // Kind of resource (always returns ContainerImage here)
@@ -279,7 +327,7 @@ func (r *ContainerImage) Depth() uint16 {
 	return 0
 }
 
-// EnrichResult enriches the result with contextual information
+// EnrichResult adds contextual information to each result
 func (r *ContainerImage) EnrichResult(result *response.Result) *response.Result {
 
 	hash, file, found := strings.Cut(result.Location.Path, string(os.PathSeparator))
@@ -293,7 +341,9 @@ func (r *ContainerImage) EnrichResult(result *response.Result) *response.Result 
 		result.Kind = response.ContainerMetdataResultKind
 	}
 	result.Kind = response.ContainerLayerResultKind
-	// check for author in manifest and config
+
+	result.Contact.Name, result.Contact.Email = r.Author()
+
 	return result
 }
 
