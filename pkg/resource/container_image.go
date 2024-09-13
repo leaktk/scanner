@@ -51,17 +51,9 @@ func NewContainerImage(location string, options *ContainerImageOptions) *Contain
 }
 
 // Contact Attempts to identify author information returing name and email if found
-// The order was selected for most completeness with a preference to maintainer
+// The order was selected for most completeness with a preference to maintainer and OCI spec
 // Returns the name and email
 func (r *ContainerImage) Contact() (name string, email string) {
-	if authors, ok := r.labels["org.opencontainers.image.authors"]; ok {
-		if match := extractRFC5322Mailbox(authors); match != nil {
-			name = match[0]
-			email = match[1]
-		} else {
-			name = authors
-		}
-	}
 	if author, ok := r.labels["author"]; ok {
 		name = strings.TrimSpace(author)
 	}
@@ -84,17 +76,25 @@ func (r *ContainerImage) Contact() (name string, email string) {
 			name = maintainer
 		}
 	}
-	
+	if authors, ok := r.labels["org.opencontainers.image.authors"]; ok {
+		if match := extractRFC5322Mailbox(authors); match != nil {
+			name = match[0]
+			email = match[1]
+		} else {
+			name = authors
+		}
+	}
 	return name, email
 }
 
-// Extracts RFC5322 style Mailboxes ie. "John Smith <jsmith@example.com>"
+// Extracts RFC5322 style Mailboxes i.e "John Smith <jsmith@example.com>"
 func extractRFC5322Mailbox(mailbox string) []string {
-	re := regexp.MustCompile(`^(.*)\s<([^>]+)>$`)
-
-	matches := re.FindStringSubmatch(mailbox)
-	if len(matches) > 2 {
-		return matches
+	for _, mb := range strings.Split(mailbox, ",") {
+		re := regexp.MustCompile(`^(.*)\s<([^>]+)>$`)
+		matches := re.FindStringSubmatch(mb)
+		if len(matches) > 2 {
+			return matches[1:]
+		}
 	}
 	return nil
 }
@@ -179,7 +179,6 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 		imgRef := imageSource.Reference().DockerReference().Name() + "@" + indexManifest.Manifests[index].Digest.String()
 
 		return r.cloneRemoteResource(path, imgRef)
-
 	}
 
 	img, err := imgRef.NewImage(ctx, sysCtx)
