@@ -4,14 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/leaktk/scanner/pkg/logger"
 )
+
+var urlRegexp = regexp.MustCompile(`^https?:\/\/\S+$`)
 
 // JSONData provides a way to interact with a json data as a resource
 type JSONData struct {
@@ -25,8 +29,17 @@ type JSONData struct {
 
 // JSONDataOptions are options for the JSONData resource
 type JSONDataOptions struct {
-	// Currently none needed but here for future cases
+	FetchURLs bool `json:"fetch_urls"`
 }
+
+type jsonNode struct {
+	parent any
+	key    string
+	path   string
+	value  any
+}
+
+type jsonWalkFunc func(leafNode jsonNode) error
 
 // NewJSONData returns a configured JSONData resource for the scanner to scan
 func NewJSONData(raw string, options *JSONDataOptions) *JSONData {
@@ -48,13 +61,16 @@ func (r *JSONData) String() string {
 
 // Clone the resource to the desired local location and store the path
 func (r *JSONData) Clone(path string) error {
+	var err error
+
 	r.clonePath = path
-	if err := os.MkdirAll(r.clonePath, 0700); err != nil {
+
+	if err = os.MkdirAll(r.clonePath, 0700); err != nil {
 		return err
 	}
 
 	// Load the raw json into the data variable
-	if err := json.Unmarshal([]byte(r.raw), &r.data); err != nil {
+	if err = json.Unmarshal([]byte(r.raw), &r.data); err != nil {
 		logger.Debug("JSONData:\n%v", r.raw)
 		return fmt.Errorf("could not unmarshal JSONData: error=%q", err)
 	}
@@ -66,13 +82,41 @@ func (r *JSONData) Clone(path string) error {
 		".gitleaksbaseline",
 	} {
 		if data, err := r.ReadFile(file); err == nil {
-			if err := os.WriteFile(filepath.Join(r.clonePath, file), data, 0600); err != nil {
+			if err = os.WriteFile(filepath.Join(r.clonePath, file), data, 0600); err != nil {
 				return err
 			}
 		}
 	}
 
-	return nil
+	// Fetch URLs in jsonNodes and replace the node with a resource object
+	if r.options.FetchURLs {
+		err = r.fetchURLs(jsonNode{value: r.data}, r.clonePath)
+	}
+
+	return err
+}
+
+func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
+	return r.walkRecusrive(rootNode, func(leafNode jsonNode) error {
+		// We only want string objects
+		obj, isString := leafNode.value.(string)
+		if !isString {
+			return nil
+		}
+
+		if !urlRegexp.MatchString(obj) {
+			return nil
+		}
+
+		urlResource := NewURL(obj, &URLOptions{})
+		err := urlResource.Clone(filepath.Join(clonePath, leafNode.path))
+
+		if err != nil {
+			return fmt.Errorf("could not fetch url: path=%q url=%q error=%q", leafNode.path, obj, err)
+		}
+
+		return r.replaceWithResource(leafNode, urlResource)
+	})
 }
 
 // ClonePath returns where this repo has been cloned if cloned else ""
@@ -115,7 +159,7 @@ func (r *JSONData) ReadFile(path string) ([]byte, error) {
 	// Traverse the data structure
 	doesNotExistError := fmt.Errorf("%q does not exist", path)
 	current := r.data
-	for _, component := range components {
+	for i, component := range components {
 		switch obj := current.(type) {
 		case []any:
 			i, err := strconv.Atoi(component)
@@ -137,52 +181,115 @@ func (r *JSONData) ReadFile(path string) ([]byte, error) {
 			if !ok {
 				return []byte{}, doesNotExistError
 			}
+		case Resource:
+			return obj.ReadFile(filepath.Join(components[i:]...))
 		default:
 			return []byte{}, doesNotExistError
 		}
 	}
 
 	// Look at the value of current after traversal and return it if reached
-	switch current.(type) {
+	switch obj := current.(type) {
 	case map[string]any:
 		return []byte{}, doesNotExistError
 	case []any:
 		return []byte{}, doesNotExistError
 	case nil: // Handle nil
 		return []byte{}, nil
+	case Resource:
+		return obj.ReadFile("")
 	default: // Handle bool, float64, and string
-		return []byte(fmt.Sprintf("%v", current)), nil
+		return []byte(fmt.Sprintf("%v", obj)), nil
 	}
 }
 
-func (r *JSONData) walkRecusrive(path string, current any, fn WalkFunc) error {
-	switch obj := current.(type) {
+func (r *JSONData) walkRecusrive(currentNode jsonNode, fn jsonWalkFunc) error {
+	switch obj := currentNode.value.(type) {
 	case map[string]any:
 		for key, value := range obj {
-			subPath := filepath.Join(path, key)
+			childNode := jsonNode{
+				parent: currentNode.value,
+				key:    key,
+				path:   filepath.Join(currentNode.path, key),
+				value:  value,
+			}
 
-			if err := r.walkRecusrive(subPath, value, fn); err != nil {
+			if err := r.walkRecusrive(childNode, fn); err != nil {
 				return err
 			}
 		}
+
 		return nil
 	case []any:
 		for i, value := range obj {
-			subPath := filepath.Join(path, strconv.Itoa(i))
+			key := strconv.Itoa(i)
 
-			if err := r.walkRecusrive(subPath, value, fn); err != nil {
+			childNode := jsonNode{
+				parent: currentNode.value,
+				key:    key,
+				path:   filepath.Join(currentNode.path, key),
+				value:  value,
+			}
+
+			if err := r.walkRecusrive(childNode, fn); err != nil {
 				return err
 			}
 		}
 		return nil
-	case nil: // Handle nil
-		return fn(path, bytes.NewReader([]byte{}))
-	default: // Handle bool, float64, and string
-		return fn(path, bytes.NewReader([]byte(fmt.Sprintf("%v", obj))))
+	default: // We found a leaf node
+		return fn(currentNode)
+	}
+}
+
+// Take a leaf node in the JSON tree and replace it with a resource object
+func (r *JSONData) replaceWithResource(leafNode jsonNode, resource Resource) error {
+	switch parent := leafNode.parent.(type) {
+	case map[string]any:
+		parent[leafNode.key] = resource
+	case []any:
+		i, err := strconv.Atoi(leafNode.key)
+
+		if err != nil {
+			return fmt.Errorf("could not set resource: path=%q error=%q", leafNode.path, err)
+		}
+
+		parent[i] = resource
+	default:
+		// Not sure how you got here
+		return fmt.Errorf(`leaf node parent was a leaf node some how: ¯\_(ツ)_/¯`)
+	}
+
+	return nil
+}
+
+// prefixClonePath handles providing the full clone path for sub-resources.
+// When a node in the tree is replaced with a resource, the resource isn't
+// aware of its place in the tree when you call Walk on it. This adds that path
+// back.
+func (r *JSONData) prefixClonePath(leafNode jsonNode, fn WalkFunc) WalkFunc {
+	return func(path string, reader io.Reader) error {
+		return fn(filepath.Join(leafNode.path, path), reader)
+	}
+}
+
+// walkFuncToJSONWalkFunc takes a normal WalkFunc and wraps it in a
+// jsonWalkFunc so it can be used in this resource. The custom jsonWalkFunc
+// exists since there are mutliple cases where we need to walk through the json
+// data structure that wouldn't apply to other resources.
+func (r *JSONData) walkFuncToJSONWalkFunc(fn WalkFunc) jsonWalkFunc {
+	return func(leafNode jsonNode) error {
+		switch obj := leafNode.value.(type) {
+		case nil: // Handle nil
+			return fn(leafNode.path, bytes.NewReader([]byte{}))
+		case Resource:
+			return obj.Walk(r.prefixClonePath(leafNode, fn))
+		default: // Handle bool, float64, and string
+			return fn(leafNode.path, bytes.NewReader([]byte(fmt.Sprintf("%v", obj))))
+		}
 	}
 }
 
 // Walk traverses the JSON data structure like it's a directory tree
 func (r *JSONData) Walk(fn WalkFunc) error {
-	return r.walkRecusrive("", r.data, fn)
+	return r.walkRecusrive(jsonNode{value: r.data}, r.walkFuncToJSONWalkFunc(fn))
 }

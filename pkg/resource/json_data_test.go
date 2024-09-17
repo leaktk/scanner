@@ -3,6 +3,8 @@ package resource
 import (
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 
@@ -10,8 +12,46 @@ import (
 )
 
 func TestJSONData(t *testing.T) {
-	data := `{"foo":"bar", "baz": ["bop", true, 1, 2.3, null, {"hello": "there"}]}`
-	jsonData := NewJSONData(data, &JSONDataOptions{})
+	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		var content string
+
+		assert.Equal(t, "GET", r.Method)
+
+		switch r.URL.Path {
+		case "/hello":
+			content = "hello world"
+		case "/hello.json":
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			content = `{"hello": "world"}`
+		default:
+			content = "Not sure what happened here"
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, err = io.WriteString(w, content)
+
+		assert.NoError(t, err)
+	}))
+
+	ts.Start()
+	defer ts.Close()
+
+	data := `{
+			"foo":"bar",
+			"baz": ["bop", true, 1, 2.3, null, {"hello": "there"}],
+			"url":"` + ts.URL + `/hello",
+			"nested":"` + ts.URL + `/hello.json"
+	} `
+
+	brokenURLData := `{
+		"invalid": "https://raw.githubusercontent.com/leaktk/fake-leaks/main/this-url-doesnt-exist-8UaehX5b24MzZiaeJ428FK5R"
+	}`
+
+	jsonData := NewJSONData(data, &JSONDataOptions{
+		FetchURLs: true,
+	})
+
 	err := jsonData.Clone(t.TempDir())
 	assert.NoError(t, err)
 
@@ -75,6 +115,21 @@ func TestJSONData(t *testing.T) {
 			path: "cat",
 			err:  true,
 		},
+		{
+			path:  "url",
+			value: "hello world",
+			err:   false,
+		},
+		{
+			path:  filepath.Join("nested", "hello"),
+			value: "world",
+			err:   false,
+		},
+		{
+			path:  "invalid",
+			value: "https://raw.githubusercontent.com/leaktk/fake-leaks/main/this-url-doesnt-exist-8UaehX5b24MzZiaeJ428FK5R",
+			err:   true,
+		},
 	}
 
 	t.Run("ReadFile", func(t *testing.T) {
@@ -125,5 +180,21 @@ func TestJSONData(t *testing.T) {
 
 		// Make sure all items have been checked
 		assert.Equal(t, len(toCheck), 0, fmt.Sprintf("remaining values: %v", toCheck))
+	})
+
+	t.Run("CloneBrokenURLWithoutFetchURLs", func(t *testing.T) {
+		// Should work
+		jsonData := NewJSONData(brokenURLData, &JSONDataOptions{})
+
+		assert.NoError(t, jsonData.Clone(t.TempDir()))
+	})
+
+	t.Run("CloneBrokenURLWithFetchURLs", func(t *testing.T) {
+		// Should throw an error
+		jsonData := NewJSONData(brokenURLData, &JSONDataOptions{
+			FetchURLs: true,
+		})
+
+		assert.Error(t, jsonData.Clone(t.TempDir()))
 	})
 }
