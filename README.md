@@ -195,7 +195,19 @@ Note: the `resource` here is a string containing escaped JSON data.
 
 #### Request Options
 
-JSONData currently doesn't have any options, but it does support including
+**fetch_urls**
+
+If true and one of the values in the JSON data is a URL, it will be fetched
+and treated as the content at that path in the data structure. This is
+like running a URL scan. If the response is JSON it can be traversed too,
+but it won't fetch futher URLs.
+
+* Type: `bool`
+* Default: `false`
+
+**NOTE:** It is **NOT** recommended to enable this option unless you trust
+the JSON and the URLs you are providing to the scanner.
+
 Gitleaks config files (e.g. `.gitleaks.toml`, `.gitleaksignore`,
 `.gitleaksbaseline`) as top level keys that will be considered during the
 scan. The [examples/requests.jsonl](./examples/requests.jsonl) has an
