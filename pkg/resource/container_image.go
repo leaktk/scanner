@@ -37,7 +37,6 @@ type ContainerImage struct {
 
 // ContainerImageOptions are options for the ContainerImage resource
 type ContainerImageOptions struct {
-	Local      bool     `json:"local"`
 	Exclusions []string `json:"exclusions"`
 	Arch       string   `json:"arch"`
 }
@@ -109,7 +108,7 @@ func (r *ContainerImage) String() string {
 	return r.location
 }
 
-// Clone the resource to the desired local location and store the path
+// Clone the resource to the desired clonePath location
 func (r *ContainerImage) Clone(path string) error {
 	err := os.MkdirAll(path, 0700)
 	if err != nil {
@@ -117,17 +116,10 @@ func (r *ContainerImage) Clone(path string) error {
 	}
 	r.clonePath = path
 
-	if r.options.Local {
-		return r.cloneLocalResource(path, r.location)
-	}
 	return r.cloneRemoteResource(path, r.location)
 }
 
-func (r *ContainerImage) cloneLocalResource(clonePath string, location string) error {
-	// Do local stuff here - likely just decompress/untar?
-	return nil
-}
-
+// cloneRemoteResource clones a remote resource ready for scanning.
 func (r *ContainerImage) cloneRemoteResource(path string, resource string) error {
 
 	ctx := context.Background()
@@ -174,7 +166,8 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 				}
 			}
 		} else {
-			logger.Info("manifest contains multiple options, defaulted to first")
+			logger.Info("manifest contains multiple options, defaulted to first (OS: %s, Arch: %s)",
+				indexManifest.Manifests[index].Platform.OS, indexManifest.Manifests[index].Platform.Architecture)
 		}
 		imgRef := imageSource.Reference().DockerReference().Name() + "@" + indexManifest.Manifests[index].Digest.String()
 
@@ -193,11 +186,11 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 	}
 	r.labels = config.Config.Labels
 
-	configJson, err := json.MarshalIndent(config, "", "  ")
+	configJSON, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to create string from configjson: %v", err)
 	}
-	err = r.writeFile("config.json", configJson)
+	err = r.writeFile("config.json", configJSON)
 	if err != nil {
 		return fmt.Errorf("failed to write config to clonepath: %v", err)
 	}

@@ -403,29 +403,22 @@ Note: the `path` will be blank when using a `Files` type scan and it will
 use the same logic as `JSONData` when the response's content type is
 `application/json` (i.e. it will be the path down the traversed keys).
 
-### Container
+### Container Image
 
-This allows you to pull a remote, or local, container image to scan. It will
-be parsed as a `Files` request once the images are downloaded and prepared.
+This allows you to pull a remote container image to scan. It unpacks and scans
+the Image, Config and Manifest.
 
 #### Request
 
 ```json
 {
   "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
-  "kind": "Container",
-  "resource": "quay.io/jetstack/cert-manager-controller:v1.15.3"
+  "kind": "ContainerImage",
+  "resource": "quay.io/wizzy/fake-leaks:v1.0.2"
 }
 ```
 
 #### Request Options
-
-**local**
-
-Specifies that the provided resource is a local path, not remote. Defaults to false (remote),
-
-* Type: `bool`
-* Default: excluded (false)
 
 **exclusions**
 
@@ -434,6 +427,12 @@ Sets a list of RootFS Layer hashes to exclude from scanning
 * Type: `[]string`
 * Default: excluded
 
+**arch**
+
+Provide a preferred architecture
+
+* Type: `string`
+* Default: excluded
 
 #### Response  
 TODO: Refine this.
@@ -442,13 +441,13 @@ TODO: Refine this.
   "id": "a1ef32d00c609b370d2181ea46b11111119deeeea68918cc676a8f12d1fc7e3b",
   "request": {
     "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
-    "kind": "Container",
-    "resource": "quay.io/jetstack/cert-manager-controller:v1.15.3y"
+    "kind": "ContainerImage",
+    "resource": "quay.io/wizzy/fake-leaks:v1.0.2"
   },
   "results": [
     {
       "id": "6c14f496a2111dfeecbfff4a61587b0b1866788a6112b420f80071f8cded0153",
-      "kind": "General",
+      "kind": "ContainerLayer",
       "secret": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
       "match": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
       "entropy": 6.0285063,
@@ -463,19 +462,19 @@ TODO: Refine this.
         ]
       },
       "contact": {
-        "name": "",
-        "email": ""
+        "name": "Josh Maint",
+        "email": "wizzy-maint@wizzy.com"
       },
       "location": {
-        "version": "",
-        "path": "",
+        "version": "bd34309759a381a850f60d90bb1adc2a1756bbdf11d746c438c8706a13c63f66",
+        "path": "fake-leaks\\base64-encoded",
         "start": {
           "line": 2,
           "column": 2
         },
         "end": {
-          "line": 29,
-          "column": 26
+          "line": 10,
+          "column": 13
         }
       },
       "notes": {}
