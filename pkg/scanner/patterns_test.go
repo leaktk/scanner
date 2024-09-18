@@ -9,10 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	gitleaksconfig "github.com/zricethezav/gitleaks/v8/config"
-
 	"github.com/leaktk/scanner/pkg/config"
+	"github.com/stretchr/testify/assert"
 )
 
 const mockConfig = `
@@ -207,7 +205,7 @@ func TestPatternsGitleaks(t *testing.T) {
 	tempDir := t.TempDir()
 	configFilePath := filepath.Join(tempDir, "gitleaks.toml")
 
-	getGitleaksConfig := func(autofetch bool, refreshAfter, expiredAfter, modTime uint32) (*gitleaksconfig.Config, error) {
+	getPatterns := func(autofetch bool, refreshAfter, expiredAfter, modTime uint32) *Patterns {
 		err := os.WriteFile(configFilePath, []byte(mockConfig), 0644)
 		assert.NoError(t, err)
 
@@ -223,11 +221,11 @@ func TestPatternsGitleaks(t *testing.T) {
 		cfg.Scanner.Patterns.Gitleaks.ConfigPath = configFilePath
 		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
 
-		return NewPatterns(&cfg.Scanner.Patterns, &http.Client{}).Gitleaks()
+		return NewPatterns(&cfg.Scanner.Patterns, &http.Client{})
 	}
 
 	t.Run("AutofetchEnabledAndConfigExpired", func(t *testing.T) {
-		cfg, err := getGitleaksConfig(true, 5, 10, 15)
+		cfg, err := getPatterns(true, 5, 10, 15).Gitleaks()
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
 		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
@@ -239,7 +237,7 @@ func TestPatternsGitleaks(t *testing.T) {
 	})
 
 	t.Run("AutofetchEnabledAndConfigNotExpired", func(t *testing.T) {
-		cfg, err := getGitleaksConfig(true, 5, 15, 10)
+		cfg, err := getPatterns(true, 5, 15, 10).Gitleaks()
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
 		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
@@ -251,15 +249,24 @@ func TestPatternsGitleaks(t *testing.T) {
 	})
 
 	t.Run("AutofetchDisabledAndConfigExpired", func(t *testing.T) {
-		_, err := getGitleaksConfig(false, 5, 10, 15)
+		_, err := getPatterns(false, 5, 10, 15).Gitleaks()
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "gitleaks config is expired and autofetch is disabled")
 	})
 
 	t.Run("AutofetchDisabledAndConfigNotExpired", func(t *testing.T) {
-		cfg, err := getGitleaksConfig(false, 5, 15, 10)
+		cfg, err := getPatterns(false, 5, 15, 10).Gitleaks()
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
 		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+	})
+
+	t.Run("ValidateGitleaksConfigHash", func(t *testing.T) {
+		patterns := getPatterns(false, 5, 15, 10)
+		cfg, err := patterns.Gitleaks()
+		assert.NoError(t, err)
+		assert.NotNil(t, cfg)
+		assert.NotNil(t, patterns)
+		assert.Equal(t, "32359008caab9646f685745b9888a71d81697a3fdfa5a2f49cc8d8f38649320b", patterns.GitleaksConfigHash())
 	})
 }
