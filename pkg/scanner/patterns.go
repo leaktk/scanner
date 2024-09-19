@@ -116,7 +116,7 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 		if err := os.WriteFile(p.config.Gitleaks.ConfigPath, []byte(rawConfig), 0600); err != nil {
 			return p.gitleaksConfig, fmt.Errorf("could not write config: path=%q error=%q", p.config.Gitleaks.ConfigPath, err)
 		}
-		p.gitleaksConfigHash = sha256.Sum256([]byte(rawConfig))
+		p.updateGitleaksConfigHash(sha256.Sum256([]byte(rawConfig)))
 	} else if p.gitleaksConfig == nil {
 		if p.gitleaksConfigModTimeExceeds(p.config.ExpiredAfter) {
 			return nil, fmt.Errorf(
@@ -135,9 +135,8 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 			logger.Debug("loaded config:\n%s\n", rawConfig)
 			return p.gitleaksConfig, fmt.Errorf("could not parse config: error=%q", err)
 		}
-		p.gitleaksConfigHash = sha256.Sum256(rawConfig)
+		p.updateGitleaksConfigHash(sha256.Sum256(rawConfig))
 	}
-	logger.Info("updated gitleaks patterns: hash=%s", p.GitleaksConfigHash())
 
 	return p.gitleaksConfig, nil
 }
@@ -145,6 +144,14 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 // GitleaksConfigHash returns the sha256 hash for the current gitleaks config
 func (p *Patterns) GitleaksConfigHash() string {
 	return fmt.Sprintf("%x", p.gitleaksConfigHash)
+}
+
+// updateGitleaksConfigHash updated value and logs only on a change
+func (p *Patterns) updateGitleaksConfigHash(hash [32]byte) {
+	if hash != p.gitleaksConfigHash {
+		p.gitleaksConfigHash = hash
+		logger.Info("updated gitleaks patterns: hash=%s", p.GitleaksConfigHash())
+	}
 }
 
 func invalidConfig(cfg *gitleaksconfig.Config) bool {
