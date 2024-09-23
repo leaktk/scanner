@@ -217,7 +217,6 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, err
 				// How: Uniquely identify what was used to find it
 				finding.RuleID,
 			),
-			Kind:    "",
 			Secret:  finding.Secret,
 			Match:   finding.Match,
 			Entropy: finding.Entropy,
