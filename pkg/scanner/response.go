@@ -16,17 +16,10 @@ const (
 type (
 	// Response from the scanner with the scan results
 	Response struct {
-		ID      string         `json:"id"`
-		Errors  []LeakTKError  `json:"errors"`
-		Request RequestDetails `json:"request"`
-		Results []*Result      `json:"results"`
-	}
-
-	// RequestDetails that we return with the response for tying the two together
-	RequestDetails struct {
-		ID       string `json:"id"`
-		Kind     string `json:"kind"`
-		Resource string `json:"resource"`
+		ID        string        `json:"id"`
+		Errors    []LeakTKError `json:"errors"`
+		RequestID string        `json:"request_id"`
+		Results   []*Result     `json:"results"`
 	}
 
 	// Result of a scan
