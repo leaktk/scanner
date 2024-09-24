@@ -169,14 +169,10 @@ func (s *Scanner) listenForScanRequests() {
 			})
 		}
 		s.responses <- &Response{
-			ID:      id.ID(),
-			Results: results,
-			Errors:  request.Errors,
-			Request: RequestDetails{
-				ID:       request.ID,
-				Kind:     request.Resource.Kind(),
-				Resource: request.Resource.String(),
-			},
+			ID:        id.ID(),
+			Results:   results,
+			Errors:    request.Errors,
+			RequestID: request.ID,
 		}
 	}
 }
