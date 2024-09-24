@@ -112,7 +112,10 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 		err := urlResource.Clone(filepath.Join(clonePath, leafNode.path))
 
 		if err != nil {
-			return fmt.Errorf("could not fetch url: path=%q url=%q error=%q", leafNode.path, obj, err)
+			// Not being able to retrieve a URL found inside JSONData is not a fatal error. Logging until update how
+			// we manage fatal/nonfatal errors flowing through the application.
+			logger.Info("%v", fmt.Errorf("could not fetch url: path=%q url=%q error=%q", leafNode.path, obj, err))
+			return nil
 		}
 
 		return r.replaceWithResource(leafNode, urlResource)
