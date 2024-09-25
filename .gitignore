@@ -1,5 +1,6 @@
 # Binaries for programs and plugins
 leaktk-scanner
+!completions/bash/leaktk-scanner
 *.exe
 *.exe~
 *.dll
