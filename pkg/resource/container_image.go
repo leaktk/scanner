@@ -195,18 +195,22 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 		return fmt.Errorf("failed to write config to clonepath: %v", err)
 	}
 
-	imgManifest, err := manifest.Schema2FromManifest(rawManifest)
+	imgManifest, err := manifest.FromBlob(rawManifest, manifestType)
 	if err != nil {
 		return fmt.Errorf("could not parse manifest: %v", err)
 	}
 
 	cache := blobinfocache.DefaultCache(sysCtx)
-	for _, layer := range imgManifest.LayersDescriptors {
-		for _, skip := range r.options.Exclusions {
-			if skip == layer.Digest.String() {
+	for _, layer := range imgManifest.LayerInfos() {
+		skipLayer := false
+		for _, exclude := range r.options.Exclusions {
+			if exclude == layer.Digest.String() {
 				logger.Debug("skipping layer %s", layer.Digest.String())
-				continue
+				skipLayer = true
 			}
+		}
+		if skipLayer {
+			continue
 		}
 		logger.Debug("downloading layer %s", layer.Digest.String())
 
