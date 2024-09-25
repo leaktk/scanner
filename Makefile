@@ -4,6 +4,7 @@ BUILD_META :=
 BUILD_META += -X=github.com/leaktk/scanner/cmd.Version=$(VERSION)
 BUILD_META += -X=github.com/leaktk/scanner/cmd.Commit=$(COMMIT)
 PREFIX ?= /usr
+MODULE := $(shell grep '^module' go.mod | awk '{print $$2}')
 
 SHELL := $(shell command -v bash;)
 BASHINSTALLDIR=${PREFIX}/share/bash-completion/completions
@@ -43,6 +44,8 @@ build: format test
 
 format:
 	go fmt ./...
+	which goimports &> /dev/null || go install golang.org/x/tools/cmd/goimports@latest
+	goimports -local $(MODULE) -l -w .
 
 test: format gosec golint
 	go vet ./...
