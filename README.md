@@ -505,3 +505,6 @@ TODO: Refine this.
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
 1. Have options for URL and JSONData to allow them to recursively pull other URLs when they see them (e.g. `follow_urls bool`, `depth uint16`) and make sure it can't loop
+1. Improve error handling, allowing resources to better handle fatal/nonfatal errors
+1. Implement scanning with Yara
+1. Investigate a custom log handler to consume the logs from the embedded gitleaks. Log to DEBUG.

@@ -169,16 +169,11 @@ func (s *Scanner) listenForScanRequests() {
 				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
 			})
 		}
-
 		s.responses <- &response.Response{
-			ID:      id.ID(),
-			Results: results,
-			Errors:  request.Errors,
-			Request: response.RequestDetails{
-				ID:       request.ID,
-				Kind:     request.Resource.Kind(),
-				Resource: request.Resource.String(),
-			},
+			ID:        id.ID(),
+			Results:   results,
+			Errors:    request.Errors,
+			RequestID: request.ID,
 		}
 	}
 }

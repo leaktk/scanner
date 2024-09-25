@@ -22,7 +22,7 @@ func (e LeakTKError) String() string {
 		fatal = "fatal "
 	}
 
-	return fmt.Sprintf("%serror occured, code %d (%s): %s", fatal, e.Code, errorNames[e.Code], e.Message)
+	return fmt.Sprintf("%serror occurred, code %d (%s): %s", fatal, e.Code, errorNames[e.Code], e.Message)
 }
 
 // ErrorCode defined sthe set of error codes that can be set on a LeakTKError

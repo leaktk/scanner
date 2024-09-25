@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,10 +21,11 @@ import (
 // Patterns acts as an abstraction for fetching different scanner patterns
 // and keeping them up to date and cached
 type Patterns struct {
-	client         HTTPClient
-	config         *config.Patterns
-	gitleaksConfig *gitleaksconfig.Config
-	mutex          sync.Mutex
+	client             HTTPClient
+	config             *config.Patterns
+	gitleaksConfigHash [32]byte
+	gitleaksConfig     *gitleaksconfig.Config
+	mutex              sync.Mutex
 }
 
 // NewPatterns returns a configured instance of Patterns
@@ -95,7 +97,6 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 
 	if p.config.Autofetch && p.gitleaksConfigModTimeExceeds(p.config.RefreshAfter) {
 		rawConfig, err := p.fetchGitleaksConfig()
-
 		if err != nil {
 			return p.gitleaksConfig, err
 		}
@@ -115,6 +116,7 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 		if err := os.WriteFile(p.config.Gitleaks.ConfigPath, []byte(rawConfig), 0600); err != nil {
 			return p.gitleaksConfig, fmt.Errorf("could not write config: path=%q error=%q", p.config.Gitleaks.ConfigPath, err)
 		}
+		p.updateGitleaksConfigHash(sha256.Sum256([]byte(rawConfig)))
 	} else if p.gitleaksConfig == nil {
 		if p.gitleaksConfigModTimeExceeds(p.config.ExpiredAfter) {
 			return nil, fmt.Errorf(
@@ -133,9 +135,23 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 			logger.Debug("loaded config:\n%s\n", rawConfig)
 			return p.gitleaksConfig, fmt.Errorf("could not parse config: error=%q", err)
 		}
+		p.updateGitleaksConfigHash(sha256.Sum256(rawConfig))
 	}
 
 	return p.gitleaksConfig, nil
+}
+
+// GitleaksConfigHash returns the sha256 hash for the current gitleaks config
+func (p *Patterns) GitleaksConfigHash() string {
+	return fmt.Sprintf("%x", p.gitleaksConfigHash)
+}
+
+// updateGitleaksConfigHash updated value and logs only on a change
+func (p *Patterns) updateGitleaksConfigHash(hash [32]byte) {
+	if hash != p.gitleaksConfigHash {
+		p.gitleaksConfigHash = hash
+		logger.Info("updated gitleaks patterns: hash=%s", p.GitleaksConfigHash())
+	}
 }
 
 func invalidConfig(cfg *gitleaksconfig.Config) bool {
