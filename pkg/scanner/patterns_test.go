@@ -112,7 +112,7 @@ func TestGitleaksConfigModTimeExceeds(t *testing.T) {
 		tempDir := t.TempDir()
 
 		tempFilePath := filepath.Join(tempDir, "gitleaks.toml")
-		err := os.WriteFile(tempFilePath, []byte{}, 0644)
+		err := os.WriteFile(tempFilePath, []byte{}, 0600)
 		assert.NoError(t, err)
 
 		// Set the file's modification time to 10 seconds ago
@@ -207,7 +207,7 @@ func TestPatternsGitleaks(t *testing.T) {
 	configFilePath := filepath.Join(tempDir, "gitleaks.toml")
 
 	getPatterns := func(autofetch bool, refreshAfter, expiredAfter, modTime uint32) *Patterns {
-		err := os.WriteFile(configFilePath, []byte(mockConfig), 0644)
+		err := os.WriteFile(configFilePath, []byte(mockConfig), 0600)
 		assert.NoError(t, err)
 
 		// Set the file's modification time to 15 seconds ago
