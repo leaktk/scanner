@@ -6,10 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
-	"github.com/stretchr/testify/assert"
 )
 
 const mockGitleaksTestConfig = `
@@ -26,7 +27,7 @@ func TestGitleaksScan(t *testing.T) {
 
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "gitleaks.toml")
-	err = os.WriteFile(configPath, []byte(mockGitleaksTestConfig), 0644)
+	err = os.WriteFile(configPath, []byte(mockGitleaksTestConfig), 0600)
 	assert.NoError(t, err)
 	cfg := config.DefaultConfig()
 	cfg.Scanner.Patterns.Gitleaks.ConfigPath = configPath
