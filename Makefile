@@ -49,7 +49,7 @@ format:
 
 test: format gosec golint
 	go vet ./...
-	go test ./...
+	go test -race $(MODULE) ./...
 
 install:
 	install ./leaktk-scanner $(DESTDIR)$(PREFIX)/bin/leaktk-scanner
@@ -71,7 +71,7 @@ update:
 	go mod tidy
 
 .PHONY: validate.completions
-validate.completions: SHELL:=/usr/bin/env bash 
+validate.completions: SHELL:=/usr/bin/env bash
 validate.completions: completions
 	. completions/bash/leaktk-scanner
 	if [ -x /bin/zsh ]; then /bin/zsh completions/zsh/_leaktk-scanner; fi
