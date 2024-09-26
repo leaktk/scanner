@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/leaktk/scanner/pkg/config"
 )
 
 const mockConfig = `

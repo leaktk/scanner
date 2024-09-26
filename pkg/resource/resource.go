@@ -3,9 +3,10 @@ package resource
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/leaktk/scanner/pkg/response"
 	"io"
 	"time"
+
+	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"

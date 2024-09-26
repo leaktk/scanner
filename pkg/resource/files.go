@@ -1,11 +1,12 @@
 package resource
 
 import (
-	"github.com/leaktk/scanner/pkg/response"
 	iofs "io/fs"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"

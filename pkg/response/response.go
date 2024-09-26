@@ -2,6 +2,7 @@ package response
 
 import (
 	"encoding/json"
+
 	"github.com/leaktk/scanner/pkg/logger"
 )
 

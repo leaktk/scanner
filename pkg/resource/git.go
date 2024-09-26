@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/leaktk/scanner/pkg/response"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/leaktk/scanner/pkg/logger"
 )

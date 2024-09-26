@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/leaktk/scanner/pkg/resource"
-	"github.com/leaktk/scanner/pkg/response"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/stretchr/testify/assert"
 

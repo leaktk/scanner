@@ -2,10 +2,11 @@ package scanner
 
 import (
 	"fmt"
-	"github.com/leaktk/scanner/pkg/response"
 	"io"
 	"path/filepath"
 	"strings"
+
+	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/h2non/filetype"
 	"github.com/zricethezav/gitleaks/v8/detect"

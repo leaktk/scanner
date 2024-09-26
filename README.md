@@ -83,7 +83,7 @@ Notes about the formats below:
     "branch": "main",
     "depth": 1,
     "proxy": "http://squid.example.com:3128",
-    "since": "2020-01-01",
+    "since": "2020-01-01"
   }
 }
 ```
@@ -426,7 +426,7 @@ the Image, Config and Manifest.
 {
   "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
   "kind": "ContainerImage",
-  "resource": "quay.io/wizzy/fake-leaks:v1.0.2"
+  "resource": "quay.io/leaktk/fake-leaks:v1.0.1"
 }
 ```
 
@@ -438,6 +438,8 @@ Sets a list of RootFS Layer hashes to exclude from scanning
 
 * Type: `[]string`
 * Default: excluded
+
+Example `"options":{"exclusions":["2b84bab8609aea9706783cda5f66adb7648a7daedd2650665ca67c717718c3d1"]}`  
 
 **arch**
 

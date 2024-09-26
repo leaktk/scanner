@@ -6,9 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/leaktk/scanner/pkg/fs"
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/response"
 	"io"
 	iofs "io/fs"
 	"log"
@@ -17,6 +14,11 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/leaktk/scanner/pkg/fs"
+
+	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/manifest"
@@ -53,35 +55,29 @@ func NewContainerImage(location string, options *ContainerImageOptions) *Contain
 // The order was selected for most completeness with a preference to maintainer and OCI spec
 // Returns the name and email
 func (r *ContainerImage) Contact() (name string, email string) {
-	if author, ok := r.labels["author"]; ok {
-		name = strings.TrimSpace(author)
-	}
 	if e, ok := r.labels["email"]; ok {
 		email = strings.TrimSpace(e)
 	}
-	if maintainer, ok := r.labels["maintainer"]; ok {
-		if match := extractRFC5322Mailbox(maintainer); match != nil {
-			name = match[0]
-			email = match[1]
-		} else {
-			name = maintainer
+	if authors, ok := r.labels["org.opencontainers.image.authors"]; ok {
+		if match := extractRFC5322Mailbox(authors); match != nil {
+			return match[0], match[1]
 		}
+		return strings.TrimSpace(authors), email
 	}
 	if maintainer, ok := r.labels["org.opencontainers.image.maintainers"]; ok {
 		if match := extractRFC5322Mailbox(maintainer); match != nil {
-			name = match[0]
-			email = match[1]
-		} else {
-			name = maintainer
+			return match[0], match[1]
 		}
+		return strings.TrimSpace(maintainer), email
 	}
-	if authors, ok := r.labels["org.opencontainers.image.authors"]; ok {
-		if match := extractRFC5322Mailbox(authors); match != nil {
-			name = match[0]
-			email = match[1]
-		} else {
-			name = authors
+	if maintainer, ok := r.labels["maintainer"]; ok {
+		if match := extractRFC5322Mailbox(maintainer); match != nil {
+			return match[0], match[1]
 		}
+		return strings.TrimSpace(maintainer), email
+	}
+	if author, ok := r.labels["author"]; ok {
+		return strings.TrimSpace(author), email
 	}
 	return name, email
 }
@@ -169,9 +165,9 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 			logger.Info("manifest contains multiple options, defaulted to first (OS: %s, Arch: %s)",
 				indexManifest.Manifests[index].Platform.OS, indexManifest.Manifests[index].Platform.Architecture)
 		}
-		imgRef := imageSource.Reference().DockerReference().Name() + "@" + indexManifest.Manifests[index].Digest.String()
+		imgRefString := imageSource.Reference().DockerReference().Name() + "@" + indexManifest.Manifests[index].Digest.String()
 
-		return r.cloneRemoteResource(path, imgRef)
+		return r.cloneRemoteResource(path, imgRefString)
 	}
 
 	img, err := imgRef.NewImage(ctx, sysCtx)
@@ -202,23 +198,11 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 
 	cache := blobinfocache.DefaultCache(sysCtx)
 	for _, layer := range imgManifest.LayerInfos() {
-		skipLayer := false
-		for _, exclude := range r.options.Exclusions {
-			if exclude == layer.Digest.String() {
-				logger.Debug("skipping layer %s", layer.Digest.String())
-				skipLayer = true
-			}
-		}
-		if skipLayer {
+
+		if r.skipLayer(layer.Digest.Hex()) {
 			continue
 		}
-		logger.Debug("downloading layer %s", layer.Digest.String())
-
-		layerDir := filepath.Join(path, layer.Digest.Hex())
-		err = os.MkdirAll(layerDir, 0700)
-		if err != nil {
-			return fmt.Errorf("could not create layer directory: %v", err)
-		}
+		logger.Debug("downloading layer %s", layer.Digest.Hex())
 
 		blobInfo := types.BlobInfo{
 			Digest: layer.Digest,
@@ -229,7 +213,7 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 			return fmt.Errorf("could not download layer blob: %v", err)
 		}
 
-		err = r.decompress(layerBlob, layer.Digest.Hex(), layer.MediaType, layer.Size)
+		err = r.extract(layerBlob, layer, path)
 		if err != nil {
 			return fmt.Errorf("could not decompress layer: %v", err)
 		}
@@ -243,28 +227,23 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 }
 
 func (r *ContainerImage) writeFile(filename string, content []byte) error {
-	file, err := os.OpenFile(filepath.Join(r.clonePath, filename), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600) // #nosec G304
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	_, err = file.Write(content)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(filepath.Join(r.clonePath, filename), content, 0600)
 }
 
 // The decompression process is a little more involved so separated out.
-func (r *ContainerImage) decompress(t io.Reader, layer string, mediaType string, size int64) error {
+func (r *ContainerImage) extract(t io.Reader, layer manifest.LayerInfo, path string) error {
 	// The maximum file size should be less than 10x the layer size.
-	size = size * 10
-	path := filepath.Join(r.ClonePath(), layer)
+	size := layer.Size * 10
+	layerRootDir := filepath.Join(r.ClonePath(), layer.Digest.Hex())
+	layerDir := filepath.Join(path, layer.Digest.Hex())
+	err := os.MkdirAll(layerDir, 0700)
+	if err != nil {
+		return fmt.Errorf("could not create layer directory: %v", err)
+	}
 
 	var tarReader *tar.Reader
 
-	if strings.Contains(strings.ToLower(mediaType), "gzip") {
+	if strings.Contains(strings.ToLower(layer.MediaType), "gzip") {
 		gzReader, err := gzip.NewReader(t)
 		if err != nil {
 			return err
@@ -282,7 +261,7 @@ func (r *ContainerImage) decompress(t io.Reader, layer string, mediaType string,
 		} else if err != nil {
 			return err
 		}
-		path, err := sanitizePath(path, header.Name)
+		path, err := fs.CleanJoin(layerRootDir, header.Name)
 		if err != nil {
 			logger.Error("%v - skipped", err)
 			continue
@@ -327,19 +306,15 @@ func (r *ContainerImage) Depth() uint16 {
 
 // EnrichResult adds contextual information to each result
 func (r *ContainerImage) EnrichResult(result *response.Result) *response.Result {
-
-	hash, file, found := strings.Cut(result.Location.Path, string(os.PathSeparator))
-	if found {
+	if hash, file, found := strings.Cut(result.Location.Path, string(os.PathSeparator)); found {
 		result.Location.Version = hash
 		result.Location.Path = file
-	}
-	result.Notes = r.labels
-	if result.Location.Version != "" {
-		// If there is no layer then it is a metadata file
+		result.Kind = response.ContainerLayerResultKind
+	} else {
 		result.Kind = response.ContainerMetdataResultKind
 	}
-	result.Kind = response.ContainerLayerResultKind
 
+	result.Notes = r.labels
 	result.Contact.Name, result.Contact.Email = r.Contact()
 
 	return result
@@ -361,6 +336,17 @@ func (r *ContainerImage) Since() string {
 	return ""
 }
 
+// skipLayer checks if the digest is in the exclusion list and returns true if it is
+func (r *ContainerImage) skipLayer(digest string) bool {
+	for _, exclude := range r.options.Exclusions {
+		if exclude == digest {
+			logger.Info("skipping layer %s", digest)
+			return true
+		}
+	}
+	return false
+}
+
 // ReadFile provides a way to access values in the resource
 func (r *ContainerImage) ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(filepath.Join(r.ClonePath(), filepath.Clean(path)))
@@ -368,18 +354,6 @@ func (r *ContainerImage) ReadFile(path string) ([]byte, error) {
 
 // Walk traverses the resource like a directory tree
 func (r *ContainerImage) Walk(fn WalkFunc) error {
-	// Handle if path is a file
-	if fs.FileExists(r.ClonePath()) {
-		file, err := os.Open(r.ClonePath())
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		// path is empty because it's not in a directory
-		return fn("", file)
-	}
-
 	return filepath.WalkDir(r.ClonePath(), func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			logger.Error("could not walk path: path=%q error=%q", path, err)
@@ -415,12 +389,4 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 
 		return fn(relPath, file)
 	})
-}
-
-func sanitizePath(destination string, filePath string) (string, error) {
-	destPath := filepath.Join(destination, filePath)
-	if !strings.HasPrefix(destPath, filepath.Clean(destination)) {
-		return "", fmt.Errorf("illegal file path: %s", filePath)
-	}
-	return destPath, nil
 }

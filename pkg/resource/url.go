@@ -2,13 +2,14 @@ package resource
 
 import (
 	"fmt"
-	"github.com/leaktk/scanner/pkg/response"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/leaktk/scanner/pkg/id"
 )
