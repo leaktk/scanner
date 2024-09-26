@@ -7,4 +7,5 @@
 {"id":"780efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"Files",    "resource":"README.md"}
 {"id":"880efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"URL",      "resource":"https://raw.githubusercontent.com/leaktk/fake-leaks/main/general-test"}
 {"id":"1c7387111111ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420", "kind":"ContainerImage","resource":"quay.io/leaktk/fake-leaks:v1.0.1", "options": {"exclusions": ["2b84bab8609aea9706783cda5f66adb7648a7daedd2650665ca67c717718c3d1"]}}
+{"id":"1c7387111111ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420", "kind":"ContainerImage","resource":"quay.io/leaktk/fake-leaks:v1.0.1", "options": {"depth": 1}}
 {"id":"1c7387111111ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420", "kind":"ContainerImage","resource":"quay.io/openshift-cnv/qe-cnv-tests-fedora:40"}

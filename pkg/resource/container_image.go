@@ -26,6 +26,19 @@ import (
 	"github.com/containers/image/v5/types"
 )
 
+var rfc5322Regexp = regexp.MustCompile(`^(.*)\s<([^>]+)>$`)
+
+// Extracts RFC5322 style Mailboxes i.e "John Smith <jsmith@example.com>"
+func extractRFC5322Mailbox(mailbox string) []string {
+	for _, mb := range strings.Split(mailbox, ",") {
+		matches := rfc5322Regexp.FindStringSubmatch(mb)
+		if len(matches) > 2 {
+			return matches[1:]
+		}
+	}
+	return nil
+}
+
 // ContainerImage provides a pull and hold a container
 type ContainerImage struct {
 	// Provide common helper functions
@@ -39,8 +52,12 @@ type ContainerImage struct {
 
 // ContainerImageOptions are options for the ContainerImage resource
 type ContainerImageOptions struct {
+	// A list of layer hashes to exclude from clone and scan
 	Exclusions []string `json:"exclusions"`
-	Arch       string   `json:"arch"`
+	// A preferred arch, if it exists - defaults to first
+	Arch string `json:"arch"`
+	// Set the number of layers to download, counting from the top down.
+	Depth uint16 `json:"depth"`
 }
 
 // NewContainerImage returns a configured ContainerImage resource for the scanner to scan
@@ -80,18 +97,6 @@ func (r *ContainerImage) Contact() (name string, email string) {
 		return strings.TrimSpace(author), email
 	}
 	return name, email
-}
-
-// Extracts RFC5322 style Mailboxes i.e "John Smith <jsmith@example.com>"
-func extractRFC5322Mailbox(mailbox string) []string {
-	for _, mb := range strings.Split(mailbox, ",") {
-		re := regexp.MustCompile(`^(.*)\s<([^>]+)>$`)
-		matches := re.FindStringSubmatch(mb)
-		if len(matches) > 2 {
-			return matches[1:]
-		}
-	}
-	return nil
 }
 
 // Kind of resource (always returns ContainerImage here)
@@ -197,7 +202,8 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 	}
 
 	cache := blobinfocache.DefaultCache(sysCtx)
-	for _, layer := range imgManifest.LayerInfos() {
+	layers := imgManifest.LayerInfos()
+	for _, layer := range r.layerInfoDepth(layers) {
 
 		if r.skipLayer(layer.Digest.Hex()) {
 			continue
@@ -213,7 +219,7 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 			return fmt.Errorf("could not download layer blob: %v", err)
 		}
 
-		err = r.extract(layerBlob, layer, path)
+		err = r.extractLayer(layerBlob, layer, path)
 		if err != nil {
 			return fmt.Errorf("could not decompress layer: %v", err)
 		}
@@ -231,7 +237,7 @@ func (r *ContainerImage) writeFile(filename string, content []byte) error {
 }
 
 // The decompression process is a little more involved so separated out.
-func (r *ContainerImage) extract(t io.Reader, layer manifest.LayerInfo, path string) error {
+func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, path string) error {
 	// The maximum file size should be less than 10x the layer size.
 	size := layer.Size * 10
 	layerRootDir := filepath.Join(r.ClonePath(), layer.Digest.Hex())
@@ -301,7 +307,20 @@ func (r *ContainerImage) ClonePath() string {
 
 // Depth returns the depth for things that have version control
 func (r *ContainerImage) Depth() uint16 {
-	return 0
+	return r.options.Depth
+}
+
+// layerDepth returns the layers to scan based on the depth provided
+func (r *ContainerImage) layerInfoDepth(layers []manifest.LayerInfo) []manifest.LayerInfo {
+	if r.Depth() == 0 {
+		return layers
+	}
+	sliceStart := len(layers) - int(r.Depth())
+	if sliceStart < 0 {
+		return layers
+	} else {
+		return layers[sliceStart:]
+	}
 }
 
 // EnrichResult adds contextual information to each result

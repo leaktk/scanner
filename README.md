@@ -432,6 +432,20 @@ the Image, Config and Manifest.
 
 #### Request Options
 
+**arch**
+
+Provide a preferred architecture
+
+* Type: `string`
+* Default: excluded
+
+**depth**
+
+Sets the number of layers to download and scan, starting from the top
+
+* Type: `uint16`
+* Default: 0 (All layers scanned)
+
 **exclusions**
 
 Sets a list of RootFS Layer hashes to exclude from scanning
@@ -439,14 +453,7 @@ Sets a list of RootFS Layer hashes to exclude from scanning
 * Type: `[]string`
 * Default: excluded
 
-Example `"options":{"exclusions":["2b84bab8609aea9706783cda5f66adb7648a7daedd2650665ca67c717718c3d1"]}`  
-
-**arch**
-
-Provide a preferred architecture
-
-* Type: `string`
-* Default: excluded
+Example `"options":{"exclusions":["2b84bab8609aea9706783cda5f66adb7648a7daedd2650665ca67c717718c3d1"]}`
 
 #### Response  
 TODO: Refine this.
