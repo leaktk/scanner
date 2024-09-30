@@ -14,12 +14,8 @@ level = "INFO"
 clone_timeout = 0 # 0 means no timeout
 # How many clones to run at once
 clone_workers = 1
-# How big the clone queue can get
-max_clone_queue_size = 1
 # How many commits can be scanned
 max_scan_depth = 0 # 0 means no max depth.
-# How big the scan queue can get
-max_scan_queue_size = 1
 # How many scans can happen at once
 scan_workers = 1
 # The full path to where the scanner should store files, clone repos, etc

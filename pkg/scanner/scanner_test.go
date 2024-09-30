@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -93,15 +94,11 @@ func TestScanner(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Scanner.CloneTimeout = 10
 	cfg.Scanner.CloneWorkers = 2
-	cfg.Scanner.MaxCloneQueueSize = 10
 	cfg.Scanner.MaxScanDepth = 5
-	cfg.Scanner.MaxScanQueueSize = 10
 	cfg.Scanner.ScanWorkers = 2
 	cfg.Scanner.Workdir = tempDir
 
 	scanner := NewScanner(cfg)
-	defer scanner.Close()
-
 	scanner.backends = []Backend{
 		&mockBackend{},
 	}
@@ -117,12 +114,19 @@ func TestScanner(t *testing.T) {
 		_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		scanner.Send(request)
-		response := <-scanner.Responses()
+		var wg sync.WaitGroup
 
-		// Depth was reduced to the max scan depth
-		assert.Equal(t, response.Results[0].Notes["depth"], fmt.Sprint(request.Resource.Depth()))
-		assert.Equal(t, response.Results[0].Notes["clone_path"], request.Resource.ClonePath())
-		assert.Equal(t, response.Results[0].Notes["clone_timeout"], fmt.Sprint(cfg.Scanner.CloneTimeout))
+		scanner.Send(request)
+		wg.Add(1)
+
+		go scanner.Recv(func(response *Response) {
+			// Depth was reduced to the max scan depth
+			assert.Equal(t, response.Results[0].Notes["depth"], fmt.Sprint(request.Resource.Depth()))
+			assert.Equal(t, response.Results[0].Notes["clone_path"], request.Resource.ClonePath())
+			assert.Equal(t, response.Results[0].Notes["clone_timeout"], fmt.Sprint(cfg.Scanner.CloneTimeout))
+			wg.Done()
+		})
+
+		wg.Wait()
 	})
 }
