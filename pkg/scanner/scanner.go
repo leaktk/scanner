@@ -62,9 +62,8 @@ func (s *Scanner) Recv(fn func(*Response)) {
 // Send accepts a request for scanning and puts it in the queues
 func (s *Scanner) Send(request *Request) {
 	logger.Debug("queueing clone: request_id=%q", request.ID)
-
 	s.cloneQueue.Send(&queue.Message[*Request]{
-		Priority: 0, // TODO: set this from request options
+		Priority: request.Priority(),
 		Value:    request,
 	})
 }

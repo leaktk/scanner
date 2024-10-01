@@ -66,6 +66,10 @@ func (m *mockResource) Walk(fn resource.WalkFunc) error {
 	return fn("/", bytes.NewReader([]byte{}))
 }
 
+func (m *mockResource) Priority() int {
+	return 0
+}
+
 // mockBackend implements a dummy scanner backend
 
 type mockBackend struct {

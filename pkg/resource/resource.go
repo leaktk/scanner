@@ -22,6 +22,7 @@ type Resource interface {
 	Depth() uint16
 	ID() string
 	Kind() string
+	Priority() int
 	ReadFile(path string) ([]byte, error)
 	SetCloneTimeout(timeout time.Duration)
 	SetDepth(depth uint16)

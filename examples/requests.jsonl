@@ -6,3 +6,5 @@
 {"id":"680efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"JSONData", "resource":"{\".gitleaks.toml\": \"[allowlist]\\nregexes = ['BEGIN PRIVATE KEY']\\n\", \"some\":{\"key\": \"-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----\"}}"}
 {"id":"780efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"Files",    "resource":"README.md"}
 {"id":"880efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"URL",      "resource":"https://raw.githubusercontent.com/leaktk/fake-leaks/main/general-test"}
+{"kind": "GitRepo", "id": "low-priority", "resource": "https://github.com/leaktk/fake-leaks", "options": {"priority": 0}}
+{"kind": "GitRepo", "id": "high-priority", "resource": "https://github.com/leaktk/fake-leaks", "options": {"priority": 1}}
