@@ -27,8 +27,6 @@ func NewPriorityQueue[T any](queueSize int) *PriorityQueue[T] {
 
 	// Set up message forwarding
 	go func() {
-		pq.waitForMessage()
-
 		for {
 			pq.heapMutex.Lock()
 			count := pq.heap.Len()
