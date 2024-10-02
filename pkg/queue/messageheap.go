@@ -38,7 +38,7 @@ func (h *MessageHeap[T]) Push(msg any) {
 	h.data = append(h.data, msg.(*Message[T]))
 }
 
-// Pop an item off the priority queue
+// Pop an item off the heap
 func (h *MessageHeap[T]) Pop() any {
 	msg := h.data[h.Len()-1]
 	h.data[h.Len()-1] = nil // For GC purposes
