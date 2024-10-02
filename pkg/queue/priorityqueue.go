@@ -36,11 +36,13 @@ func NewPriorityQueue[T any](queueSize int) *PriorityQueue[T] {
 				pq.waitForMessage()
 			}
 
-			// Since out can block, only lock for popping the message
+			// Get the message but don't send it yet because sending can wait for
+			// the reciever and we don't want to hold the lock for that long
 			pq.heapMutex.Lock()
 			msg := heap.Pop(pq.heap).(*Message[T])
 			pq.heapMutex.Unlock()
 
+			// Send the message to the out channel
 			pq.out <- msg
 		}
 	}()

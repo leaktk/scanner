@@ -40,8 +40,10 @@ func (h *MessageHeap[T]) Push(msg any) {
 
 // Pop an item off the heap
 func (h *MessageHeap[T]) Pop() any {
-	msg := h.data[h.Len()-1]
-	h.data[h.Len()-1] = nil // For GC purposes
-	h.data = h.data[:h.Len()-1]
+	n := len(h.data)
+	msg := h.data[n-1]
+	h.data[n-1] = nil // For GC purposes
+	h.data = h.data[:n-1]
+
 	return msg
 }
