@@ -20,7 +20,8 @@ type Files struct {
 
 // FilesOptions are options for the Files resource
 type FilesOptions struct {
-	// Currently none needed but here for future cases
+	// The scan priority
+	Priority int `json:"priority"`
 }
 
 // NewFiles returns a configured Files resource for the scanner to scan
@@ -127,4 +128,9 @@ func (r *Files) Walk(fn WalkFunc) error {
 
 		return fn(relPath, file)
 	})
+}
+
+// Priority returns the scan priority
+func (r *Files) Priority() int {
+	return r.options.Priority
 }

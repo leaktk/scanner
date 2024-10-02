@@ -125,6 +125,13 @@ clone.
 * Type: `string`
 * Default: excluded
 
+**priority**
+
+Sets the request priority. Higher priority items will be scanned first.
+
+* Type: `int`
+* Default: `0`
+
 #### Response
 
 ```json
@@ -213,6 +220,13 @@ Gitleaks config files (e.g. `.gitleaks.toml`, `.gitleaksignore`,
 scan. The [examples/requests.jsonl](./examples/requests.jsonl) has an
 example of including a `.gitleaks.toml` with a JSONData scan.
 
+**priority**
+
+Sets the request priority. Higher priority items will be scanned first.
+
+* Type: `int`
+* Default: `0`
+
 #### Response
 
 ```json
@@ -284,8 +298,12 @@ Note: the `resource` can be either a single file or a directory.
 
 #### Request Options
 
-Files currently doesn't have any options but all the Gitleaks config files
-(e.g. `.gitleaks.toml`, `.gitleaksignore`, `.gitleaksbaseline`) are supported.
+**priority**
+
+Sets the request priority. Higher priority items will be scanned first.
+
+* Type: `int`
+* Default: `0`
 
 #### Response
 
@@ -359,7 +377,12 @@ be parsed as a `Files` request.
 
 #### Request Options
 
-URL currently doesn't have any options.
+**priority**
+
+Sets the request priority. Higher priority items will be scanned first.
+
+* Type: `int`
+* Default: `0`
 
 #### Response
 
@@ -414,7 +437,6 @@ URL currently doesn't have any options.
 Note: the `path` will be blank when using a `Files` type scan and it will
 use the same logic as `JSONData` when the response's content type is
 `application/json` (i.e. it will be the path down the traversed keys).
-
 
 ## TODO
 
