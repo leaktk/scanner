@@ -39,6 +39,8 @@ type GitRepoOptions struct {
 	Since string `json:"since"`
 	// Work through a proxy for this request
 	Proxy string `json:"proxy"`
+	// The scan priority
+	Priority int `json:"priority"`
 }
 
 // GitRepo provides a way to interact with a git repo
@@ -262,4 +264,9 @@ func (r *GitRepo) Refs() []string {
 	}
 
 	return refs
+}
+
+// Priority returns the scan priority
+func (r *GitRepo) Priority() int {
+	return r.options.Priority
 }

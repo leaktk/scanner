@@ -25,6 +25,7 @@ type Resource interface {
 	EnrichResult(result *response.Result) *response.Result
 	ID() string
 	Kind() string
+	Priority() int
 	ReadFile(path string) ([]byte, error)
 	SetCloneTimeout(timeout time.Duration)
 	SetDepth(depth uint16)

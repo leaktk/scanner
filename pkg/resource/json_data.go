@@ -31,6 +31,8 @@ type JSONData struct {
 // JSONDataOptions are options for the JSONData resource
 type JSONDataOptions struct {
 	FetchURLs bool `json:"fetch_urls"`
+	// The scan priority
+	Priority int `json:"priority"`
 }
 
 type jsonNode struct {
@@ -302,4 +304,9 @@ func (r *JSONData) walkFuncToJSONWalkFunc(fn WalkFunc) jsonWalkFunc {
 // Walk traverses the JSON data structure like it's a directory tree
 func (r *JSONData) Walk(fn WalkFunc) error {
 	return r.walkRecusrive(jsonNode{value: r.data}, r.walkFuncToJSONWalkFunc(fn))
+}
+
+// Priority returns the scan priority
+func (r *JSONData) Priority() int {
+	return r.options.Priority
 }

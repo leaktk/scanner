@@ -18,6 +18,11 @@ type Request struct {
 	Errors   []response.LeakTKError
 }
 
+// Return the Priority of this request
+func (r *Request) Priority() int {
+	return r.Resource.Priority()
+}
+
 // UnmarshalJSON sets r to a copy of data
 func (r *Request) UnmarshalJSON(data []byte) error {
 	if r == nil {

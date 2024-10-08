@@ -11,35 +11,39 @@ import (
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/queue"
 	"github.com/leaktk/scanner/pkg/resource"
 	"github.com/leaktk/scanner/pkg/response"
 )
 
+// Set initial queue size. The queue can grow over time if needed
+const queueSize = 1024
+
 // Scanner holds the config and state for the scanner processes
 type Scanner struct {
-	backends     []Backend
-	cloneQueue   chan *Request
-	cloneTimeout time.Duration
-	cloneWorkers uint16
-	maxScanDepth uint16
-	resourceDir  string
-	responses    chan *response.Response
-	scanQueue    chan *Request
-	scanWorkers  uint16
+	backends      []Backend
+	cloneQueue    *queue.PriorityQueue[*Request]
+	cloneTimeout  time.Duration
+	cloneWorkers  uint16
+	maxScanDepth  uint16
+	resourceDir   string
+	responseQueue *queue.PriorityQueue[*response.Response]
+	scanQueue     *queue.PriorityQueue[*Request]
+	scanWorkers   uint16
 }
 
 // NewScanner returns a initialized and listening scanner instance that should
 // be closed when it's no longer needed.
 func NewScanner(cfg *config.Config) *Scanner {
 	scanner := &Scanner{
-		cloneQueue:   make(chan *Request, cfg.Scanner.MaxCloneQueueSize),
-		cloneTimeout: time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
-		cloneWorkers: cfg.Scanner.CloneWorkers,
-		maxScanDepth: cfg.Scanner.MaxScanDepth,
-		resourceDir:  filepath.Join(cfg.Scanner.Workdir, "resources"),
-		responses:    make(chan *response.Response),
-		scanQueue:    make(chan *Request, cfg.Scanner.MaxScanQueueSize),
-		scanWorkers:  cfg.Scanner.ScanWorkers,
+		cloneQueue:    queue.NewPriorityQueue[*Request](queueSize),
+		cloneTimeout:  time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
+		cloneWorkers:  cfg.Scanner.CloneWorkers,
+		maxScanDepth:  cfg.Scanner.MaxScanDepth,
+		resourceDir:   filepath.Join(cfg.Scanner.Workdir, "resources"),
+		responseQueue: queue.NewPriorityQueue[*response.Response](queueSize),
+		scanQueue:     queue.NewPriorityQueue[*Request](queueSize),
+		scanWorkers:   cfg.Scanner.ScanWorkers,
 		backends: []Backend{
 			NewGitleaks(NewPatterns(&cfg.Scanner.Patterns, &http.Client{})),
 		},
@@ -49,24 +53,20 @@ func NewScanner(cfg *config.Config) *Scanner {
 	return scanner
 }
 
-// Close closes out all of the queues (make sure to call this)
-func (s *Scanner) Close() error {
-	close(s.cloneQueue)
-	close(s.responses)
-	close(s.scanQueue)
-
-	return nil
-}
-
-// Responses returns a channel that can be used for subscribing to respones
-func (s *Scanner) Responses() <-chan *response.Response {
-	return s.responses
+// Recv sends scan responses to a callback function
+func (s *Scanner) Recv(fn func(*response.Response)) {
+	s.responseQueue.Recv(func(msg *queue.Message[*response.Response]) {
+		fn(msg.Value)
+	})
 }
 
 // Send accepts a request for scanning and puts it in the queues
 func (s *Scanner) Send(request *Request) {
 	logger.Debug("queueing clone: request_id=%q", request.ID)
-	s.cloneQueue <- request
+	s.cloneQueue.Send(&queue.Message[*Request]{
+		Priority: request.Priority(),
+		Value:    request,
+	})
 }
 
 // start kicks off the background workers
@@ -85,7 +85,8 @@ func (s *Scanner) start() {
 func (s *Scanner) listenForCloneRequests() {
 	// This should always send things to the scan queue, even if the clone fails.
 	// This ensures that things waiting on respones can mark them as done
-	for request := range s.cloneQueue {
+	s.cloneQueue.Recv(func(msg *queue.Message[*Request]) {
+		request := msg.Value
 		reqResource := request.Resource
 
 		if s.cloneTimeout > 0 {
@@ -112,8 +113,8 @@ func (s *Scanner) listenForCloneRequests() {
 
 		// Now that it's cloned send it on to the scan queue
 		logger.Debug("queueing scan: request_id=%q", request.ID)
-		s.scanQueue <- request
-	}
+		s.scanQueue.Send(msg)
+	})
 }
 
 func (s *Scanner) resourceFilesPath(reqResource resource.Resource) string {
@@ -131,7 +132,8 @@ func (s *Scanner) removeResourceFiles(reqResource resource.Resource) error {
 
 // Watch the scan queue for requests
 func (s *Scanner) listenForScanRequests() {
-	for request := range s.scanQueue {
+	s.scanQueue.Recv(func(msg *queue.Message[*Request]) {
+		request := msg.Value
 		reqResource := request.Resource
 
 		results := make([]*response.Result, 0)
@@ -169,11 +171,15 @@ func (s *Scanner) listenForScanRequests() {
 				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
 			})
 		}
-		s.responses <- &response.Response{
-			ID:        id.ID(),
-			Results:   results,
-			Errors:    request.Errors,
-			RequestID: request.ID,
-		}
-	}
+
+		s.responseQueue.Send(&queue.Message[*response.Response]{
+			Priority: msg.Priority,
+			Value: &response.Response{
+				ID:        id.ID(),
+				Results:   results,
+				Errors:    request.Errors,
+				RequestID: request.ID,
+			},
+		})
+	})
 }

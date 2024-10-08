@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
+
 	"github.com/leaktk/scanner/pkg/fs"
 
 	"github.com/leaktk/scanner/pkg/logger"
@@ -58,6 +60,8 @@ type ContainerImageOptions struct {
 	Depth uint16 `json:"depth"`
 	// A list of layer hashes to exclude from clone and scan
 	Exclusions []string `json:"exclusions"`
+	// The scan priority
+	Priority int `json:"priority"`
 	// Only scan since this date
 	Since string `json:"since"`
 }
@@ -269,13 +273,20 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 
 	var tarReader *tar.Reader
 
-	if strings.Contains(strings.ToLower(layer.MediaType), "gzip") {
+	if strings.HasSuffix(strings.ToLower(layer.MediaType), "gzip") {
 		gzReader, err := gzip.NewReader(t)
 		if err != nil {
 			return fmt.Errorf("could not create gzip reader: %v", err)
 		}
 		tarReader = tar.NewReader(gzReader)
 		defer gzReader.Close()
+	} else if strings.HasSuffix(strings.ToLower(layer.MediaType), "zstd") {
+		zstdReader, err := zstd.NewReader(t)
+		if err != nil {
+			return fmt.Errorf("could not create zstd reader: %v", err)
+		}
+		tarReader = tar.NewReader(zstdReader)
+		defer zstdReader.Close()
 	} else {
 		tarReader = tar.NewReader(t)
 	}
@@ -365,6 +376,11 @@ func (r *ContainerImage) EnrichResult(result *response.Result) *response.Result 
 	result.Contact.Name, result.Contact.Email = r.Contact()
 
 	return result
+}
+
+// Priority returns the scan priority
+func (r *ContainerImage) Priority() int {
+	return r.options.Priority
 }
 
 // SetDepth allows you to adjust the depth for the resource

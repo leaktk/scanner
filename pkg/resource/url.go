@@ -26,7 +26,8 @@ type URL struct {
 
 // URLOptions are options for the URL resource
 type URLOptions struct {
-	// Currently none needed but here for future cases
+	// The scan priority
+	Priority int `json:"priority"`
 }
 
 // NewURL returns a configured URL resource for the scanner to scan
@@ -134,4 +135,9 @@ func (r *URL) ReadFile(path string) ([]byte, error) {
 // Walk traverses the resource like a directory tree
 func (r *URL) Walk(fn WalkFunc) error {
 	return r.resource.Walk(fn)
+}
+
+// Priority returns the scan priority
+func (r *URL) Priority() int {
+	return r.options.Priority
 }

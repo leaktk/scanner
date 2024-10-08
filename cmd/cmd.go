@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/leaktk/scanner/pkg/response"
+
+	"github.com/spf13/cobra"
 
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/id"
@@ -88,11 +91,19 @@ func runScan(cmd *cobra.Command, args []string) {
 		logger.Fatal("could not generate scan request: error=%q", err.Error())
 	}
 
+	var wg sync.WaitGroup
 	leakScanner := scanner.NewScanner(cfg)
-	defer leakScanner.Close()
 
+	// Prints the output of the scanner as they come
+	go leakScanner.Recv(func(response *response.Response) {
+		fmt.Println(response)
+		wg.Done()
+	})
+
+	wg.Add(1)
 	leakScanner.Send(request)
-	fmt.Println(<-leakScanner.Responses())
+
+	wg.Wait()
 }
 
 func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
@@ -168,15 +179,12 @@ func runListen(cmd *cobra.Command, args []string) {
 	stdinScanner := bufio.NewScanner(os.Stdin)
 	stdinScanner.Buffer(make([]byte, maxRequestSize), maxRequestSize)
 	leakScanner := scanner.NewScanner(cfg)
-	defer leakScanner.Close()
 
 	// Prints the output of the scanner as they come
-	go func() {
-		for response := range leakScanner.Responses() {
-			fmt.Println(response)
-			wg.Done()
-		}
-	}()
+	go leakScanner.Recv(func(response *response.Response) {
+		fmt.Println(response)
+		wg.Done()
+	})
 
 	// Listen for requests
 	for stdinScanner.Scan() {
