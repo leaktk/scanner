@@ -14,9 +14,9 @@ func TestContainerImage(t *testing.T) {
 
 		err := image.Clone(tempDir)
 		assert.NoError(t, err)
-		name, email := image.Contact()
-		assert.Equal(t, "Fake Leaks", name)
-		assert.Equal(t, "fake-leaks@leaktk.org", email)
+		contact := image.Contact()
+		assert.Equal(t, "Fake Leaks", contact.Name)
+		assert.Equal(t, "fake-leaks@leaktk.org", contact.Email)
 	})
 
 }

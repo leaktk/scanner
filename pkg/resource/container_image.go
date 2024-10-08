@@ -77,32 +77,33 @@ func NewContainerImage(location string, options *ContainerImageOptions) *Contain
 // Contact Attempts to identify author information returing name and email if found
 // The order was selected for most completeness with a preference to maintainer and OCI spec
 // Returns the name and email
-func (r *ContainerImage) Contact() (name string, email string) {
+func (r *ContainerImage) Contact() response.Contact {
+	var email string
 	if e, ok := r.labels["email"]; ok {
 		email = strings.TrimSpace(e)
 	}
 	if authors, ok := r.labels["org.opencontainers.image.authors"]; ok {
 		if match := extractRFC5322Mailbox(authors); match != nil {
-			return match[0], match[1]
+			return response.Contact{Name: match[0], Email: match[1]}
 		}
-		return strings.TrimSpace(authors), email
+		return response.Contact{Name: strings.TrimSpace(authors), Email: email}
 	}
 	if maintainer, ok := r.labels["org.opencontainers.image.maintainers"]; ok {
 		if match := extractRFC5322Mailbox(maintainer); match != nil {
-			return match[0], match[1]
+			return response.Contact{Name: match[0], Email: match[1]}
 		}
-		return strings.TrimSpace(maintainer), email
+		return response.Contact{Name: strings.TrimSpace(maintainer), Email: email}
 	}
 	if maintainer, ok := r.labels["maintainer"]; ok {
 		if match := extractRFC5322Mailbox(maintainer); match != nil {
-			return match[0], match[1]
+			return response.Contact{Name: match[0], Email: match[1]}
 		}
-		return strings.TrimSpace(maintainer), email
+		return response.Contact{Name: strings.TrimSpace(maintainer), Email: email}
 	}
 	if author, ok := r.labels["author"]; ok {
-		return strings.TrimSpace(author), email
+		return response.Contact{Name: strings.TrimSpace(author), Email: email}
 	}
-	return name, email
+	return response.Contact{Email: email}
 }
 
 // Kind of resource (always returns ContainerImage here)
@@ -373,7 +374,7 @@ func (r *ContainerImage) EnrichResult(result *response.Result) *response.Result 
 	}
 
 	result.Notes = r.labels
-	result.Contact.Name, result.Contact.Email = r.Contact()
+	result.Contact = r.Contact()
 
 	return result
 }
