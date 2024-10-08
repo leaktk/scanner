@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	iofs "io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -43,21 +42,24 @@ func extractRFC5322Mailbox(mailbox string) []string {
 type ContainerImage struct {
 	// Provide common helper functions
 	BaseResource
-	clonePath string
-	location  string
-	options   *ContainerImageOptions
-	manifest  *string
-	labels    map[string]string
+	clonePath    string
+	cloneTimeout time.Duration
+	location     string
+	options      *ContainerImageOptions
+	manifest     *string
+	labels       map[string]string
 }
 
 // ContainerImageOptions are options for the ContainerImage resource
 type ContainerImageOptions struct {
-	// A list of layer hashes to exclude from clone and scan
-	Exclusions []string `json:"exclusions"`
 	// A preferred arch, if it exists - defaults to first
 	Arch string `json:"arch"`
 	// Set the number of layers to download, counting from the top down.
 	Depth uint16 `json:"depth"`
+	// A list of layer hashes to exclude from clone and scan
+	Exclusions []string `json:"exclusions"`
+	// Only scan since this date
+	Since string `json:"since"`
 }
 
 // NewContainerImage returns a configured ContainerImage resource for the scanner to scan
@@ -116,15 +118,19 @@ func (r *ContainerImage) Clone(path string) error {
 		return fmt.Errorf("could not create clone directory: %v", err)
 	}
 	r.clonePath = path
+	if r.cloneTimeout > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), r.cloneTimeout)
+		defer cancel()
+		return r.cloneRemoteResource(ctx, path, r.location)
+	} else {
+		ctx := context.Background()
+		return r.cloneRemoteResource(ctx, path, r.location)
+	}
 
-	return r.cloneRemoteResource(path, r.location)
 }
 
 // cloneRemoteResource clones a remote resource ready for scanning.
-func (r *ContainerImage) cloneRemoteResource(path string, resource string) error {
-
-	ctx := context.Background()
-
+func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, resource string) error {
 	sysCtx := &types.SystemContext{}
 
 	imgRef, err := docker.ParseReference("//" + resource)
@@ -172,18 +178,25 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 		}
 		imgRefString := imageSource.Reference().DockerReference().Name() + "@" + indexManifest.Manifests[index].Digest.String()
 
-		return r.cloneRemoteResource(path, imgRefString)
+		return r.cloneRemoteResource(ctx, path, imgRefString)
 	}
 
 	img, err := imgRef.NewImage(ctx, sysCtx)
 	if err != nil {
-		log.Fatalf("could not load image to retrieve labels: %v", err)
+		return fmt.Errorf("could not load image to retrieve labels: %v", err)
 	}
 	defer img.Close()
 
 	config, err := img.OCIConfig(ctx)
 	if err != nil {
-		log.Fatalf("could not get image config to retrieve labels: %v", err)
+		return fmt.Errorf("could not get image config to retrieve labels: %v", err)
+	}
+
+	var layerHistoryDates []*time.Time
+	for _, layerHistory := range config.History {
+		if !layerHistory.EmptyLayer {
+			layerHistoryDates = append(layerHistoryDates, layerHistory.Created)
+		}
 	}
 	r.labels = config.Config.Labels
 
@@ -203,8 +216,15 @@ func (r *ContainerImage) cloneRemoteResource(path string, resource string) error
 
 	cache := blobinfocache.DefaultCache(sysCtx)
 	layers := imgManifest.LayerInfos()
-	for _, layer := range r.layerInfoDepth(layers) {
-
+	since := r.sinceTime()
+	layers, layerHistoryDates = r.layerDepth(layers, layerHistoryDates)
+	for i, layer := range layers {
+		if since != nil && layerHistoryDates != nil {
+			if layerHistoryDates[i].Before(*since) {
+				logger.Info("layer older than provided date, skipping layer %s", layer.Digest.Hex())
+				continue
+			}
+		}
 		if r.skipLayer(layer.Digest.Hex()) {
 			continue
 		}
@@ -252,7 +272,7 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 	if strings.Contains(strings.ToLower(layer.MediaType), "gzip") {
 		gzReader, err := gzip.NewReader(t)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not create gzip reader: %v", err)
 		}
 		tarReader = tar.NewReader(gzReader)
 		defer gzReader.Close()
@@ -265,7 +285,7 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return err
+			return fmt.Errorf("could not extract tar: %v", err)
 		}
 		path, err := fs.CleanJoin(layerRootDir, header.Name)
 		if err != nil {
@@ -275,8 +295,12 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 		info := header.FileInfo()
 		if info.IsDir() {
 			if err = os.MkdirAll(path, 0700); err != nil {
-				return err
+				return fmt.Errorf("could not create directory: %v", err)
 			}
+			continue
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			logger.Warning("skipping file that is a symlink: %s", info.Name())
 			continue
 		}
 
@@ -311,15 +335,19 @@ func (r *ContainerImage) Depth() uint16 {
 }
 
 // layerDepth returns the layers to scan based on the depth provided
-func (r *ContainerImage) layerInfoDepth(layers []manifest.LayerInfo) []manifest.LayerInfo {
+func (r *ContainerImage) layerDepth(layers []manifest.LayerInfo, dates []*time.Time) ([]manifest.LayerInfo, []*time.Time) {
+	if len(layers) != len(dates) {
+		// if our history length is different to our layer length, drop it.
+		dates = nil
+	}
 	if r.Depth() == 0 {
-		return layers
+		return layers, dates
 	}
 	sliceStart := len(layers) - int(r.Depth())
 	if sliceStart < 0 {
-		return layers
+		return layers, dates
 	} else {
-		return layers[sliceStart:]
+		return layers[sliceStart:], dates[sliceStart:]
 	}
 }
 
@@ -346,20 +374,33 @@ func (r *ContainerImage) SetDepth(depth uint16) {
 
 // SetCloneTimeout lets you adjust the timeout before the clone aborts
 func (r *ContainerImage) SetCloneTimeout(timeout time.Duration) {
-	// no-op
+	r.cloneTimeout = timeout
 }
 
-// Since returns the date after which things should be scanned for things
-// that have versions
+// Since returns the date after which things should be scanned for containers
+// that have history
 func (r *ContainerImage) Since() string {
-	return ""
+	return r.options.Since
+}
+
+func (r *ContainerImage) sinceTime() *time.Time {
+	if len(r.options.Since) > 0 {
+		date, err := time.Parse("2006-01-02", r.options.Since)
+		if err != nil {
+			logger.Error("could not parse since time: %v", err)
+			return nil
+		} else {
+			return &date
+		}
+	}
+	return nil
 }
 
 // skipLayer checks if the digest is in the exclusion list and returns true if it is
 func (r *ContainerImage) skipLayer(digest string) bool {
 	for _, exclude := range r.options.Exclusions {
 		if exclude == digest {
-			logger.Info("skipping layer %s", digest)
+			logger.Info("layer in exclusion list, skipping layer %s", digest)
 			return true
 		}
 	}

@@ -455,6 +455,14 @@ Sets a list of RootFS Layer hashes to exclude from scanning
 
 Example `"options":{"exclusions":["2b84bab8609aea9706783cda5f66adb7648a7daedd2650665ca67c717718c3d1"]}`
 
+**since**
+
+Is a date formatted `yyyy-mm-dd` used for filtering layers based on provided history. History is optional
+so not all images will have the information.
+
+* Type: `string`
+* Default: excluded
+
 #### Response  
 TODO: Refine this.
 ```json
