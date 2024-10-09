@@ -19,6 +19,7 @@ const mockConfig = `
 paths = ['''testdata''']
 
 [[rules]]
+id = "test-rule"
 description = "test-rule"
 regex = '''test-rule'''
 `
@@ -268,6 +269,6 @@ func TestPatternsGitleaks(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
 		assert.NotNil(t, patterns)
-		assert.Equal(t, "32359008caab9646f685745b9888a71d81697a3fdfa5a2f49cc8d8f38649320b", patterns.GitleaksConfigHash())
+		assert.Equal(t, "9c88490b8b230ef6cf0d25b23a63679557cbe8cca1cc6703e55ca9d52331d0a9", patterns.GitleaksConfigHash())
 	})
 }
