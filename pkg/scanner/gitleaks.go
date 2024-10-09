@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/leaktk/scanner/pkg/response"
+
 	"github.com/h2non/filetype"
 	"github.com/zricethezav/gitleaks/v8/detect"
 	"github.com/zricethezav/gitleaks/v8/report"
@@ -139,7 +141,7 @@ func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Res
 				return nil
 			}
 			if mimetype.MIME.Type == "application" {
-				logger.Error("skipping binary file: path=%q", path)
+				logger.Warning("skipping binary file: path=%q", path)
 				return nil // skip binary files
 			}
 
@@ -166,7 +168,7 @@ func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Res
 }
 
 // Scan does the gitleaks scan on the resource
-func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
+func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, error) {
 	var findings []report.Finding
 	var err error
 	var resultKind string
@@ -179,20 +181,15 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 	switch scanResource := scanResource.(type) {
 	case *resource.GitRepo:
 		findings, err = g.gitScan(detector, scanResource)
-		resultKind = GitCommitResultKind
-	case *resource.JSONData:
-		findings, err = g.walkScan(detector, scanResource)
-		resultKind = JSONDataResultKind
 	default:
 		findings, err = g.walkScan(detector, scanResource)
-		resultKind = GeneralResultKind
 	}
 
 	if err != nil {
 		logger.Error("gitleaks error: error=%q", err)
 	}
 
-	results := make([]*Result, len(findings))
+	results := make([]*response.Result, len(findings))
 
 	for i, finding := range findings {
 		notes := map[string]string{}
@@ -202,7 +199,7 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 			notes["message"] = finding.Message
 		}
 
-		results[i] = &Result{
+		result := &response.Result{
 			// Be careful changing how this is generated, this could result in
 			// duplicate alerts
 			ID: id.ID(
@@ -221,34 +218,34 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*Result, error) {
 				// How: Uniquely identify what was used to find it
 				finding.RuleID,
 			),
-			Kind:    resultKind,
 			Secret:  finding.Secret,
 			Match:   finding.Match,
 			Entropy: finding.Entropy,
 			Date:    finding.Date,
 			Notes:   notes,
-			Contact: Contact{
+			Contact: response.Contact{
 				Name:  finding.Author,
 				Email: finding.Email,
 			},
-			Rule: Rule{
+			Rule: response.Rule{
 				ID:          finding.RuleID,
 				Description: finding.Description,
 				Tags:        finding.Tags,
 			},
-			Location: Location{
+			Location: response.Location{
 				Version: finding.Commit,
 				Path:    finding.File,
-				Start: Point{
+				Start: response.Point{
 					Line:   finding.StartLine,
 					Column: finding.StartColumn,
 				},
-				End: Point{
+				End: response.Point{
 					Line:   finding.EndLine,
 					Column: finding.EndColumn,
 				},
 			},
 		}
+		results[i] = scanResource.EnrichResult(result)
 	}
 
 	return results, err

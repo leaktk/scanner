@@ -6,6 +6,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/leaktk/scanner/pkg/response"
+
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 )
@@ -20,6 +22,7 @@ type Resource interface {
 	Clone(path string) error
 	ClonePath() string
 	Depth() uint16
+	EnrichResult(result *response.Result) *response.Result
 	ID() string
 	Kind() string
 	Priority() int
@@ -84,6 +87,17 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		}
 
 		return NewURL(resource, &urlOptions), nil
+	case "ContainerImage":
+		var containerOptions ContainerImageOptions
+
+		if len(options) > 0 {
+			if err := json.Unmarshal(options, &containerOptions); err != nil {
+				logger.Debug("ContainerImageOptions:\n%v", options)
+				return nil, fmt.Errorf("could not unmarshal ContainerImageOptions: error=%q", err)
+			}
+		}
+
+		return NewContainerImage(resource, &containerOptions), nil
 	default:
 		return nil, fmt.Errorf("unsupported kind: kind=%q", kind)
 	}

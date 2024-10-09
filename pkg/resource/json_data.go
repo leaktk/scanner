@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/response"
 )
 
 var urlRegexp = regexp.MustCompile(`^https?:\/\/\S+$`)
@@ -132,6 +133,12 @@ func (r *JSONData) ClonePath() string {
 // Depth returns the depth for things that have version control
 func (r *JSONData) Depth() uint16 {
 	return 0
+}
+
+// EnrichResult enriches the result with contextual information
+func (r *JSONData) EnrichResult(result *response.Result) *response.Result {
+	result.Kind = response.JSONDataResultKind
+	return result
 }
 
 // SetDepth allows you to adjust the depth for the resource

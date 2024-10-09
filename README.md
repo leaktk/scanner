@@ -83,7 +83,7 @@ Notes about the formats below:
     "branch": "main",
     "depth": 1,
     "proxy": "http://squid.example.com:3128",
-    "since": "2020-01-01",
+    "since": "2020-01-01"
   }
 }
 ```
@@ -437,6 +437,109 @@ Sets the request priority. Higher priority items will be scanned first.
 Note: the `path` will be blank when using a `Files` type scan and it will
 use the same logic as `JSONData` when the response's content type is
 `application/json` (i.e. it will be the path down the traversed keys).
+
+### Container Image
+
+This allows you to pull a remote container image to scan. It unpacks and scans
+the Image, Config and Manifest.
+
+#### Request
+
+```json
+{
+  "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
+  "kind": "ContainerImage",
+  "resource": "quay.io/leaktk/fake-leaks:v1.0.1"
+}
+```
+
+#### Request Options
+
+**arch**
+
+Provide a preferred architecture
+
+* Type: `string`
+* Default: excluded
+
+**depth**
+
+Sets the number of layers to download and scan, starting from the top
+
+* Type: `uint16`
+* Default: 0 (All layers scanned)
+
+**exclusions**
+
+Sets a list of RootFS Layer hashes to exclude from scanning
+
+* Type: `[]string`
+* Default: excluded
+
+Example `"options":{"exclusions":["2b84bab8609aea9706783cda5f66adb7648a7daedd2650665ca67c717718c3d1"]}`
+
+**priority**
+
+Sets the request priority. Higher priority items will be scanned first.
+
+* Type: `int`
+* Default: `0`
+
+**since**
+
+Is a date formatted `yyyy-mm-dd` used for filtering layers based on provided history. History is optional
+so not all images will have the information.
+
+* Type: `string`
+* Default: excluded
+
+#### Response  
+```json
+{
+  "id": "a1ef32d00c609b370d2181ea46b11111119deeeea68918cc676a8f12d1fc7e3b",
+  "request": {
+    "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
+    "kind": "ContainerImage",
+    "resource": "quay.io/leaktk/fake-leaks:v1.0.1"
+  },
+  "results": [
+    {
+      "id": "6c14f496a2111dfeecbfff4a61587b0b1866788a6112b420f80071f8cded0153",
+      "kind": "ContainerLayer",
+      "secret": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
+      "match": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
+      "entropy": 6.0285063,
+      "date": "",
+      "rule": {
+        "id": "private-key",
+        "description": "Private Key",
+        "tags": [
+          "group:leaktk-testing",
+          "alert:repo-owner",
+          "type:secret"
+        ]
+      },
+      "contact": {
+        "name":"Fake Leaks",
+        "email":"fake-leaks@leaktk.org"
+      },
+      "location": {
+        "version": "bd34309759a381a850f60d90bb1adc2a1756bbdf11d746c438c8706a13c63f66",
+        "path": "fake-leaks/base64-encoded",
+        "start": {
+          "line": 2,
+          "column": 2
+        },
+        "end": {
+          "line": 10,
+          "column": 13
+        }
+      },
+      "notes": {}
+    }
+  ]
+}
+```
 
 ## TODO
 

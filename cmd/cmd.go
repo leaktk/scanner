@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/leaktk/scanner/pkg/response"
+
 	"github.com/spf13/cobra"
 
 	"github.com/leaktk/scanner/pkg/config"
@@ -93,7 +95,7 @@ func runScan(cmd *cobra.Command, args []string) {
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
-	go leakScanner.Recv(func(response *scanner.Response) {
+	go leakScanner.Recv(func(response *response.Response) {
 		fmt.Println(response)
 		wg.Done()
 	})
@@ -179,7 +181,7 @@ func runListen(cmd *cobra.Command, args []string) {
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
-	go leakScanner.Recv(func(response *scanner.Response) {
+	go leakScanner.Recv(func(response *response.Response) {
 		fmt.Println(response)
 		wg.Done()
 	})

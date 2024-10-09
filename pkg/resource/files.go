@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/leaktk/scanner/pkg/response"
+
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
 )
@@ -56,6 +58,12 @@ func (r *Files) ClonePath() string {
 // Depth returns the depth for things that have version control
 func (r *Files) Depth() uint16 {
 	return 0
+}
+
+// EnrichResult enriches the result with contextual information
+func (r *Files) EnrichResult(result *response.Result) *response.Result {
+	result.Kind = response.GeneralResultKind
+	return result
 }
 
 // SetDepth allows you to adjust the depth for the resource

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leaktk/scanner/pkg/response"
+
 	"github.com/leaktk/scanner/pkg/logger"
 )
 
@@ -138,6 +140,12 @@ func (r *GitRepo) Clone(path string) error {
 // ClonePath returns where this repo has been cloned if cloned else ""
 func (r *GitRepo) ClonePath() string {
 	return r.clonePath
+}
+
+// EnrichResult enriches the result with contextual information
+func (r *GitRepo) EnrichResult(result *response.Result) *response.Result {
+	result.Kind = response.GitCommitResultKind
+	return result
 }
 
 // Depth returns the depth for things that have version control

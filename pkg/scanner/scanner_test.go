@@ -9,10 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/scanner/pkg/response"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/leaktk/scanner/pkg/config"
-	"github.com/leaktk/scanner/pkg/resource"
 )
 
 // mockResource implements a dummy resource
@@ -44,6 +46,10 @@ func (m *mockResource) ClonePath() string {
 
 func (m *mockResource) Depth() uint16 {
 	return m.depth
+}
+
+func (m *mockResource) EnrichResult(result *response.Result) *response.Result {
+	return result
 }
 
 func (m *mockResource) SetDepth(depth uint16) {
@@ -79,11 +85,11 @@ func (b *mockBackend) Name() string {
 	return "mock"
 }
 
-func (b *mockBackend) Scan(resource resource.Resource) ([]*Result, error) {
+func (b *mockBackend) Scan(resource resource.Resource) ([]*response.Result, error) {
 	mockResource, _ := resource.(*mockResource)
 
-	return []*Result{
-		&Result{
+	return []*response.Result{
+		&response.Result{
 			Notes: map[string]string{
 				"depth":         fmt.Sprint(resource.Depth()),
 				"clone_path":    resource.ClonePath(),
@@ -123,7 +129,7 @@ func TestScanner(t *testing.T) {
 		scanner.Send(request)
 		wg.Add(1)
 
-		go scanner.Recv(func(response *Response) {
+		go scanner.Recv(func(response *response.Response) {
 			// Depth was reduced to the max scan depth
 			assert.Equal(t, response.Results[0].Notes["depth"], fmt.Sprint(request.Resource.Depth()))
 			assert.Equal(t, response.Results[0].Notes["clone_path"], request.Resource.ClonePath())

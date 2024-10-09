@@ -6,5 +6,9 @@
 {"id":"680efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"JSONData", "resource":"{\".gitleaks.toml\": \"[allowlist]\\nregexes = ['BEGIN PRIVATE KEY']\\n\", \"some\":{\"key\": \"-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----\"}}"}
 {"id":"780efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"Files",    "resource":"README.md"}
 {"id":"880efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7", "kind":"URL",      "resource":"https://raw.githubusercontent.com/leaktk/fake-leaks/main/general-test"}
+{"id":"1c7387111111ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420", "kind":"ContainerImage","resource":"quay.io/leaktk/fake-leaks:v1.0.1", "options": {"exclusions": ["2b84bab8609aea9706783cda5f66adb7648a7daedd2650665ca67c717718c3d1"]}}
+{"id":"6d25f1aa7c8d41c9f74a8cfd931007465d1406ce1f722965efcd250ccc605e27", "kind":"ContainerImage","resource":"quay.io/leaktk/fake-leaks:v1.0.1", "options": {"depth": 1}}
+{"id":"6fdabcb1883634bddb23878c944e0dbea444c8c853c7f10e55a552d8e0ac0a4d", "kind":"ContainerImage","resource":"quay.io/leaktk/fake-leaks:v1.0.1", "options": {"since": "2024-02-04"}}
+{"id":"324cbaba6d05a483a5501925daa0baf0fdf5cd204aac0af08c86ba661afeef2f", "kind":"ContainerImage","resource":"quay.io/jetstack/cert-manager-controller:v1.16.0"}
 {"kind": "GitRepo", "id": "low-priority", "resource": "https://github.com/leaktk/fake-leaks", "options": {"priority": 0}}
 {"kind": "GitRepo", "id": "high-priority", "resource": "https://github.com/leaktk/fake-leaks", "options": {"priority": 1}}

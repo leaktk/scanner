@@ -13,6 +13,7 @@ import (
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/queue"
 	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/scanner/pkg/response"
 )
 
 // Set initial queue size. The queue can grow over time if needed
@@ -26,7 +27,7 @@ type Scanner struct {
 	cloneWorkers  uint16
 	maxScanDepth  uint16
 	resourceDir   string
-	responseQueue *queue.PriorityQueue[*Response]
+	responseQueue *queue.PriorityQueue[*response.Response]
 	scanQueue     *queue.PriorityQueue[*Request]
 	scanWorkers   uint16
 }
@@ -40,7 +41,7 @@ func NewScanner(cfg *config.Config) *Scanner {
 		cloneWorkers:  cfg.Scanner.CloneWorkers,
 		maxScanDepth:  cfg.Scanner.MaxScanDepth,
 		resourceDir:   filepath.Join(cfg.Scanner.Workdir, "resources"),
-		responseQueue: queue.NewPriorityQueue[*Response](queueSize),
+		responseQueue: queue.NewPriorityQueue[*response.Response](queueSize),
 		scanQueue:     queue.NewPriorityQueue[*Request](queueSize),
 		scanWorkers:   cfg.Scanner.ScanWorkers,
 		backends: []Backend{
@@ -53,8 +54,8 @@ func NewScanner(cfg *config.Config) *Scanner {
 }
 
 // Recv sends scan responses to a callback function
-func (s *Scanner) Recv(fn func(*Response)) {
-	s.responseQueue.Recv(func(msg *queue.Message[*Response]) {
+func (s *Scanner) Recv(fn func(*response.Response)) {
+	s.responseQueue.Recv(func(msg *queue.Message[*response.Response]) {
 		fn(msg.Value)
 	})
 }
@@ -102,9 +103,9 @@ func (s *Scanner) listenForCloneRequests() {
 			logger.Info("starting clone: request_id=%q", request.ID)
 			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
 				logger.Error("clone error: request_id=%q error=%q", request.ID, err.Error())
-				request.Errors = append(request.Errors, LeakTKError{
+				request.Errors = append(request.Errors, response.LeakTKError{
 					Fatal:   true,
-					Code:    CloneError,
+					Code:    response.CloneError,
 					Message: err.Error(),
 				})
 			}
@@ -135,7 +136,7 @@ func (s *Scanner) listenForScanRequests() {
 		request := msg.Value
 		reqResource := request.Resource
 
-		results := make([]*Result, 0)
+		results := make([]*response.Result, 0)
 
 		if fs.PathExists(reqResource.ClonePath()) {
 			for _, backend := range s.backends {
@@ -144,9 +145,9 @@ func (s *Scanner) listenForScanRequests() {
 				backendResults, err := backend.Scan(reqResource)
 				if err != nil {
 					logger.Error("scan error: request_id=%q error=%q", request.ID, err.Error())
-					request.Errors = append(request.Errors, LeakTKError{
+					request.Errors = append(request.Errors, response.LeakTKError{
 						Fatal:   true,
-						Code:    ScanError,
+						Code:    response.ScanError,
 						Message: err.Error(),
 					})
 				}
@@ -156,24 +157,24 @@ func (s *Scanner) listenForScanRequests() {
 			}
 			if err := s.removeResourceFiles(reqResource); err != nil {
 				logger.Error("resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
-				request.Errors = append(request.Errors, LeakTKError{
+				request.Errors = append(request.Errors, response.LeakTKError{
 					Fatal:   false,
-					Code:    ResourceCleanupError,
+					Code:    response.ResourceCleanupError,
 					Message: err.Error(),
 				})
 			}
 		} else {
 			logger.Error("skipping scan due to missing clone path: request_id=%q", request.ID)
-			request.Errors = append(request.Errors, LeakTKError{
+			request.Errors = append(request.Errors, response.LeakTKError{
 				Fatal:   true,
-				Code:    CloneError,
+				Code:    response.CloneError,
 				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
 			})
 		}
 
-		s.responseQueue.Send(&queue.Message[*Response]{
+		s.responseQueue.Send(&queue.Message[*response.Response]{
 			Priority: msg.Priority,
-			Value: &Response{
+			Value: &response.Response{
 				ID:        id.ID(),
 				Results:   results,
 				Errors:    request.Errors,

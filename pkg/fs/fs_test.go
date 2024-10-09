@@ -52,3 +52,19 @@ func TestPathExists(t *testing.T) {
 		assert.False(t, PathExists(noFile))
 	})
 }
+
+func TestCleanJoin(t *testing.T) {
+	t.Run("CleanJoin", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		err := os.MkdirAll(filepath.Join(tmpDir, "foo"), 0700)
+		assert.NoError(t, err)
+
+		testPathFail := "../../hello/world"
+		_, err = CleanJoin(tmpDir, testPathFail)
+		assert.Error(t, err)
+
+		testPathPass := "hello/world..zip"
+		_, err = CleanJoin(tmpDir, testPathPass)
+		assert.NoError(t, err)
+	})
+}
