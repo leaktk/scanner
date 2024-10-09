@@ -261,6 +261,25 @@ func (r *ContainerImage) writeFile(filename string, content []byte) error {
 	return os.WriteFile(filepath.Join(r.clonePath, filename), content, 0600)
 }
 
+func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
+	file, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600) // #nosec G304
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Copy a maximum number of bytes (layer size * 10) so we do not get "bombs". It is unlikely that a file
+	// with significant entropy will be compressed more than 10x. We can review this.
+	written, err := io.CopyN(file, src, n)
+	if err != nil && err != io.EOF {
+		return err
+	}
+	if written >= n {
+		logger.Warning("copying file %s did not finish due to max file size: %v", file.Name(), err)
+	}
+	return nil
+}
+
 // The decompression process is a little more involved so separated out.
 func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, path string) error {
 	// The maximum file size should be less than 10x the layer size.
@@ -316,21 +335,11 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 			continue
 		}
 
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600) // #nosec G304
+		err = r.copyN(path, tarReader, size)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error("could not create/write file: %v", err)
+			// Try others, in case its unsupported file name for the filesystem etc.
 			continue
-		}
-		defer file.Close()
-
-		// Copy a maximum number of bytes (layer size * 10) so we do not get "bombs". It is unlikely that a file
-		// with significant entropy will be compressed more than 10x. We can review this.
-		n, err := io.CopyN(file, tarReader, size)
-		if err != nil && err != io.EOF {
-			return fmt.Errorf("could not copy file to disk: %v", err)
-		}
-		if n >= size {
-			logger.Warning("copying file %s did not finish due to max file size: %v", file.Name(), err)
 		}
 	}
 	return nil
@@ -386,7 +395,7 @@ func (r *ContainerImage) Priority() int {
 
 // SetDepth allows you to adjust the depth for the resource
 func (r *ContainerImage) SetDepth(depth uint16) {
-	// no-op
+	r.options.Depth = depth
 }
 
 // SetCloneTimeout lets you adjust the timeout before the clone aborts
@@ -431,6 +440,7 @@ func (r *ContainerImage) ReadFile(path string) ([]byte, error) {
 
 // Walk traverses the resource like a directory tree
 func (r *ContainerImage) Walk(fn WalkFunc) error {
+	// TODO: consider calling JSONData and creating Files for these instead of walking this way
 	return filepath.WalkDir(r.ClonePath(), func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			logger.Error("could not walk path: path=%q error=%q", path, err)

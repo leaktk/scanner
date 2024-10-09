@@ -478,6 +478,13 @@ Sets a list of RootFS Layer hashes to exclude from scanning
 
 Example `"options":{"exclusions":["2b84bab8609aea9706783cda5f66adb7648a7daedd2650665ca67c717718c3d1"]}`
 
+**priority**
+
+Sets the request priority. Higher priority items will be scanned first.
+
+* Type: `int`
+* Default: `0`
+
 **since**
 
 Is a date formatted `yyyy-mm-dd` used for filtering layers based on provided history. History is optional
@@ -487,14 +494,13 @@ so not all images will have the information.
 * Default: excluded
 
 #### Response  
-TODO: Refine this.
 ```json
 {
   "id": "a1ef32d00c609b370d2181ea46b11111119deeeea68918cc676a8f12d1fc7e3b",
   "request": {
     "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
     "kind": "ContainerImage",
-    "resource": "quay.io/wizzy/fake-leaks:v1.0.2"
+    "resource": "quay.io/leaktk/fake-leaks:v1.0.1"
   },
   "results": [
     {
@@ -514,12 +520,12 @@ TODO: Refine this.
         ]
       },
       "contact": {
-        "name": "Josh Maint",
-        "email": "wizzy-maint@wizzy.com"
+        "name":"Fake Leaks",
+        "email":"fake-leaks@leaktk.org"
       },
       "location": {
         "version": "bd34309759a381a850f60d90bb1adc2a1756bbdf11d746c438c8706a13c63f66",
-        "path": "fake-leaks\\base64-encoded",
+        "path": "fake-leaks/base64-encoded",
         "start": {
           "line": 2,
           "column": 2
