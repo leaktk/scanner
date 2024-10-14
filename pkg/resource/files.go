@@ -103,13 +103,13 @@ func (r *Files) Walk(fn WalkFunc) error {
 
 	return filepath.WalkDir(r.path, func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
-			logger.Error("could not walk path: path=%q error=%q", path, err)
+			r.Error(logger.ScanError, "could not walk path: path=%q error=%q", path, err)
 			return nil
 		}
 
 		relPath, err := filepath.Rel(r.path, path)
 		if err != nil {
-			logger.Error("could generate relative path: path=%q error=%q", path, err)
+			r.Error(logger.ScanError, "could generate relative path: path=%q error=%q", path, err)
 			return nil
 		}
 
@@ -123,13 +123,13 @@ func (r *Files) Walk(fn WalkFunc) error {
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {
-			logger.Info("skipping symlink: path=%q", relPath)
+			r.Info(logger.ScanError, "skipping symlink: path=%q", relPath)
 			return nil
 		}
 
 		file, err := os.Open(filepath.Clean(path))
 		if err != nil {
-			logger.Error("could not open file: path=%q error=%q", relPath, err)
+			r.Error(logger.ScanError, "could not open file: path=%q error=%q", relPath, err)
 			return nil
 		}
 		defer file.Close()

@@ -74,7 +74,7 @@ func (r *JSONData) Clone(path string) error {
 
 	// Load the raw json into the data variable
 	if err = json.Unmarshal([]byte(r.raw), &r.data); err != nil {
-		logger.Debug("JSONData:\n%v", r.raw)
+		r.Debug(logger.ScanError, "JSONData:\n%v", r.raw)
 		return fmt.Errorf("could not unmarshal JSONData: error=%q", err)
 	}
 
@@ -117,7 +117,7 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 		if err != nil {
 			// Not being able to retrieve a URL found inside JSONData is not a fatal error. Logging until update how
 			// we manage fatal/nonfatal errors flowing through the application.
-			logger.Info("%v", fmt.Errorf("could not fetch url: path=%q url=%q error=%q", leafNode.path, obj, err))
+			r.Warning(logger.CloneError, "%v", fmt.Errorf("could not fetch url: path=%q url=%q error=%q", leafNode.path, obj, err))
 			return nil
 		}
 

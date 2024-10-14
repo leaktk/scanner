@@ -21,10 +21,15 @@ type WalkFunc func(path string, reader io.Reader) error
 type Resource interface {
 	Clone(path string) error
 	ClonePath() string
+	Critical(code logger.ErrorCode, msg string, args ...any)
+	Debug(code logger.ErrorCode, msg string, args ...any)
 	Depth() uint16
 	EnrichResult(result *response.Result) *response.Result
+	Error(code logger.ErrorCode, msg string, args ...any)
 	ID() string
+	Info(code logger.ErrorCode, msg string, args ...any)
 	Kind() string
+	Logs() []logger.Entry
 	Priority() int
 	ReadFile(path string) ([]byte, error)
 	SetCloneTimeout(timeout time.Duration)
@@ -33,6 +38,7 @@ type Resource interface {
 	String() string
 	// Walk is the main way to pick through resource data (except for GitRepo)
 	Walk(WalkFunc) error
+	Warning(code logger.ErrorCode, msg string, args ...any)
 }
 
 // NewResource handles building out the resource from kind, the resource string
@@ -105,7 +111,8 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 // BaseResource is a mixin to handle some of the common resource related methods
 type BaseResource struct {
-	id string
+	id   string
+	logs []logger.Entry
 }
 
 // ID returns a path-safe, unique id for this resource
@@ -115,4 +122,44 @@ func (r *BaseResource) ID() string {
 	}
 
 	return r.id
+}
+
+func (r *BaseResource) Logs() []logger.Entry {
+	return r.logs
+}
+
+func (r *BaseResource) Critical(code logger.ErrorCode, msg string, args ...any) {
+	if entry := logger.Error(msg, args...); entry != nil {
+		entry.Code = code.String()
+		entry.Severity = "CRITICAL"
+		r.logs = append(r.logs, *entry)
+	}
+}
+
+func (r *BaseResource) Debug(code logger.ErrorCode, msg string, args ...any) {
+	if entry := logger.Debug(msg, args...); entry != nil {
+		entry.Code = code.String()
+		r.logs = append(r.logs, *entry)
+	}
+}
+
+func (r *BaseResource) Error(code logger.ErrorCode, msg string, args ...any) {
+	if entry := logger.Error(msg, args...); entry != nil {
+		entry.Code = code.String()
+		r.logs = append(r.logs, *entry)
+	}
+}
+
+func (r *BaseResource) Warning(code logger.ErrorCode, msg string, args ...any) {
+	if entry := logger.Warning(msg, args...); entry != nil {
+		entry.Code = code.String()
+		r.logs = append(r.logs, *entry)
+	}
+}
+
+func (r *BaseResource) Info(code logger.ErrorCode, msg string, args ...any) {
+	if entry := logger.Info(msg, args...); entry != nil {
+		entry.Code = code.String()
+		r.logs = append(r.logs, *entry)
+	}
 }

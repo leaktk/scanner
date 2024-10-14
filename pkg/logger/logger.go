@@ -42,6 +42,28 @@ const (
 	HUMAN LogFormat = 1
 )
 
+// ErrorCode defined sthe set of error codes that can be set on a Entry
+type ErrorCode int
+
+const (
+	// NoErrorCode means the error code hasn't been set
+	NoErrorCode = iota
+	// CloneError means we were unable to successfully clone the resource
+	CloneError
+	// ScanError means there was some issue scanning the cloned resource
+	ScanError
+	// ResourceCleanupError means we couldn't remove the resources that were cloned after a scan
+	ResourceCleanupError
+	// CommandError means there was an error with an external command
+	CommandError
+)
+
+var errorNames = [...]string{"NoErrorCode", "CloneError", "ScanError", "ResourceCleanupError", "CommandError"}
+
+func (code ErrorCode) String() string {
+	return errorNames[code]
+}
+
 // String renders a LogLevel as its string value
 func (l LogLevel) String() string {
 	switch l {
@@ -69,6 +91,7 @@ var currentLogFormat = HUMAN
 type Entry struct {
 	Time     string `json:"time"`
 	Severity string `json:"severity"`
+	Code     string `json:"code,omitempty"`
 	Message  string `json:"message"`
 }
 
@@ -144,55 +167,59 @@ func GetLoggerLevel() LogLevel {
 }
 
 // Debug emits an DEBUG level log
-func Debug(msg string, a ...any) {
+func Debug(msg string, a ...any) *Entry {
 	if currentLogLevel > DEBUG {
-		return
+		return nil
 	}
-
-	log.Println(Entry{
+	entry := Entry{
 		Time:     time.Now().UTC().Format(time.RFC3339),
 		Severity: "DEBUG",
 		Message:  fmt.Sprintf(msg, a...),
-	})
+	}
+	log.Println(entry)
+	return &entry
 }
 
 // Info emits an INFO level log
-func Info(msg string, a ...any) {
+func Info(msg string, a ...any) *Entry {
 	if currentLogLevel > INFO {
-		return
+		return nil
 	}
-
-	log.Println(Entry{
+	entry := Entry{
 		Time:     time.Now().UTC().Format(time.RFC3339),
 		Severity: "INFO",
 		Message:  fmt.Sprintf(msg, a...),
-	})
+	}
+	log.Println(entry)
+	return &entry
 }
 
 // Warning emits an WARNING level log
-func Warning(msg string, a ...any) {
+func Warning(msg string, a ...any) *Entry {
 	if currentLogLevel > WARNING {
-		return
+		return nil
 	}
-
-	log.Println(Entry{
+	entry := Entry{
 		Time:     time.Now().UTC().Format(time.RFC3339),
 		Severity: "WARNING",
 		Message:  fmt.Sprintf(msg, a...),
-	})
+	}
+	log.Println(entry)
+	return &entry
 }
 
 // Error emits an ERROR level log
-func Error(msg string, a ...any) {
+func Error(msg string, a ...any) *Entry {
 	if currentLogLevel > ERROR {
-		return
+		return nil
 	}
-
-	log.Println(Entry{
+	entry := Entry{
 		Time:     time.Now().UTC().Format(time.RFC3339),
 		Severity: "ERROR",
 		Message:  fmt.Errorf(msg, a...).Error(),
-	})
+	}
+	log.Println(entry)
+	return &entry
 }
 
 // Fatal emits an CRITICAL level log and stops the program

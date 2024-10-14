@@ -19,10 +19,10 @@ const (
 type (
 	// Response from the scanner with the scan results
 	Response struct {
-		ID        string        `json:"id"`
-		Errors    []LeakTKError `json:"errors"`
-		RequestID string        `json:"request_id"`
-		Results   []*Result     `json:"results"`
+		ID        string         `json:"id"`
+		Logs      []logger.Entry `json:"logs"`
+		RequestID string         `json:"request_id"`
+		Results   []*Result      `json:"results"`
 	}
 
 	// Result of a scan
