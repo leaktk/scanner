@@ -30,6 +30,10 @@ func (m *mockResource) Kind() string {
 	return "Mock"
 }
 
+func (m *mockResource) NonFatalErrors() []response.LeakTKError {
+	return []response.LeakTKError{}
+}
+
 func (m *mockResource) ReadFile(path string) ([]byte, error) {
 	return []byte{}, nil
 }

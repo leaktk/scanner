@@ -117,7 +117,9 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 		if err != nil {
 			// Not being able to retrieve a URL found inside JSONData is not a fatal error. Logging until update how
 			// we manage fatal/nonfatal errors flowing through the application.
-			logger.Info("%v", fmt.Errorf("could not fetch url: path=%q url=%q error=%q", leafNode.path, obj, err))
+			err = fmt.Errorf("could not fetch url: path=%q url=%q error=%q", leafNode.path, obj, err)
+			logger.Info("%v", err)
+			r.addNonFatalError(response.CloneError, err)
 			return nil
 		}
 

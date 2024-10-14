@@ -171,7 +171,8 @@ func (s *Scanner) listenForScanRequests() {
 				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
 			})
 		}
-
+		// Append any non fatal errors encountered
+		request.Errors = append(request.Errors, reqResource.NonFatalErrors()...)
 		s.responseQueue.Send(&queue.Message[*response.Response]{
 			Priority: msg.Priority,
 			Value: &response.Response{
