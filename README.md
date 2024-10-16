@@ -48,7 +48,7 @@ The order of precedence for config paths:
 
 1. The `LEAKTK_CONFIG_PATH` env var
 1. `--config <some path>`
-1. `${XDG_CONFIG_HOME}/leatktk/config.toml` if it exists
+1. `${XDG_CONFIG_HOME}/leaktk/config.toml` if it exists
 1. `/etc/leaktk/config.toml` if it exists
 1. default config
 
