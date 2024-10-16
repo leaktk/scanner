@@ -25,6 +25,7 @@ type Resource interface {
 	EnrichResult(result *response.Result) *response.Result
 	ID() string
 	Kind() string
+	NonFatalErrors() []response.LeakTKError
 	Priority() int
 	ReadFile(path string) ([]byte, error)
 	SetCloneTimeout(timeout time.Duration)
@@ -105,7 +106,8 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 // BaseResource is a mixin to handle some of the common resource related methods
 type BaseResource struct {
-	id string
+	id             string
+	nonFatalErrors []response.LeakTKError
 }
 
 // ID returns a path-safe, unique id for this resource
@@ -115,4 +117,17 @@ func (r *BaseResource) ID() string {
 	}
 
 	return r.id
+}
+
+func (r *BaseResource) addNonFatalError(code response.ErrorCode, err error) {
+	r.nonFatalErrors = append(r.nonFatalErrors, response.LeakTKError{
+		Fatal:   false,
+		Code:    code,
+		Message: err.Error(),
+	})
+}
+
+// NonFatalErrors returns any errors encountered that did not interrupt the resource flow
+func (r *BaseResource) NonFatalErrors() []response.LeakTKError {
+	return r.nonFatalErrors
 }

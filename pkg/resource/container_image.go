@@ -275,7 +275,9 @@ func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
 		return err
 	}
 	if written >= n {
-		logger.Warning("copying file %s did not finish due to max file size: %v", file.Name(), err)
+		err = fmt.Errorf("copying file %s did not finish due to max file size: %v", file.Name(), err)
+		logger.Warning("%s", err.Error())
+		r.addNonFatalError(response.CloneError, err)
 	}
 	return nil
 }
@@ -320,7 +322,9 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 		}
 		path, err := fs.CleanJoin(layerRootDir, header.Name)
 		if err != nil {
-			logger.Error("%v - skipped", err)
+			err = fmt.Errorf("%v - skipped unclean join", err)
+			logger.Error("%v", err)
+			r.addNonFatalError(response.CloneError, err)
 			continue
 		}
 		info := header.FileInfo()
@@ -331,13 +335,17 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 			continue
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			logger.Warning("skipping file that is a symlink: %s", info.Name())
+			err = fmt.Errorf("skipping file that is a symlink: %s", header.Name)
+			logger.Warning("%s", err.Error())
+			r.addNonFatalError(response.CloneError, err)
 			continue
 		}
 
 		err = r.copyN(path, tarReader, size)
 		if err != nil {
-			logger.Error("could not create/write file: %v", err)
+			err = fmt.Errorf("could not create/write file: %v", err)
+			logger.Warning("%s", err.Error())
+			r.addNonFatalError(response.CloneError, err)
 			// Try others, in case its unsupported file name for the filesystem etc.
 			continue
 		}
@@ -413,7 +421,9 @@ func (r *ContainerImage) sinceTime() *time.Time {
 	if len(r.options.Since) > 0 {
 		date, err := time.Parse("2006-01-02", r.options.Since)
 		if err != nil {
-			logger.Error("could not parse since time: %v", err)
+			err = fmt.Errorf("could not parse since time, reverting to scan all: %v", err)
+			logger.Warning("%s", err.Error())
+			r.addNonFatalError(response.CloneError, err)
 			return nil
 		} else {
 			return &date
