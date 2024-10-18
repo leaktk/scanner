@@ -39,6 +39,13 @@ func NewPriorityQueue[T any](queueSize int) *PriorityQueue[T] {
 			// Get the message but don't send it yet because sending can wait for
 			// the reciever and we don't want to hold the lock for that long
 			pq.heapMutex.Lock()
+			// Sometimes with a lot of workers and very rapid bulk scanning, another
+			// worker may snag the last item between the wait and this lock. So we
+			// need to check the length again just to be sure to avoid any panics.
+			if pq.heap.Len() == 0 {
+				pq.heapMutex.Unlock()
+				continue
+			}
 			msg := heap.Pop(pq.heap).(*Message[T])
 			pq.heapMutex.Unlock()
 
