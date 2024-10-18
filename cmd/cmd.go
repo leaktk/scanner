@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -173,11 +174,40 @@ func scanCommand() *cobra.Command {
 	return scanCommand
 }
 
+func stdinSplitter(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	if i := bytes.IndexByte(data, '\n'); i >= 0 {
+		// We have a full newline-terminated line
+		if i > maxRequestSize {
+			// Skip this line if it's too long
+			// TODO: log it
+			return i + 1, nil, nil
+		}
+
+		return i + 1, data[0:i], nil
+	}
+
+	if atEOF {
+		if len(data) > maxRequestSize {
+			return len(data), nil, nil
+		}
+
+		return len(data), data, nil
+	}
+
+	// Request more data.
+	return 0, nil, nil
+}
+
 func runListen(cmd *cobra.Command, args []string) {
 	var wg sync.WaitGroup
 
 	stdinScanner := bufio.NewScanner(os.Stdin)
 	stdinScanner.Buffer(make([]byte, maxRequestSize), maxRequestSize)
+	stdinScanner.Split(stdinSplitter)
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
