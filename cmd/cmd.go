@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,8 +20,6 @@ import (
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/scanner"
 )
-
-const maxRequestSize = 256 * 1024
 
 // Version number set by the build
 var Version = ""
@@ -174,10 +173,23 @@ func scanCommand() *cobra.Command {
 	return scanCommand
 }
 
+func readLine(reader *bufio.Reader) ([]byte, error) {
+	var buf bytes.Buffer
+
+	for {
+		line, isPrefix, err := reader.ReadLine()
+		buf.Write(line)
+
+		if err != nil || !isPrefix {
+			return buf.Bytes(), err
+		}
+	}
+}
+
 func runListen(cmd *cobra.Command, args []string) {
 	var wg sync.WaitGroup
 
-	stdinReader := bufio.NewReaderSize(os.Stdin, maxRequestSize)
+	stdinReader := bufio.NewReader(os.Stdin)
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
@@ -188,7 +200,7 @@ func runListen(cmd *cobra.Command, args []string) {
 
 	// Listen for requests
 	for {
-		line, isPrefix, err := stdinReader.ReadLine()
+		line, err := readLine(stdinReader)
 
 		if err != nil {
 			if err == io.EOF {
@@ -196,11 +208,6 @@ func runListen(cmd *cobra.Command, args []string) {
 			}
 
 			logger.Error("error reading from stdin: error=%q", err)
-			continue
-		}
-
-		if isPrefix {
-			logger.Error("line too long: %s...", line)
 			continue
 		}
 
