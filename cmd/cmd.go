@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -174,40 +174,10 @@ func scanCommand() *cobra.Command {
 	return scanCommand
 }
 
-func stdinSplitter(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-
-	if i := bytes.IndexByte(data, '\n'); i >= 0 {
-		// We have a full newline-terminated line
-		if i > maxRequestSize {
-			// Skip this line if it's too long
-			// TODO: log it
-			return i + 1, nil, nil
-		}
-
-		return i + 1, data[0:i], nil
-	}
-
-	if atEOF {
-		if len(data) > maxRequestSize {
-			return len(data), nil, nil
-		}
-
-		return len(data), data, nil
-	}
-
-	// Request more data.
-	return 0, nil, nil
-}
-
 func runListen(cmd *cobra.Command, args []string) {
 	var wg sync.WaitGroup
 
-	stdinScanner := bufio.NewScanner(os.Stdin)
-	stdinScanner.Buffer(make([]byte, maxRequestSize), maxRequestSize)
-	stdinScanner.Split(stdinSplitter)
+	stdinReader := bufio.NewReaderSize(os.Stdin, maxRequestSize)
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
@@ -217,9 +187,25 @@ func runListen(cmd *cobra.Command, args []string) {
 	})
 
 	// Listen for requests
-	for stdinScanner.Scan() {
+	for {
+		line, isPrefix, err := stdinReader.ReadLine()
+
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			logger.Error("error reading from stdin: error=%q", err)
+			continue
+		}
+
+		if isPrefix {
+			logger.Error("line too long: %s...", line)
+			continue
+		}
+
 		var request scanner.Request
-		err := json.Unmarshal(stdinScanner.Bytes(), &request)
+		err = json.Unmarshal(line, &request)
 
 		if err != nil {
 			logger.Error("could not unmarshal request: error=%q", err)
@@ -233,10 +219,6 @@ func runListen(cmd *cobra.Command, args []string) {
 
 		wg.Add(1)
 		leakScanner.Send(&request)
-	}
-
-	if err := stdinScanner.Err(); err != nil {
-		logger.Error("error reading from stdin: error=%q", err)
 	}
 
 	// Wait for all of the scans to complete and responses to be sent
