@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -18,8 +20,6 @@ import (
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/scanner"
 )
-
-const maxRequestSize = 256 * 1024
 
 // Version number set by the build
 var Version = ""
@@ -173,11 +173,23 @@ func scanCommand() *cobra.Command {
 	return scanCommand
 }
 
+func readLine(reader *bufio.Reader) ([]byte, error) {
+	var buf bytes.Buffer
+
+	for {
+		line, isPrefix, err := reader.ReadLine()
+		buf.Write(line)
+
+		if err != nil || !isPrefix {
+			return buf.Bytes(), err
+		}
+	}
+}
+
 func runListen(cmd *cobra.Command, args []string) {
 	var wg sync.WaitGroup
 
-	stdinScanner := bufio.NewScanner(os.Stdin)
-	stdinScanner.Buffer(make([]byte, maxRequestSize), maxRequestSize)
+	stdinReader := bufio.NewReader(os.Stdin)
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
@@ -187,9 +199,20 @@ func runListen(cmd *cobra.Command, args []string) {
 	})
 
 	// Listen for requests
-	for stdinScanner.Scan() {
+	for {
+		line, err := readLine(stdinReader)
+
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			logger.Error("error reading from stdin: error=%q", err)
+			continue
+		}
+
 		var request scanner.Request
-		err := json.Unmarshal(stdinScanner.Bytes(), &request)
+		err = json.Unmarshal(line, &request)
 
 		if err != nil {
 			logger.Error("could not unmarshal request: error=%q", err)
@@ -203,10 +226,6 @@ func runListen(cmd *cobra.Command, args []string) {
 
 		wg.Add(1)
 		leakScanner.Send(&request)
-	}
-
-	if err := stdinScanner.Err(); err != nil {
-		logger.Error("error reading from stdin: error=%q", err)
 	}
 
 	// Wait for all of the scans to complete and responses to be sent
