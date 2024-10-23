@@ -7,7 +7,6 @@ import (
 
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/resource"
-	"github.com/leaktk/scanner/pkg/response"
 )
 
 // Request to the scanner to scan some resource
@@ -15,7 +14,6 @@ type Request struct {
 	ID string
 	// Thing to scan (e.g. URL, snippet of text, etc)
 	Resource resource.Resource
-	Errors   []response.LeakTKError
 }
 
 // Priority of this request

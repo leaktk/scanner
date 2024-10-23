@@ -21,7 +21,8 @@ scan_workers = 1
 # The full path to where the scanner should store files, clone repos, etc
 # for better performance mount a tmpfs at this location
 # workdir = "/tmp/leaktk/scanner" # This defaults to ${XDG_CACHE_HOME}/leaktk/scanner
-
+# Include logs at logger level in response
+# include_logs_response = false
 
 [scanner.patterns]
 # Tells the scanner if it can fetch pattenrs or not
