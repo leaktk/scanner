@@ -102,7 +102,7 @@ func (r *JSONData) Clone(path string) error {
 }
 
 func (r *JSONData) shouldFetchURL(path string) bool {
-	for _, pattern := range filepath.SplitList(r.options.FetchURLs) {
+	for _, pattern := range strings.Split(r.options.FetchURLs, ":") {
 		if fs.Match(pattern, path) {
 			return true
 		}
