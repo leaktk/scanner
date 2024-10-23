@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/response"
 )
@@ -30,7 +31,8 @@ type JSONData struct {
 
 // JSONDataOptions are options for the JSONData resource
 type JSONDataOptions struct {
-	FetchURLs bool `json:"fetch_urls"`
+	// *:/foo/*/bar*:/foo
+	FetchURLs string `json:"fetch_urls"`
 	// The scan priority
 	Priority int `json:"priority"`
 }
@@ -92,11 +94,21 @@ func (r *JSONData) Clone(path string) error {
 	}
 
 	// Fetch URLs in jsonNodes and replace the node with a resource object
-	if r.options.FetchURLs {
+	if len(r.options.FetchURLs) > 0 {
 		err = r.fetchURLs(jsonNode{value: r.data}, r.clonePath)
 	}
 
 	return err
+}
+
+func (r *JSONData) shouldFetchURL(path string) bool {
+	for _, pattern := range filepath.SplitList(r.options.FetchURLs) {
+		if fs.Match(pattern, path) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
@@ -108,6 +120,11 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 		}
 
 		if !urlRegexp.MatchString(obj) {
+			return nil
+		}
+
+		if !r.shouldFetchURL(leafNode.path) {
+			logger.Debug("not fetching URL: path=%q url=%q", leafNode.path, obj)
 			return nil
 		}
 
