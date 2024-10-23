@@ -142,7 +142,7 @@ Sets the request priority. Higher priority items will be scanned first.
     "kind": "GitRepo",
     "resource": "http://github.com/leaktk/fake-leaks.git"
   },
-  "errors": [],
+  "logs": [],
   "results": [
     {
       "id": "c80efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7",
@@ -237,7 +237,7 @@ Sets the request priority. Higher priority items will be scanned first.
     "kind": "JSONData",
     "resource": "{\"some\":{\"key\": \"-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----\"}}"
   },
-  "errors": [],
+  "logs": [],
   "results": [
     {
       "id": "66456b43e1efac03f9448ece59a65b0e2bf304b55506507a8aa07727e3900522",
@@ -315,7 +315,7 @@ Sets the request priority. Higher priority items will be scanned first.
     "kind": "Files",
     "resource": "/path/to/fake-leaks/keys/tls"
   },
-  "errors": [],
+  "logs": [],
   "results": [
     {
       "id": "9376e604a7e8c4f5259ceb47f8a29c57e77c07668e317fa8c177de5e56fbe029",
@@ -394,7 +394,7 @@ Sets the request priority. Higher priority items will be scanned first.
     "kind": "URL",
     "resource": "https://raw.githubusercontent.com/leaktk/fake-leaks/main/keys/tls/server.key"
   },
-  "errors": [],
+  "logs": [],
   "results": [
     {
       "id": "6c14f496a2111dfeecbfff4a61587b0b1866788a6112b420f80071f8cded0153",
@@ -551,6 +551,5 @@ so not all images will have the information.
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
 1. Have options for URL and JSONData to allow them to recursively pull other URLs when they see them (e.g. `follow_urls bool`, `depth uint16`) and make sure it can't loop
-1. Improve error handling, allowing resources to better handle fatal/nonfatal errors
 1. Implement scanning with Yara
 1. Investigate a custom log handler to consume the logs from the embedded gitleaks. Log to DEBUG.
