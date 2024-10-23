@@ -30,12 +30,13 @@ type (
 
 	// Scanner provides scanner specific config
 	Scanner struct {
-		CloneTimeout uint16   `toml:"clone_timeout"`
-		CloneWorkers uint16   `toml:"clone_workers"`
-		MaxScanDepth uint16   `toml:"max_scan_depth"`
-		Patterns     Patterns `toml:"patterns"`
-		ScanWorkers  uint16   `toml:"scan_workers"`
-		Workdir      string   `toml:"workdir"`
+		CloneTimeout        uint16   `toml:"clone_timeout"`
+		CloneWorkers        uint16   `toml:"clone_workers"`
+		IncludeResponseLogs bool     `toml:"include_logs_response"`
+		MaxScanDepth        uint16   `toml:"max_scan_depth"`
+		Patterns            Patterns `toml:"patterns"`
+		ScanWorkers         uint16   `toml:"scan_workers"`
+		Workdir             string   `toml:"workdir"`
 	}
 
 	// Patterns provides configuration for managing pattern updates
@@ -172,11 +173,12 @@ func DefaultConfig() *Config {
 			Level: "INFO",
 		},
 		Scanner: Scanner{
-			CloneTimeout: 0,
-			CloneWorkers: 1,
-			MaxScanDepth: 0,
-			ScanWorkers:  1,
-			Workdir:      filepath.Join(leaktkCacheDir(), "scanner"),
+			CloneTimeout:        0,
+			CloneWorkers:        1,
+			IncludeResponseLogs: false,
+			MaxScanDepth:        0,
+			ScanWorkers:         1,
+			Workdir:             filepath.Join(leaktkCacheDir(), "scanner"),
 			Patterns: Patterns{
 				Autofetch:    true,
 				ExpiredAfter: 60 * 60 * 12 * 14, // 7 days

@@ -34,6 +34,7 @@ type Resource interface {
 	ReadFile(path string) ([]byte, error)
 	SetCloneTimeout(timeout time.Duration)
 	SetDepth(depth uint16)
+	SetResourceLogs(enabled bool)
 	Since() string
 	String() string
 	// Walk is the main way to pick through resource data (except for GitRepo)
@@ -111,8 +112,9 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 // BaseResource is a mixin to handle some of the common resource related methods
 type BaseResource struct {
-	id   string
-	logs []logger.Entry
+	id             string
+	logs           []logger.Entry
+	LogsInResponse bool
 }
 
 // ID returns a path-safe, unique id for this resource
@@ -128,6 +130,8 @@ func (r *BaseResource) Logs() []logger.Entry {
 	return r.logs
 }
 
+// Critical forwards to the logger and adds to the resource logs used for critical errors that interupt
+// the scanner flow.
 func (r *BaseResource) Critical(code logger.ErrorCode, msg string, args ...any) {
 	if entry := logger.Error(msg, args...); entry != nil {
 		entry.Code = code.String()
@@ -136,30 +140,47 @@ func (r *BaseResource) Critical(code logger.ErrorCode, msg string, args ...any) 
 	}
 }
 
+// Debug forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Debug(code logger.ErrorCode, msg string, args ...any) {
 	if entry := logger.Debug(msg, args...); entry != nil {
 		entry.Code = code.String()
-		r.logs = append(r.logs, *entry)
+		if r.LogsInResponse {
+			r.logs = append(r.logs, *entry)
+		}
 	}
 }
 
+// Error forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Error(code logger.ErrorCode, msg string, args ...any) {
 	if entry := logger.Error(msg, args...); entry != nil {
 		entry.Code = code.String()
-		r.logs = append(r.logs, *entry)
+		if r.LogsInResponse {
+			r.logs = append(r.logs, *entry)
+		}
 	}
 }
 
+// Warning forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Warning(code logger.ErrorCode, msg string, args ...any) {
 	if entry := logger.Warning(msg, args...); entry != nil {
 		entry.Code = code.String()
-		r.logs = append(r.logs, *entry)
+		if r.LogsInResponse {
+			r.logs = append(r.logs, *entry)
+		}
 	}
 }
 
+// Info forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Info(code logger.ErrorCode, msg string, args ...any) {
 	if entry := logger.Info(msg, args...); entry != nil {
 		entry.Code = code.String()
-		r.logs = append(r.logs, *entry)
+		if r.LogsInResponse {
+			r.logs = append(r.logs, *entry)
+		}
 	}
+}
+
+// SetResourceLogs sets whether to include non-CRITICAL logs
+func (r *BaseResource) SetResourceLogs(enabled bool) {
+	r.LogsInResponse = enabled
 }

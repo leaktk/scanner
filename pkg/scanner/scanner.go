@@ -20,29 +20,31 @@ const queueSize = 1024
 
 // Scanner holds the config and state for the scanner processes
 type Scanner struct {
-	backends      []Backend
-	cloneQueue    *queue.PriorityQueue[*Request]
-	cloneTimeout  time.Duration
-	cloneWorkers  uint16
-	maxScanDepth  uint16
-	resourceDir   string
-	responseQueue *queue.PriorityQueue[*response.Response]
-	scanQueue     *queue.PriorityQueue[*Request]
-	scanWorkers   uint16
+	backends            []Backend
+	cloneQueue          *queue.PriorityQueue[*Request]
+	cloneTimeout        time.Duration
+	cloneWorkers        uint16
+	includeResponseLogs bool
+	maxScanDepth        uint16
+	resourceDir         string
+	responseQueue       *queue.PriorityQueue[*response.Response]
+	scanQueue           *queue.PriorityQueue[*Request]
+	scanWorkers         uint16
 }
 
 // NewScanner returns a initialized and listening scanner instance that should
 // be closed when it's no longer needed.
 func NewScanner(cfg *config.Config) *Scanner {
 	scanner := &Scanner{
-		cloneQueue:    queue.NewPriorityQueue[*Request](queueSize),
-		cloneTimeout:  time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
-		cloneWorkers:  cfg.Scanner.CloneWorkers,
-		maxScanDepth:  cfg.Scanner.MaxScanDepth,
-		resourceDir:   filepath.Join(cfg.Scanner.Workdir, "resources"),
-		responseQueue: queue.NewPriorityQueue[*response.Response](queueSize),
-		scanQueue:     queue.NewPriorityQueue[*Request](queueSize),
-		scanWorkers:   cfg.Scanner.ScanWorkers,
+		cloneQueue:          queue.NewPriorityQueue[*Request](queueSize),
+		cloneTimeout:        time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
+		cloneWorkers:        cfg.Scanner.CloneWorkers,
+		maxScanDepth:        cfg.Scanner.MaxScanDepth,
+		resourceDir:         filepath.Join(cfg.Scanner.Workdir, "resources"),
+		responseQueue:       queue.NewPriorityQueue[*response.Response](queueSize),
+		scanQueue:           queue.NewPriorityQueue[*Request](queueSize),
+		scanWorkers:         cfg.Scanner.ScanWorkers,
+		includeResponseLogs: cfg.Scanner.IncludeResponseLogs,
 		backends: []Backend{
 			NewGitleaks(NewPatterns(&cfg.Scanner.Patterns, &http.Client{})),
 		},
@@ -87,6 +89,7 @@ func (s *Scanner) listenForCloneRequests() {
 	s.cloneQueue.Recv(func(msg *queue.Message[*Request]) {
 		request := msg.Value
 		reqResource := request.Resource
+		reqResource.SetResourceLogs(s.includeResponseLogs)
 
 		if s.cloneTimeout > 0 {
 			logger.Debug("setting clone timeout: request_id=%q timeout=%v", request.ID, s.cloneTimeout.Seconds())
