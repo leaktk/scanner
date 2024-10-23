@@ -68,3 +68,17 @@ func TestCleanJoin(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestMatch(t *testing.T) {
+	t.Run("Match", func(t *testing.T) {
+		assert.False(t, Match("a/*/c", "a/b/d/c"))   // * matches only one segment
+		assert.False(t, Match("a/b/c", "a/b/d"))     // exact match required
+		assert.True(t, Match("**", "a"))             // match anything
+		assert.True(t, Match("**", "a/b/d"))         // match anything
+		assert.True(t, Match("a/**", "a/b/d/e/c"))   // ** matches till the end
+		assert.True(t, Match("a/**/c", "a/b/d/e/c")) // ** matches multiple segments
+		assert.True(t, Match("a/**/d", "a/b/c/d"))   // ** matches intermediate segments
+		assert.True(t, Match("a/*/c", "a/b/c"))      // * matches one segment
+		assert.True(t, Match("a/b/c", "a/b/c"))      // exact match
+	})
+}

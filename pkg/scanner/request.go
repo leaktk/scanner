@@ -18,7 +18,7 @@ type Request struct {
 	Errors   []response.LeakTKError
 }
 
-// Return the Priority of this request
+// Priority of this request
 func (r *Request) Priority() int {
 	return r.Resource.Priority()
 }

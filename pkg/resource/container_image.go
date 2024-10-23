@@ -122,16 +122,16 @@ func (r *ContainerImage) Clone(path string) error {
 	if err != nil {
 		return fmt.Errorf("could not create clone directory: %v", err)
 	}
+
 	r.clonePath = path
 	if r.cloneTimeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), r.cloneTimeout)
 		defer cancel()
 		return r.cloneRemoteResource(ctx, path, r.location)
-	} else {
-		ctx := context.Background()
-		return r.cloneRemoteResource(ctx, path, r.location)
 	}
 
+	ctx := context.Background()
+	return r.cloneRemoteResource(ctx, path, r.location)
 }
 
 // cloneRemoteResource clones a remote resource ready for scanning.
@@ -361,15 +361,17 @@ func (r *ContainerImage) layerDepth(layers []manifest.LayerInfo, dates []*time.T
 		// if our history length is different to our layer length, drop it.
 		dates = nil
 	}
+
 	if r.Depth() == 0 {
 		return layers, dates
 	}
+
 	sliceStart := len(layers) - int(r.Depth())
 	if sliceStart < 0 {
 		return layers, dates
-	} else {
-		return layers[sliceStart:], dates[sliceStart:]
 	}
+
+	return layers[sliceStart:], dates[sliceStart:]
 }
 
 // EnrichResult adds contextual information to each result
@@ -415,10 +417,11 @@ func (r *ContainerImage) sinceTime() *time.Time {
 		if err != nil {
 			logger.Error("could not parse since time: %v", err)
 			return nil
-		} else {
-			return &date
 		}
+
+		return &date
 	}
+
 	return nil
 }
 

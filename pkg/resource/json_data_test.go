@@ -38,10 +38,11 @@ func TestJSONData(t *testing.T) {
 	defer ts.Close()
 
 	data := `{
-			"foo":"bar",
+			"foo": "bar",
 			"baz": ["bop", true, 1, 2.3, null, {"hello": "there"}],
-			"url":"` + ts.URL + `/hello",
-			"nested":"` + ts.URL + `/hello.json"
+			"url": "` + ts.URL + `/hello",
+			"nested": {"url": "` + ts.URL + `/hello.json"},
+			"skipped": "https://example.com"
 	} `
 
 	brokenURLData := `{
@@ -49,7 +50,8 @@ func TestJSONData(t *testing.T) {
 	}`
 
 	jsonData := NewJSONData(data, &JSONDataOptions{
-		FetchURLs: true,
+		// fetch url and anything one level under nested
+		FetchURLs: "url:nested/*",
 	})
 
 	err := jsonData.Clone(t.TempDir())
@@ -121,7 +123,13 @@ func TestJSONData(t *testing.T) {
 			err:   false,
 		},
 		{
-			path:  filepath.Join("nested", "hello"),
+			path:  "skipped",
+			value: "https://example.com",
+			err:   false,
+		},
+
+		{
+			path:  filepath.Join("nested", "url", "hello"),
 			value: "world",
 			err:   false,
 		},
@@ -179,7 +187,7 @@ func TestJSONData(t *testing.T) {
 		})
 
 		// Make sure all items have been checked
-		assert.Equal(t, len(toCheck), 0, fmt.Sprintf("remaining values: %v", toCheck))
+		assert.Equal(t, 0, len(toCheck), fmt.Sprintf("remaining values: %v", toCheck))
 	})
 
 	t.Run("CloneBrokenURLWithoutFetchURLs", func(t *testing.T) {
@@ -189,13 +197,30 @@ func TestJSONData(t *testing.T) {
 		assert.NoError(t, jsonData.Clone(t.TempDir()))
 	})
 
-	// Removing this test until we fix up error handling. Broken URLs is not a fatal error.
-	//t.Run("CloneBrokenURLWithFetchURLs", func(t *testing.T) {
-	//	// Should throw an error
-	//	jsonData := NewJSONData(brokenURLData, &JSONDataOptions{
-	//		FetchURLs: true,
-	//	})
-	//
-	//	assert.Error(t, jsonData.Clone(t.TempDir()))
-	//})
+	t.Run("CloneBrokenURLWithFetchURLs", func(t *testing.T) {
+		jsonData := NewJSONData(brokenURLData, &JSONDataOptions{
+			// Fetch anything that ends with invalid
+			FetchURLs: "**/invalid",
+		})
+
+		// Should still not throw an error
+		assert.NoError(t, jsonData.Clone(t.TempDir()))
+
+		// Make sure the URL was left unresolved
+		invalidMatched := false
+		_ = jsonData.Walk(func(path string, reader io.Reader) error {
+			// Should not have resolved the URL
+			if path == "invalid" {
+				invalidMatched = true
+				data, err := io.ReadAll(reader)
+				assert.NoError(t, err)
+				assert.Equal(t, string(data), "https://raw.githubusercontent.com/leaktk/fake-leaks/main/this-url-doesnt-exist-8UaehX5b24MzZiaeJ428FK5R")
+			}
+
+			return nil
+		})
+
+		// Confirm the invalid path was still found
+		assert.True(t, invalidMatched, "the invalid path was never checked")
+	})
 }

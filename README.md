@@ -204,13 +204,27 @@ Note: the `resource` here is a string containing escaped JSON data.
 
 **fetch_urls**
 
-If true and one of the values in the JSON data is a URL, it will be fetched
-and treated as the content at that path in the data structure. This is
-like running a URL scan. If the response is JSON it can be traversed too,
-but it won't fetch futher URLs.
+This is a list of `:` separated paths down the JSON data in which URL fetching
+is allowed. By default it's disabled and basic `*` and recursive `**` path
+globbing is supported.
 
-* Type: `bool`
-* Default: `false`
+If one of the values in an allowed path is a URL, it will be fetched and
+treated as the content at that path in the data structure. This is like running
+a URL scan. If the response is JSON it can be traversed too, but it won't fetch
+further URLs.
+
+* Type: `string`
+* Default: `""`
+
+Examples:
+
+- `**` fetch any URLs found
+- `users/*/url` fetch things like `user/foo/url` and `user/1/url`
+- `link` only fetch a url if it exists at a top level `link` field
+- `**/url` fetch any url who's key is `url` at any level
+- `**/users/*/url` like the other users example above but at any level
+- `attachments/**` fetch any urls under the attachments path
+- `files/**:links/**` fetch anything under files or links
 
 **NOTE:** It is **NOT** recommended to enable this option unless you trust
 the JSON and the URLs you are providing to the scanner.
@@ -493,7 +507,7 @@ so not all images will have the information.
 * Type: `string`
 * Default: excluded
 
-#### Response  
+#### Response
 ```json
 {
   "id": "a1ef32d00c609b370d2181ea46b11111119deeeea68918cc676a8f12d1fc7e3b",
