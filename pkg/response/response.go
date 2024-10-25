@@ -31,6 +31,7 @@ type (
 		Kind     string            `json:"kind"`
 		Secret   string            `json:"secret"`
 		Match    string            `json:"match"`
+		Context  string            `json:"context"`
 		Entropy  float32           `json:"entropy"`
 		Date     string            `json:"date"`
 		Rule     Rule              `json:"rule"`
