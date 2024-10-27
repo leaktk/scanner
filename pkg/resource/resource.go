@@ -133,7 +133,9 @@ func (r *BaseResource) Logs() []logger.Entry {
 // Critical forwards to the logger and adds to the resource logs used for critical errors that interupt
 // the scanner flow.
 func (r *BaseResource) Critical(code logger.ErrorCode, msg string, args ...any) {
-	if entry := logger.Error(msg, args...); entry != nil {
+	resourceMsg := fmt.Sprintf("resource_id=%s ", r.id)
+	if entry := logger.Error(resourceMsg+msg, args...); entry != nil {
+		entry.Message = fmt.Errorf(msg, args...).Error()
 		entry.Code = code.String()
 		entry.Severity = "CRITICAL"
 		r.logs = append(r.logs, *entry)
@@ -142,7 +144,9 @@ func (r *BaseResource) Critical(code logger.ErrorCode, msg string, args ...any) 
 
 // Debug forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Debug(code logger.ErrorCode, msg string, args ...any) {
-	if entry := logger.Debug(msg, args...); entry != nil {
+	resourceMsg := fmt.Sprintf("resource_id=%s ", r.id)
+	if entry := logger.Debug(resourceMsg+msg, args...); entry != nil {
+		entry.Message = fmt.Errorf(msg, args...).Error()
 		entry.Code = code.String()
 		if r.LogsInResponse {
 			r.logs = append(r.logs, *entry)
@@ -152,7 +156,9 @@ func (r *BaseResource) Debug(code logger.ErrorCode, msg string, args ...any) {
 
 // Error forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Error(code logger.ErrorCode, msg string, args ...any) {
-	if entry := logger.Error(msg, args...); entry != nil {
+	resourceMsg := fmt.Sprintf("resource_id=%s ", r.id)
+	if entry := logger.Error(resourceMsg+msg, args...); entry != nil {
+		entry.Message = fmt.Errorf(msg, args...).Error()
 		entry.Code = code.String()
 		if r.LogsInResponse {
 			r.logs = append(r.logs, *entry)
@@ -162,7 +168,9 @@ func (r *BaseResource) Error(code logger.ErrorCode, msg string, args ...any) {
 
 // Warning forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Warning(code logger.ErrorCode, msg string, args ...any) {
-	if entry := logger.Warning(msg, args...); entry != nil {
+	resourceMsg := fmt.Sprintf("resource_id=%s ", r.id)
+	if entry := logger.Warning(resourceMsg+msg, args...); entry != nil {
+		entry.Message = fmt.Errorf(msg, args...).Error()
 		entry.Code = code.String()
 		if r.LogsInResponse {
 			r.logs = append(r.logs, *entry)
@@ -172,7 +180,9 @@ func (r *BaseResource) Warning(code logger.ErrorCode, msg string, args ...any) {
 
 // Info forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Info(code logger.ErrorCode, msg string, args ...any) {
-	if entry := logger.Info(msg, args...); entry != nil {
+	resourceMsg := fmt.Sprintf("resource_id=%s ", r.id)
+	if entry := logger.Info(resourceMsg+msg, args...); entry != nil {
+		entry.Message = fmt.Errorf(msg, args...).Error()
 		entry.Code = code.String()
 		if r.LogsInResponse {
 			r.logs = append(r.logs, *entry)
