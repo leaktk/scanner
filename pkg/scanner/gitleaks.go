@@ -220,6 +220,7 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, err
 			),
 			Secret:  finding.Secret,
 			Match:   finding.Match,
+			Context: finding.Line,
 			Entropy: finding.Entropy,
 			Date:    finding.Date,
 			Notes:   notes,
