@@ -123,7 +123,7 @@ func (r *Files) Walk(fn WalkFunc) error {
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {
-			r.Info(logger.ScanError, "skipping symlink: path=%q", relPath)
+			r.Info(logger.ScanDetail, "skipping symlink: path=%q", relPath)
 			return nil
 		}
 

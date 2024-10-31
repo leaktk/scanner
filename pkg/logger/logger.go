@@ -42,12 +42,12 @@ const (
 	HUMAN LogFormat = 1
 )
 
-// ErrorCode defined sthe set of error codes that can be set on a Entry
-type ErrorCode int
+// LogCode defines the set of  codes that can be set on an Entry
+type LogCode int
 
 const (
-	// NoErrorCode means the error code hasn't been set
-	NoErrorCode = iota
+	// NoCode means the entry code hasn't been set
+	NoCode = iota
 	// CloneError means we were unable to successfully clone the resource
 	CloneError
 	// ScanError means there was some issue scanning the cloned resource
@@ -58,10 +58,10 @@ const (
 	CommandError
 )
 
-var errorNames = [...]string{"NoErrorCode", "CloneError", "ScanError", "ResourceCleanupError", "CommandError"}
+var logCodeNames = [...]string{"NoCode", "CloneError", "ScanError", "ResourceCleanupError", "CommandError"}
 
-func (code ErrorCode) String() string {
-	return errorNames[code]
+func (code LogCode) String() string {
+	return logCodeNames[code]
 }
 
 // String renders a LogLevel as its string value

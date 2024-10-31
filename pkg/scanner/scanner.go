@@ -148,10 +148,10 @@ func (s *Scanner) listenForScanRequests() {
 				}
 			}
 			if err := s.removeResourceFiles(reqResource); err != nil {
-				reqResource.Critical(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
+				reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		} else {
-			reqResource.Critical(logger.CloneError, "skipping scan due to missing clone path: request_id=%q", request.ID)
+			reqResource.Critical(logger.ScanError, "skipping scan due to missing clone path: request_id=%q", request.ID)
 
 		}
 

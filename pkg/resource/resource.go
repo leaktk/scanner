@@ -34,7 +34,7 @@ type Resource interface {
 	ReadFile(path string) ([]byte, error)
 	SetCloneTimeout(timeout time.Duration)
 	SetDepth(depth uint16)
-	SetResourceLogs(enabled bool)
+	IncludeLogs(enabled bool)
 	Since() string
 	String() string
 	// Walk is the main way to pick through resource data (except for GitRepo)
@@ -114,7 +114,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 type BaseResource struct {
 	id             string
 	logs           []logger.Entry
-	LogsInResponse bool
+	includeLogs bool
 }
 
 // ID returns a path-safe, unique id for this resource
@@ -133,8 +133,8 @@ func (r *BaseResource) Logs() []logger.Entry {
 // Critical forwards to the logger and adds to the resource logs used for critical errors that interupt
 // the scanner flow.
 func (r *BaseResource) Critical(code logger.ErrorCode, msg string, args ...any) {
-	resourceMsg := fmt.Sprintf("resource_id=%s ", r.id)
-	if entry := logger.Error(resourceMsg+msg, args...); entry != nil {
+	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	if entry := logger.Critical(resourceMsg, args...); entry != nil {
 		entry.Message = fmt.Errorf(msg, args...).Error()
 		entry.Code = code.String()
 		entry.Severity = "CRITICAL"

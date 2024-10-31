@@ -173,7 +173,7 @@ func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, r
 			for i, m := range indexManifest.Manifests {
 				if m.Platform.Architecture == r.options.Arch {
 					index = i
-					r.Info(logger.CloneError, "selected first %s container", r.options.Arch)
+					r.Info(logger.CloneDetail, "selected first %s container", r.options.Arch)
 					break
 				}
 			}
