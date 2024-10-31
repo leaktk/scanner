@@ -89,7 +89,7 @@ func (s *Scanner) listenForCloneRequests() {
 	s.cloneQueue.Recv(func(msg *queue.Message[*Request]) {
 		request := msg.Value
 		reqResource := request.Resource
-		reqResource.SetResourceLogs(s.includeResponseLogs)
+		reqResource.IncludeLogs(s.includeResponseLogs)
 
 		if s.cloneTimeout > 0 {
 			logger.Debug("setting clone timeout: request_id=%q timeout=%v", request.ID, s.cloneTimeout.Seconds())

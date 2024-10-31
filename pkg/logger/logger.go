@@ -56,6 +56,10 @@ const (
 	ResourceCleanupError
 	// CommandError means there was an error with an external command
 	CommandError
+	// CloneDetail are log entries that are informational
+	CloneDetail
+	// ScanDetail are log entries that are informational
+	ScanDetail
 )
 
 var logCodeNames = [...]string{"NoCode", "CloneError", "ScanError", "ResourceCleanupError", "CommandError"}
@@ -216,6 +220,20 @@ func Error(msg string, a ...any) *Entry {
 	entry := Entry{
 		Time:     time.Now().UTC().Format(time.RFC3339),
 		Severity: "ERROR",
+		Message:  fmt.Errorf(msg, a...).Error(),
+	}
+	log.Println(entry)
+	return &entry
+}
+
+// Critical emits an CRITICAL level log
+func Critical(msg string, a ...any) *Entry {
+	if currentLogLevel > CRITICAL {
+		return nil
+	}
+	entry := Entry{
+		Time:     time.Now().UTC().Format(time.RFC3339),
+		Severity: "CRITICAL",
 		Message:  fmt.Errorf(msg, a...).Error(),
 	}
 	log.Println(entry)
