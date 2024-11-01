@@ -32,7 +32,7 @@ type (
 	Scanner struct {
 		CloneTimeout        uint16   `toml:"clone_timeout"`
 		CloneWorkers        uint16   `toml:"clone_workers"`
-		IncludeResponseLogs bool     `toml:"include_response_logs  "`
+		IncludeResponseLogs bool     `toml:"include_response_logs"`
 		MaxScanDepth        uint16   `toml:"max_scan_depth"`
 		Patterns            Patterns `toml:"patterns"`
 		ScanWorkers         uint16   `toml:"scan_workers"`
