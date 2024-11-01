@@ -62,7 +62,7 @@ const (
 	ScanDetail
 )
 
-var logCodeNames = [...]string{"NoCode", "CloneError", "ScanError", "ResourceCleanupError", "CommandError"}
+var logCodeNames = [...]string{"NoCode", "CloneError", "ScanError", "ResourceCleanupError", "CommandError", "CloneDetail", "ScanDetail"}
 
 func (code LogCode) String() string {
 	return logCodeNames[code]
