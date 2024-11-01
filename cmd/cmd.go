@@ -160,13 +160,13 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 func scanCommand() *cobra.Command {
 	scanCommand := &cobra.Command{
 		Use:   "scan",
-		Short: "Preform ad-hoc scans",
+		Short: "Perform ad-hoc scans",
 		Run:   runScan,
 	}
 
 	flags := scanCommand.Flags()
 	flags.StringP("id", "", id.ID(), "an ID for tying responses to requests")
-	flags.StringP("kind", "k", "GitRepo", "the kind of resource being scaned")
+	flags.StringP("kind", "k", "GitRepo", "the kind of resource being scanned")
 	flags.StringP("resource", "r", "", "what will be scanned (what goes here depends on kind)")
 	flags.StringP("options", "o", "{}", "additional request options formatted as JSON")
 

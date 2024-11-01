@@ -1,6 +1,6 @@
 package queue
 
-// Message encapsulates a value with its prority
+// Message encapsulates a value with its priority
 type Message[T any] struct {
 	Priority int
 	Value    T
@@ -18,7 +18,7 @@ func NewMessageHeap[T any](size int) *MessageHeap[T] {
 	}
 }
 
-// Len returns the lengh of the heap
+// Len returns the length of the heap
 func (h *MessageHeap[T]) Len() int {
 	return len(h.data)
 }

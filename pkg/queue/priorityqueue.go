@@ -37,7 +37,7 @@ func NewPriorityQueue[T any](queueSize int) *PriorityQueue[T] {
 			}
 
 			// Get the message but don't send it yet because sending can wait for
-			// the reciever and we don't want to hold the lock for that long
+			// the receiver and we don't want to hold the lock for that long
 			pq.heapMutex.Lock()
 			// Sometimes with a lot of workers and very rapid bulk scanning, another
 			// worker may snag the last item between the wait and this lock. So we
@@ -65,7 +65,7 @@ func (pq *PriorityQueue[T]) Send(msg *Message[T]) {
 	pq.signalMessageRecieved()
 }
 
-// Recv takes a function that can recieve messages sent to the queue
+// Recv takes a function that can receive messages sent to the queue
 func (pq *PriorityQueue[T]) Recv(fn func(*Message[T])) {
 	for msg := range pq.out {
 		fn(msg)
