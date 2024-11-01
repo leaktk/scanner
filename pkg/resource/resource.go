@@ -137,7 +137,6 @@ func (r *BaseResource) Critical(code logger.LogCode, msg string, args ...any) {
 	if entry := logger.Critical(resourceMsg, args...); entry != nil {
 		entry.Message = fmt.Errorf(msg, args...).Error()
 		entry.Code = code.String()
-		entry.Severity = "CRITICAL"
 		r.logs = append(r.logs, *entry)
 	}
 }
