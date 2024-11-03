@@ -91,7 +91,7 @@ func (r *GitRepo) Clone(path string) error {
 			cloneArgs = append(cloneArgs, "--branch")
 			cloneArgs = append(cloneArgs, r.options.Branch)
 		} else {
-			r.Warning(logger.CloneError, "ignoring invalid branch: branch=%q", r.options.Branch)
+			r.Warning(logger.CloneDetail, "ignoring invalid branch: branch=%q", r.options.Branch)
 			cloneArgs = append(cloneArgs, "--no-single-branch")
 		}
 	} else {
@@ -128,7 +128,7 @@ func (r *GitRepo) Clone(path string) error {
 		return fmt.Errorf("git clone: resource_id=%q command=%q error=%q output=%q", r.ID(), gitClone.String(), err.Error(), output)
 	}
 
-	r.Debug(logger.CloneError, "git clone: resource_id=%q command=%q output=%q", r.ID(), gitClone.String(), output)
+	r.Debug(logger.CloneDetail, "git clone: resource_id=%q command=%q output=%q", r.ID(), gitClone.String(), output)
 
 	if ctx != nil && ctx.Err() == context.DeadlineExceeded {
 		return fmt.Errorf("clone timeout exceeded resource_id=%q error=%q", r.ID(), ctx.Err().Error())

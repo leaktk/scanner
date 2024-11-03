@@ -178,7 +178,7 @@ func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, r
 				}
 			}
 		} else {
-			r.Info(logger.CloneError, "manifest contains multiple options, defaulted to first (OS: %s, Arch: %s)",
+			r.Info(logger.CloneDetail, "manifest contains multiple options, defaulted to first (OS: %s, Arch: %s)",
 				indexManifest.Manifests[index].Platform.OS, indexManifest.Manifests[index].Platform.Architecture)
 		}
 		imgRefString := imageSource.Reference().DockerReference().Name() + "@" + indexManifest.Manifests[index].Digest.String()
@@ -226,14 +226,14 @@ func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, r
 	for i, layer := range layers {
 		if since != nil && layerHistoryDates != nil {
 			if layerHistoryDates[i].Before(*since) {
-				r.Info(logger.CloneError, "layer older than provided date, skipping layer %s", layer.Digest.Hex())
+				r.Info(logger.CloneDetail, "layer older than provided date, skipping layer %s", layer.Digest.Hex())
 				continue
 			}
 		}
 		if r.skipLayer(layer.Digest.Hex()) {
 			continue
 		}
-		r.Debug(logger.CloneError, "downloading layer %s", layer.Digest.Hex())
+		r.Debug(logger.CloneDetail, "downloading layer %s", layer.Digest.Hex())
 
 		blobInfo := types.BlobInfo{
 			Digest: layer.Digest,
@@ -275,7 +275,7 @@ func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
 		return err
 	}
 	if written >= n {
-		r.Warning(logger.CloneError, "copying file %s did not finish due to max file size: %v", file.Name(), err)
+		r.Warning(logger.CloneDetail, "copying file %s did not finish due to max file size: %v", file.Name(), err)
 	}
 	return nil
 }
@@ -331,7 +331,7 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 			continue
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			r.Warning(logger.CloneError, "skipping file that is a symlink: %s", info.Name())
+			r.Warning(logger.CloneDetail, "skipping file that is a symlink: %s", info.Name())
 			continue
 		}
 
@@ -426,7 +426,7 @@ func (r *ContainerImage) sinceTime() *time.Time {
 func (r *ContainerImage) skipLayer(digest string) bool {
 	for _, exclude := range r.options.Exclusions {
 		if exclude == digest {
-			r.Info(logger.CloneError, "layer in exclusion list, skipping layer %s", digest)
+			r.Info(logger.CloneDetail, "layer in exclusion list, skipping layer %s", digest)
 			return true
 		}
 	}
@@ -463,7 +463,7 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {
-			r.Info(logger.ScanError, "skipping symlink: path=%q", relPath)
+			r.Info(logger.ScanDetail, "skipping symlink: path=%q", relPath)
 			return nil
 		}
 
