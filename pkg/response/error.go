@@ -2,7 +2,7 @@ package response
 
 import "fmt"
 
-// LeakTKError expans a normal error to provide additional meta data
+// LeakTKError expands a normal error to provide additional meta data
 type LeakTKError struct {
 	Fatal   bool      `json:"fatal"`
 	Code    ErrorCode `json:"code"`

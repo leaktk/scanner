@@ -173,12 +173,12 @@ func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, r
 			for i, m := range indexManifest.Manifests {
 				if m.Platform.Architecture == r.options.Arch {
 					index = i
-					logger.Info("selected first %s container", r.options.Arch)
+					r.Info(logger.CloneDetail, "selected first %s container", r.options.Arch)
 					break
 				}
 			}
 		} else {
-			logger.Info("manifest contains multiple options, defaulted to first (OS: %s, Arch: %s)",
+			r.Info(logger.CloneDetail, "manifest contains multiple options, defaulted to first (OS: %s, Arch: %s)",
 				indexManifest.Manifests[index].Platform.OS, indexManifest.Manifests[index].Platform.Architecture)
 		}
 		imgRefString := imageSource.Reference().DockerReference().Name() + "@" + indexManifest.Manifests[index].Digest.String()
@@ -226,14 +226,14 @@ func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, r
 	for i, layer := range layers {
 		if since != nil && layerHistoryDates != nil {
 			if layerHistoryDates[i].Before(*since) {
-				logger.Info("layer older than provided date, skipping layer %s", layer.Digest.Hex())
+				r.Info(logger.CloneDetail, "layer older than provided date, skipping layer %s", layer.Digest.Hex())
 				continue
 			}
 		}
 		if r.skipLayer(layer.Digest.Hex()) {
 			continue
 		}
-		logger.Debug("downloading layer %s", layer.Digest.Hex())
+		r.Debug(logger.CloneDetail, "downloading layer %s", layer.Digest.Hex())
 
 		blobInfo := types.BlobInfo{
 			Digest: layer.Digest,
@@ -275,7 +275,7 @@ func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
 		return err
 	}
 	if written >= n {
-		logger.Warning("copying file %s did not finish due to max file size: %v", file.Name(), err)
+		r.Warning(logger.CloneDetail, "copying file %s did not finish due to max file size: %v", file.Name(), err)
 	}
 	return nil
 }
@@ -320,7 +320,7 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 		}
 		path, err := fs.CleanJoin(layerRootDir, header.Name)
 		if err != nil {
-			logger.Error("%v - skipped", err)
+			r.Error(logger.CloneError, "%v - skipped", err)
 			continue
 		}
 		info := header.FileInfo()
@@ -331,13 +331,13 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 			continue
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			logger.Warning("skipping file that is a symlink: %s", info.Name())
+			r.Warning(logger.CloneDetail, "skipping file that is a symlink: %s", info.Name())
 			continue
 		}
 
 		err = r.copyN(path, tarReader, size)
 		if err != nil {
-			logger.Error("could not create/write file: %v", err)
+			r.Error(logger.CloneError, "could not create/write file: %v", err)
 			// Try others, in case its unsupported file name for the filesystem etc.
 			continue
 		}
@@ -415,7 +415,7 @@ func (r *ContainerImage) sinceTime() *time.Time {
 	if len(r.options.Since) > 0 {
 		date, err := time.Parse("2006-01-02", r.options.Since)
 		if err != nil {
-			logger.Error("could not parse since time: %v", err)
+			r.Error(logger.CloneError, "could not parse since time: %v", err)
 			return nil
 		}
 
@@ -429,7 +429,7 @@ func (r *ContainerImage) sinceTime() *time.Time {
 func (r *ContainerImage) skipLayer(digest string) bool {
 	for _, exclude := range r.options.Exclusions {
 		if exclude == digest {
-			logger.Info("layer in exclusion list, skipping layer %s", digest)
+			r.Info(logger.CloneDetail, "layer in exclusion list, skipping layer %s", digest)
 			return true
 		}
 	}
@@ -446,13 +446,13 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 	// TODO: consider calling JSONData and creating Files for these instead of walking this way
 	return filepath.WalkDir(r.ClonePath(), func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
-			logger.Error("could not walk path: path=%q error=%q", path, err)
+			r.Error(logger.ScanError, "could not walk path: path=%q error=%q", path, err)
 			return nil
 		}
 
 		relPath, err := filepath.Rel(r.ClonePath(), path)
 		if err != nil {
-			logger.Error("could generate relative path: path=%q error=%q", path, err)
+			r.Error(logger.ScanError, "could generate relative path: path=%q error=%q", path, err)
 			return nil
 		}
 
@@ -466,13 +466,13 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {
-			logger.Info("skipping symlink: path=%q", relPath)
+			r.Info(logger.ScanDetail, "skipping symlink: path=%q", relPath)
 			return nil
 		}
 
 		file, err := os.Open(filepath.Clean(path))
 		if err != nil {
-			logger.Error("could not open file: path=%q error=%q", relPath, err)
+			r.Error(logger.ScanError, "could not open file: path=%q error=%q", relPath, err)
 			return nil
 		}
 		defer file.Close()

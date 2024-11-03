@@ -21,18 +21,25 @@ type WalkFunc func(path string, reader io.Reader) error
 type Resource interface {
 	Clone(path string) error
 	ClonePath() string
+	Critical(code logger.LogCode, msg string, args ...any)
+	Debug(code logger.LogCode, msg string, args ...any)
 	Depth() uint16
 	EnrichResult(result *response.Result) *response.Result
+	Error(code logger.LogCode, msg string, args ...any)
 	ID() string
+	Info(code logger.LogCode, msg string, args ...any)
 	Kind() string
+	Logs() []logger.Entry
 	Priority() int
 	ReadFile(path string) ([]byte, error)
 	SetCloneTimeout(timeout time.Duration)
 	SetDepth(depth uint16)
+	IncludeLogs(enabled bool)
 	Since() string
 	String() string
 	// Walk is the main way to pick through resource data (except for GitRepo)
 	Walk(WalkFunc) error
+	Warning(code logger.LogCode, msg string, args ...any)
 }
 
 // NewResource handles building out the resource from kind, the resource string
@@ -105,7 +112,9 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 // BaseResource is a mixin to handle some of the common resource related methods
 type BaseResource struct {
-	id string
+	id          string
+	logs        []logger.Entry
+	includeLogs bool
 }
 
 // ID returns a path-safe, unique id for this resource
@@ -115,4 +124,72 @@ func (r *BaseResource) ID() string {
 	}
 
 	return r.id
+}
+
+func (r *BaseResource) Logs() []logger.Entry {
+	return r.logs
+}
+
+// Critical forwards to the logger and adds to the resource logs used for critical errors that interrupt
+// the scanner flow.
+func (r *BaseResource) Critical(code logger.LogCode, msg string, args ...any) {
+	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	if entry := logger.Critical(resourceMsg, args...); entry != nil {
+		entry.Message = fmt.Errorf(msg, args...).Error()
+		entry.Code = code.String()
+		r.logs = append(r.logs, *entry)
+	}
+}
+
+// Debug forwards to the logger and adds to the resource logs based on log level
+func (r *BaseResource) Debug(code logger.LogCode, msg string, args ...any) {
+	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	if entry := logger.Debug(resourceMsg, args...); entry != nil {
+		if r.includeLogs {
+			entry.Message = fmt.Errorf(msg, args...).Error()
+			entry.Code = code.String()
+			r.logs = append(r.logs, *entry)
+		}
+	}
+}
+
+// Error forwards to the logger and adds to the resource logs based on log level
+func (r *BaseResource) Error(code logger.LogCode, msg string, args ...any) {
+	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	if entry := logger.Error(resourceMsg, args...); entry != nil {
+		if r.includeLogs {
+			entry.Message = fmt.Errorf(msg, args...).Error()
+			entry.Code = code.String()
+			r.logs = append(r.logs, *entry)
+		}
+	}
+}
+
+// Warning forwards to the logger and adds to the resource logs based on log level
+func (r *BaseResource) Warning(code logger.LogCode, msg string, args ...any) {
+	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	if entry := logger.Warning(resourceMsg, args...); entry != nil {
+		if r.includeLogs {
+			entry.Message = fmt.Errorf(msg, args...).Error()
+			entry.Code = code.String()
+			r.logs = append(r.logs, *entry)
+		}
+	}
+}
+
+// Info forwards to the logger and adds to the resource logs based on log level
+func (r *BaseResource) Info(code logger.LogCode, msg string, args ...any) {
+	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	if entry := logger.Info(resourceMsg, args...); entry != nil {
+		if r.includeLogs {
+			r.logs = append(r.logs, *entry)
+			entry.Message = fmt.Errorf(msg, args...).Error()
+			entry.Code = code.String()
+		}
+	}
+}
+
+// SetResourceLogs sets whether to include non-CRITICAL logs
+func (r *BaseResource) IncludeLogs(enabled bool) {
+	r.includeLogs = enabled
 }

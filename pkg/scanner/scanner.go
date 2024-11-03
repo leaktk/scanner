@@ -1,7 +1,6 @@
 package scanner
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,29 +20,31 @@ const queueSize = 1024
 
 // Scanner holds the config and state for the scanner processes
 type Scanner struct {
-	backends      []Backend
-	cloneQueue    *queue.PriorityQueue[*Request]
-	cloneTimeout  time.Duration
-	cloneWorkers  uint16
-	maxScanDepth  uint16
-	resourceDir   string
-	responseQueue *queue.PriorityQueue[*response.Response]
-	scanQueue     *queue.PriorityQueue[*Request]
-	scanWorkers   uint16
+	backends            []Backend
+	cloneQueue          *queue.PriorityQueue[*Request]
+	cloneTimeout        time.Duration
+	cloneWorkers        uint16
+	includeResponseLogs bool
+	maxScanDepth        uint16
+	resourceDir         string
+	responseQueue       *queue.PriorityQueue[*response.Response]
+	scanQueue           *queue.PriorityQueue[*Request]
+	scanWorkers         uint16
 }
 
 // NewScanner returns a initialized and listening scanner instance that should
 // be closed when it's no longer needed.
 func NewScanner(cfg *config.Config) *Scanner {
 	scanner := &Scanner{
-		cloneQueue:    queue.NewPriorityQueue[*Request](queueSize),
-		cloneTimeout:  time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
-		cloneWorkers:  cfg.Scanner.CloneWorkers,
-		maxScanDepth:  cfg.Scanner.MaxScanDepth,
-		resourceDir:   filepath.Join(cfg.Scanner.Workdir, "resources"),
-		responseQueue: queue.NewPriorityQueue[*response.Response](queueSize),
-		scanQueue:     queue.NewPriorityQueue[*Request](queueSize),
-		scanWorkers:   cfg.Scanner.ScanWorkers,
+		cloneQueue:          queue.NewPriorityQueue[*Request](queueSize),
+		cloneTimeout:        time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
+		cloneWorkers:        cfg.Scanner.CloneWorkers,
+		maxScanDepth:        cfg.Scanner.MaxScanDepth,
+		resourceDir:         filepath.Join(cfg.Scanner.Workdir, "resources"),
+		responseQueue:       queue.NewPriorityQueue[*response.Response](queueSize),
+		scanQueue:           queue.NewPriorityQueue[*Request](queueSize),
+		scanWorkers:         cfg.Scanner.ScanWorkers,
+		includeResponseLogs: cfg.Scanner.IncludeResponseLogs,
 		backends: []Backend{
 			NewGitleaks(NewPatterns(&cfg.Scanner.Patterns, &http.Client{})),
 		},
@@ -88,6 +89,7 @@ func (s *Scanner) listenForCloneRequests() {
 	s.cloneQueue.Recv(func(msg *queue.Message[*Request]) {
 		request := msg.Value
 		reqResource := request.Resource
+		reqResource.IncludeLogs(s.includeResponseLogs)
 
 		if s.cloneTimeout > 0 {
 			logger.Debug("setting clone timeout: request_id=%q timeout=%v", request.ID, s.cloneTimeout.Seconds())
@@ -102,12 +104,7 @@ func (s *Scanner) listenForCloneRequests() {
 		if reqResource.ClonePath() == "" {
 			logger.Info("starting clone: request_id=%q", request.ID)
 			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
-				logger.Error("clone error: request_id=%q error=%q", request.ID, err.Error())
-				request.Errors = append(request.Errors, response.LeakTKError{
-					Fatal:   true,
-					Code:    response.CloneError,
-					Message: err.Error(),
-				})
+				reqResource.Critical(logger.CloneError, "clone error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		}
 
@@ -144,32 +141,18 @@ func (s *Scanner) listenForScanRequests() {
 
 				backendResults, err := backend.Scan(reqResource)
 				if err != nil {
-					logger.Error("scan error: request_id=%q error=%q", request.ID, err.Error())
-					request.Errors = append(request.Errors, response.LeakTKError{
-						Fatal:   true,
-						Code:    response.ScanError,
-						Message: err.Error(),
-					})
+					reqResource.Critical(logger.ScanError, "scan error: request_id=%q error=%q", request.ID, err.Error())
 				}
 				if backendResults != nil {
 					results = append(results, backendResults...)
 				}
 			}
 			if err := s.removeResourceFiles(reqResource); err != nil {
-				logger.Error("resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
-				request.Errors = append(request.Errors, response.LeakTKError{
-					Fatal:   false,
-					Code:    response.ResourceCleanupError,
-					Message: err.Error(),
-				})
+				reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		} else {
-			logger.Error("skipping scan due to missing clone path: request_id=%q", request.ID)
-			request.Errors = append(request.Errors, response.LeakTKError{
-				Fatal:   true,
-				Code:    response.CloneError,
-				Message: fmt.Sprintf("missing clone path: request_id=%q (%s)", request.ID, reqResource.ClonePath()),
-			})
+			reqResource.Critical(logger.ScanError, "skipping scan due to missing clone path: request_id=%q", request.ID)
+
 		}
 
 		s.responseQueue.Send(&queue.Message[*response.Response]{
@@ -177,7 +160,7 @@ func (s *Scanner) listenForScanRequests() {
 			Value: &response.Response{
 				ID:        id.ID(),
 				Results:   results,
-				Errors:    request.Errors,
+				Logs:      reqResource.Logs(),
 				RequestID: request.ID,
 			},
 		})
