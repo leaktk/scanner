@@ -80,7 +80,7 @@ func (r *JSONData) Clone(path string) error {
 		return fmt.Errorf("could not unmarshal JSONData: error=%q", err)
 	}
 
-	// Support droping specific files in the "repo" to configure scanner backends
+	// Support dropping specific files in the "repo" to configure scanner backends
 	for _, file := range []string{
 		".gitleaks.toml",
 		".gitleaksignore",
@@ -303,7 +303,7 @@ func (r *JSONData) prefixClonePath(leafNode jsonNode, fn WalkFunc) WalkFunc {
 
 // walkFuncToJSONWalkFunc takes a normal WalkFunc and wraps it in a
 // jsonWalkFunc so it can be used in this resource. The custom jsonWalkFunc
-// exists since there are mutliple cases where we need to walk through the json
+// exists since there are multiple cases where we need to walk through the json
 // data structure that wouldn't apply to other resources.
 func (r *JSONData) walkFuncToJSONWalkFunc(fn WalkFunc) jsonWalkFunc {
 	return func(leafNode jsonNode) error {

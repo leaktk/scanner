@@ -74,7 +74,7 @@ func NewContainerImage(location string, options *ContainerImageOptions) *Contain
 	}
 }
 
-// Contact Attempts to identify author information returing name and email if found
+// Contact Attempts to identify author information returning name and email if found
 // The order was selected for most completeness with a preference to maintainer and OCI spec
 // Returns the name and email
 func (r *ContainerImage) Contact() response.Contact {

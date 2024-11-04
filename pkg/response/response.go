@@ -48,7 +48,7 @@ type (
 		// If the start column isn't available it will be zero.
 		Start Point `json:"start"`
 		// If the end information isn't available it will be the same as the
-		// start information but the colmn will be the end of the line
+		// start information but the column will be the end of the line
 		End Point `json:"end"`
 	}
 

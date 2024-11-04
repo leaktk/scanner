@@ -85,7 +85,7 @@ func (s *Scanner) start() {
 // Watch the clone queue for requests
 func (s *Scanner) listenForCloneRequests() {
 	// This should always send things to the scan queue, even if the clone fails.
-	// This ensures that things waiting on respones can mark them as done
+	// This ensures that things waiting on responses can mark them as done
 	s.cloneQueue.Recv(func(msg *queue.Message[*Request]) {
 		request := msg.Value
 		reqResource := request.Resource
@@ -122,7 +122,7 @@ func (s *Scanner) resourceClonePath(reqResource resource.Resource) string {
 	return filepath.Join(s.resourceFilesPath(reqResource), "clone")
 }
 
-// removeResourceFiles cleares out any left over resource files for scan
+// removeResourceFiles clears out any left over resource files for scan
 func (s *Scanner) removeResourceFiles(reqResource resource.Resource) error {
 	return os.RemoveAll(s.resourceFilesPath(reqResource))
 }
