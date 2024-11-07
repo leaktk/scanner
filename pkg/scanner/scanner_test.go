@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"sync"
 	"testing"
 	"time"
@@ -40,7 +41,7 @@ func (m *mockResource) Clone(path string) error {
 	return m.cloneErr
 }
 
-func (m *mockResource) ClonePath() string {
+func (m *mockResource) Path() string {
 	return m.clonePath
 }
 
@@ -76,6 +77,10 @@ func (m *mockResource) Priority() int {
 	return 0
 }
 
+func (m *mockResource) IsLocal() bool {
+	return false
+}
+
 // mockBackend implements a dummy scanner backend
 
 type mockBackend struct {
@@ -92,7 +97,7 @@ func (b *mockBackend) Scan(resource resource.Resource) ([]*response.Result, erro
 		&response.Result{
 			Notes: map[string]string{
 				"depth":         fmt.Sprint(resource.Depth()),
-				"clone_path":    resource.ClonePath(),
+				"clone_path":    resource.Path(),
 				"clone_timeout": fmt.Sprintf("%d", int(mockResource.cloneTimeout.Seconds())),
 			},
 		},
@@ -108,11 +113,6 @@ func TestScanner(t *testing.T) {
 	cfg.Scanner.ScanWorkers = 2
 	cfg.Scanner.Workdir = tempDir
 
-	scanner := NewScanner(cfg)
-	scanner.backends = []Backend{
-		&mockBackend{},
-	}
-
 	t.Run("Success", func(t *testing.T) {
 		request := &Request{
 			ID: "test-request",
@@ -126,17 +126,51 @@ func TestScanner(t *testing.T) {
 
 		var wg sync.WaitGroup
 
+		scanner := NewScanner(cfg)
+		scanner.backends = []Backend{
+			&mockBackend{},
+		}
 		scanner.Send(request)
 		wg.Add(1)
 
 		go scanner.Recv(func(response *response.Response) {
 			// Depth was reduced to the max scan depth
 			assert.Equal(t, response.Results[0].Notes["depth"], fmt.Sprint(request.Resource.Depth()))
-			assert.Equal(t, response.Results[0].Notes["clone_path"], request.Resource.ClonePath())
+			assert.Equal(t, response.Results[0].Notes["clone_path"], request.Resource.Path())
 			assert.Equal(t, response.Results[0].Notes["clone_timeout"], fmt.Sprint(cfg.Scanner.CloneTimeout))
 			wg.Done()
 		})
 
 		wg.Wait()
+	})
+
+	t.Run("LocalScanSuccess", func(t *testing.T) {
+		repoDir := t.TempDir()
+
+		err := exec.Command("git", "-C", repoDir, "init").Run()
+		assert.NoError(t, err)
+
+		request := &Request{
+			ID:       "test-local-request",
+			Resource: resource.NewGitRepo(repoDir, &resource.GitRepoOptions{}),
+		}
+
+		_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		var wg sync.WaitGroup
+
+		scanner := NewScanner(cfg)
+		scanner.Send(request)
+		wg.Add(1)
+
+		go scanner.Recv(func(response *response.Response) {
+			assert.Equal(t, response.RequestID, request.ID)
+			wg.Done()
+		})
+		wg.Wait()
+
+		// Now confirm the repo hasn't been deleted
+		assert.DirExists(t, repoDir)
 	})
 }

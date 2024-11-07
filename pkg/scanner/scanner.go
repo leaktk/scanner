@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/leaktk/scanner/pkg/config"
-	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/queue"
@@ -63,11 +62,19 @@ func (s *Scanner) Recv(fn func(*response.Response)) {
 
 // Send accepts a request for scanning and puts it in the queues
 func (s *Scanner) Send(request *Request) {
-	logger.Debug("queueing clone: request_id=%q", request.ID)
-	s.cloneQueue.Send(&queue.Message[*Request]{
-		Priority: request.Priority(),
-		Value:    request,
-	})
+	if request.Resource.IsLocal() {
+		logger.Debug("queueing scan: request_id=%q", request.ID)
+		s.scanQueue.Send(&queue.Message[*Request]{
+			Priority: request.Priority(),
+			Value:    request,
+		})
+	} else {
+		logger.Debug("queueing clone: request_id=%q", request.ID)
+		s.cloneQueue.Send(&queue.Message[*Request]{
+			Priority: request.Priority(),
+			Value:    request,
+		})
+	}
 }
 
 // start kicks off the background workers
@@ -82,10 +89,23 @@ func (s *Scanner) start() {
 	}
 }
 
+func (s *Scanner) sendResults(request *Request, results []*response.Result) {
+	s.responseQueue.Send(&queue.Message[*response.Response]{
+		Priority: request.Resource.Priority(),
+		Value: &response.Response{
+			ID:        id.ID(),
+			Results:   results,
+			Logs:      request.Resource.Logs(),
+			RequestID: request.ID,
+		},
+	})
+}
+
 // Watch the clone queue for requests
 func (s *Scanner) listenForCloneRequests() {
-	// This should always send things to the scan queue, even if the clone fails.
-	// This ensures that things waiting on responses can mark them as done
+	// This should either return results early or send things to the scan queue
+	// so that it can return results. It's important that results are always
+	// returned.
 	s.cloneQueue.Recv(func(msg *queue.Message[*Request]) {
 		request := msg.Value
 		reqResource := request.Resource
@@ -101,10 +121,14 @@ func (s *Scanner) listenForCloneRequests() {
 			reqResource.SetDepth(s.maxScanDepth)
 		}
 
-		if reqResource.ClonePath() == "" {
+		if reqResource.Path() == "" {
 			logger.Info("starting clone: request_id=%q", request.ID)
-			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
+
+			if err := reqResource.Clone(s.resourcePath(reqResource)); err != nil {
+				// The clone failed. Log the failure, send results, and bail out early
 				reqResource.Critical(logger.CloneError, "clone error: request_id=%q error=%q", request.ID, err.Error())
+				s.sendResults(request, make([]*response.Result, 0))
+				return
 			}
 		}
 
@@ -118,12 +142,12 @@ func (s *Scanner) resourceFilesPath(reqResource resource.Resource) string {
 	return filepath.Join(s.resourceDir, reqResource.ID())
 }
 
-func (s *Scanner) resourceClonePath(reqResource resource.Resource) string {
+func (s *Scanner) resourcePath(reqResource resource.Resource) string {
 	return filepath.Join(s.resourceFilesPath(reqResource), "clone")
 }
 
-// removeResourceFiles clears out any left over resource files for scan
-func (s *Scanner) removeResourceFiles(reqResource resource.Resource) error {
+// removeInternalResourceFiles clears out any left over resource files for scan
+func (s *Scanner) removeInternalResourceFiles(reqResource resource.Resource) error {
 	return os.RemoveAll(s.resourceFilesPath(reqResource))
 }
 
@@ -135,34 +159,25 @@ func (s *Scanner) listenForScanRequests() {
 
 		results := make([]*response.Result, 0)
 
-		if fs.PathExists(reqResource.ClonePath()) {
-			for _, backend := range s.backends {
-				logger.Info("starting scan: request_id=%q scanner_backend=%q", request.ID, backend.Name())
+		for _, backend := range s.backends {
+			logger.Info("starting scan: request_id=%q scanner_backend=%q", request.ID, backend.Name())
+			backendResults, err := backend.Scan(reqResource)
 
-				backendResults, err := backend.Scan(reqResource)
-				if err != nil {
-					reqResource.Critical(logger.ScanError, "scan error: request_id=%q error=%q", request.ID, err.Error())
-				}
-				if backendResults != nil {
-					results = append(results, backendResults...)
-				}
+			if err != nil {
+				reqResource.Critical(logger.ScanError, "scan error: request_id=%q error=%q", request.ID, err.Error())
 			}
-			if err := s.removeResourceFiles(reqResource); err != nil {
-				reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
-			}
-		} else {
-			reqResource.Critical(logger.ScanError, "skipping scan due to missing clone path: request_id=%q", request.ID)
 
+			if backendResults != nil {
+				results = append(results, backendResults...)
+			}
 		}
 
-		s.responseQueue.Send(&queue.Message[*response.Response]{
-			Priority: msg.Priority,
-			Value: &response.Response{
-				ID:        id.ID(),
-				Results:   results,
-				Logs:      reqResource.Logs(),
-				RequestID: request.ID,
-			},
-		})
+		// This is safe even for local resources and should still run in case
+		// any metadata was created in the resource folder
+		if err := s.removeInternalResourceFiles(reqResource); err != nil {
+			reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
+		}
+
+		s.sendResults(request, results)
 	})
 }

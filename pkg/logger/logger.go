@@ -7,11 +7,50 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	zlog "github.com/rs/zerolog/log"
 )
 
 func init() {
-	// Disable logging for gitleaks
+	// Disable logging by default for gitleaks to let this set the log level
+	// instead
 	zerolog.SetGlobalLevel(zerolog.Disabled)
+
+	// Provide a custom handler to map to this logging framework
+	zlog.Logger = zlog.Output(zerologMapper{})
+}
+
+// zerologMapper helps translate logs from subsystems that use zerolog
+type zerologMapper struct {
+}
+
+// Write implements an io.Writer interface
+func (m zerologMapper) Write(data []byte) (int, error) {
+	var event struct {
+		Level   string `json:"level"`
+		Message string `json:"message"`
+	}
+
+	if err := json.Unmarshal(data, &event); err != nil {
+		Error("could not decode zerolog event: error=%q", err)
+		return 0, nil
+	}
+
+	switch event.Level {
+	case "info":
+		Info("gitleaks: %s", event.Message)
+	case "warn":
+		Warning("gitleaks: %s", event.Message)
+	case "error":
+		Error("gitleaks: %s", event.Message)
+	case "fatal":
+		Critical("gitleaks: %s", event.Message)
+	case "panic":
+		Critical("gitleaks: %s", event.Message)
+	default:
+		Debug("gitleaks: %s", event.Message)
+	}
+
+	return len(data), nil
 }
 
 // LogLevel is used to determine which log severities should actually log
@@ -150,14 +189,19 @@ func SetLoggerLevel(levelName string) error {
 	switch levelName {
 	case "DEBUG":
 		currentLogLevel = DEBUG
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	case "INFO":
 		currentLogLevel = INFO
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	case "WARNING":
 		currentLogLevel = WARNING
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
 	case "ERROR":
 		currentLogLevel = ERROR
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	case "CRITICAL":
 		currentLogLevel = CRITICAL
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
 	default:
 		return fmt.Errorf("invalid log level: level=%q", levelName)
 	}
