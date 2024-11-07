@@ -104,7 +104,7 @@ func (s *Scanner) listenForCloneRequests() {
 			reqResource.SetDepth(s.maxScanDepth)
 		}
 
-		if reqResource.ClonePath() == "" {
+		if reqResource.Path() == "" {
 			logger.Info("starting clone: request_id=%q resource_id=%q", request.ID, reqResource.ID())
 			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
 				reqResource.Critical(logger.CloneError, "clone error: request_id=%q error=%q", request.ID, err.Error())
@@ -138,7 +138,7 @@ func (s *Scanner) listenForScanRequests() {
 
 		results := make([]*response.Result, 0)
 
-		if fs.PathExists(reqResource.ClonePath()) {
+		if fs.PathExists(reqResource.Path()) {
 			for _, backend := range s.backends {
 				logger.Info("starting scan: request_id=%q resource_id=%q scanner_backend=%q", request.ID, reqResource.ID(), backend.Name())
 

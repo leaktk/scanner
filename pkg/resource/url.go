@@ -95,8 +95,8 @@ func (r *URL) Clone(path string) error {
 	return r.resource.Clone(r.clonePath)
 }
 
-// ClonePath returns where this repo has been cloned if cloned else ""
-func (r *URL) ClonePath() string {
+// Path returns where this repo has been cloned if cloned else ""
+func (r *URL) Path() string {
 	return r.clonePath
 }
 
@@ -140,4 +140,9 @@ func (r *URL) Walk(fn WalkFunc) error {
 // Priority returns the scan priority
 func (r *URL) Priority() int {
 	return r.options.Priority
+}
+
+// IsLocal tells whether this is a local resource or not
+func (r *URL) IsLocal() bool {
+	return false
 }
