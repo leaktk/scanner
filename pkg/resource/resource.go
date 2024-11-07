@@ -20,7 +20,7 @@ type WalkFunc func(path string, reader io.Reader) error
 // scanner
 type Resource interface {
 	Clone(path string) error
-	ClonePath() string
+	Path() string
 	Critical(code logger.LogCode, msg string, args ...any)
 	Debug(code logger.LogCode, msg string, args ...any)
 	Depth() uint16
@@ -40,6 +40,7 @@ type Resource interface {
 	// Walk is the main way to pick through resource data (except for GitRepo)
 	Walk(WalkFunc) error
 	Warning(code logger.LogCode, msg string, args ...any)
+	IsLocal() bool
 }
 
 // NewResource handles building out the resource from kind, the resource string
