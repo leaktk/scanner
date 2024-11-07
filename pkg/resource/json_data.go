@@ -144,8 +144,8 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 	})
 }
 
-// ClonePath returns where this repo has been cloned if cloned else ""
-func (r *JSONData) ClonePath() string {
+// Path returns where this repo has been cloned if cloned else ""
+func (r *JSONData) Path() string {
 	return r.clonePath
 }
 
@@ -293,11 +293,11 @@ func (r *JSONData) replaceWithResource(leafNode jsonNode, resource Resource) err
 	return nil
 }
 
-// prefixClonePath handles providing the full clone path for sub-resources.
+// prefixPath handles providing the full clone path for sub-resources.
 // When a node in the tree is replaced with a resource, the resource isn't
 // aware of its place in the tree when you call Walk on it. This adds that path
 // back.
-func (r *JSONData) prefixClonePath(leafNode jsonNode, fn WalkFunc) WalkFunc {
+func (r *JSONData) prefixPath(leafNode jsonNode, fn WalkFunc) WalkFunc {
 	return func(path string, reader io.Reader) error {
 		return fn(filepath.Join(leafNode.path, path), reader)
 	}
@@ -313,7 +313,7 @@ func (r *JSONData) walkFuncToJSONWalkFunc(fn WalkFunc) jsonWalkFunc {
 		case nil: // Handle nil
 			return fn(leafNode.path, bytes.NewReader([]byte{}))
 		case Resource:
-			return obj.Walk(r.prefixClonePath(leafNode, fn))
+			return obj.Walk(r.prefixPath(leafNode, fn))
 		default: // Handle bool, float64, and string
 			return fn(leafNode.path, bytes.NewReader([]byte(fmt.Sprintf("%v", obj))))
 		}
@@ -328,4 +328,9 @@ func (r *JSONData) Walk(fn WalkFunc) error {
 // Priority returns the scan priority
 func (r *JSONData) Priority() int {
 	return r.options.Priority
+}
+
+// IsLocal tells whether this is a local resource or not
+func (r *JSONData) IsLocal() bool {
+	return false
 }

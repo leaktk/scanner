@@ -285,7 +285,7 @@ func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
 func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, path string) error {
 	// The maximum file size should be less than 10x the layer size.
 	size := layer.Size * 10
-	layerRootDir := filepath.Join(r.ClonePath(), layer.Digest.Hex())
+	layerRootDir := filepath.Join(r.Path(), layer.Digest.Hex())
 	layerDir := filepath.Join(path, layer.Digest.Hex())
 	err := os.MkdirAll(layerDir, 0700)
 	if err != nil {
@@ -346,8 +346,8 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 	return nil
 }
 
-// ClonePath returns where this repo has been cloned if cloned else ""
-func (r *ContainerImage) ClonePath() string {
+// Path returns where this repo has been cloned if cloned else ""
+func (r *ContainerImage) Path() string {
 	return r.clonePath
 }
 
@@ -439,19 +439,19 @@ func (r *ContainerImage) skipLayer(digest string) bool {
 
 // ReadFile provides a way to access values in the resource
 func (r *ContainerImage) ReadFile(path string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(r.ClonePath(), filepath.Clean(path)))
+	return os.ReadFile(filepath.Join(r.Path(), filepath.Clean(path)))
 }
 
 // Walk traverses the resource like a directory tree
 func (r *ContainerImage) Walk(fn WalkFunc) error {
 	// TODO: consider calling JSONData and creating Files for these instead of walking this way
-	return filepath.WalkDir(r.ClonePath(), func(path string, d iofs.DirEntry, err error) error {
+	return filepath.WalkDir(r.Path(), func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			r.Error(logger.ScanError, "could not walk path: path=%q error=%q", path, err)
 			return nil
 		}
 
-		relPath, err := filepath.Rel(r.ClonePath(), path)
+		relPath, err := filepath.Rel(r.Path(), path)
 		if err != nil {
 			r.Error(logger.ScanError, "could generate relative path: path=%q error=%q", path, err)
 			return nil
@@ -480,4 +480,9 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 
 		return fn(relPath, file)
 	})
+}
+
+// IsLocal tells whether this is a local resource or not
+func (r *ContainerImage) IsLocal() bool {
+	return false
 }
