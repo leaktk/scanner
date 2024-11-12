@@ -112,7 +112,6 @@ func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo)
 		return nil, err
 	}
 
-	logger.Debug("running detector.DetectGit")
 	return detector.DetectGit(gitCmd)
 }
 
