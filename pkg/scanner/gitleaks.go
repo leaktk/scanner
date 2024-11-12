@@ -25,15 +25,15 @@ const (
 
 // Gitleaks wraps gitleaks as a scanner backend
 type Gitleaks struct {
-	patterns       *Patterns
 	maxDecodeDepth uint16
+	patterns       *Patterns
 }
 
 // NewGitleaks returns a configured gitleaks backend instance
 func NewGitleaks(maxDecodeDepth uint16, patterns *Patterns) *Gitleaks {
 	return &Gitleaks{
-		patterns:       patterns,
 		maxDecodeDepth: maxDecodeDepth,
+		patterns:       patterns,
 	}
 }
 
