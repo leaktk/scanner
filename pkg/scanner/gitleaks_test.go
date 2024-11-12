@@ -50,7 +50,7 @@ func TestGitleaksScan(t *testing.T) {
 		err = gitRepo.Clone(filepath.Join(tempDir, "clone"))
 		assert.NoError(t, err)
 
-		results, err := NewGitleaks(patterns).Scan(gitRepo)
+		results, err := NewGitleaks(1, patterns).Scan(gitRepo)
 		assert.NoError(t, err)
 		assert.Greater(t, len(results), 0)
 		assert.Equal(t, results[0].Rule.ID, "test-rule")

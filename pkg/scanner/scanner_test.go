@@ -3,8 +3,10 @@ package scanner
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -107,13 +109,14 @@ func TestScanner(t *testing.T) {
 	cfg.Scanner.MaxScanDepth = 5
 	cfg.Scanner.ScanWorkers = 2
 	cfg.Scanner.Workdir = tempDir
-
-	scanner := NewScanner(cfg)
-	scanner.backends = []Backend{
-		&mockBackend{},
-	}
+	cfg.Scanner.Patterns.Gitleaks.ConfigPath = filepath.Join(tempDir, "gitleaks.toml")
 
 	t.Run("Success", func(t *testing.T) {
+		scanner := NewScanner(cfg)
+		scanner.backends = []Backend{
+			&mockBackend{},
+		}
+
 		request := &Request{
 			ID: "test-request",
 			Resource: &mockResource{
@@ -138,5 +141,41 @@ func TestScanner(t *testing.T) {
 		})
 
 		wg.Wait()
+	})
+
+	t.Run("GitleaksDecode", func(t *testing.T) {
+		scanner := NewScanner(cfg)
+		resource, err := resource.NewResource(
+			"JSONData",
+			`{"value": "c2VjcmV0PSJJNmdIY0Ntdk9jYk9Nc0xhaFJucnBUVms3LURVaHpxT3E5SXpTMU03WW9EV1lrWjhwTzlBN2pjM1NreTJjQkVBWUJMVXBHNllQSDdRZ2ptTnJ5NzlKZyI="}`,
+			json.RawMessage(""),
+		)
+		assert.NoError(t, err)
+
+		request := &Request{
+			ID:       "test-request",
+			Resource: resource,
+		}
+
+		_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		var wg sync.WaitGroup
+
+		scanner.Send(request)
+		wg.Add(1)
+
+		go scanner.Recv(func(response *response.Response) {
+			// Confirm no crit errors
+			for _, log := range response.Logs {
+				assert.NotEqual(t, log.Severity, "CRITICAL")
+			}
+			// Should find the decoded secret
+			assert.Equal(t, response.Results[0].Secret, "I6gHcCmvOcbOMsLahRnrpTVk7-DUhzqOq9IzS1M7YoDWYkZ8pO9A7jc3Sky2cBEAYBLUpG6YPH7QgjmNry79Jg")
+			wg.Done()
+		})
+
+		wg.Wait()
+
 	})
 }

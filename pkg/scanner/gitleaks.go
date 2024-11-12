@@ -25,13 +25,15 @@ const (
 
 // Gitleaks wraps gitleaks as a scanner backend
 type Gitleaks struct {
-	patterns *Patterns
+	maxDecodeDepth uint16
+	patterns       *Patterns
 }
 
 // NewGitleaks returns a configured gitleaks backend instance
-func NewGitleaks(patterns *Patterns) *Gitleaks {
+func NewGitleaks(maxDecodeDepth uint16, patterns *Patterns) *Gitleaks {
 	return &Gitleaks{
-		patterns: patterns,
+		maxDecodeDepth: maxDecodeDepth,
+		patterns:       patterns,
 	}
 }
 
@@ -55,6 +57,7 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	detector.NoColor = true
 	detector.Redact = 0
 	detector.Verbose = false
+	detector.MaxDecodeDepth = int(g.maxDecodeDepth)
 
 	// TODO: move this to scanResource.ReadFile and have JSONData.Clone not write files to disk
 	gitleaksIgnorePath := filepath.Join(scanResource.ClonePath(), ".gitleaksignore")

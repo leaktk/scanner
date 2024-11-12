@@ -33,6 +33,7 @@ type (
 		CloneTimeout        uint16   `toml:"clone_timeout"`
 		CloneWorkers        uint16   `toml:"clone_workers"`
 		IncludeResponseLogs bool     `toml:"include_response_logs"`
+		MaxDecodeDepth      uint16   `toml:"max_decode_depth"`
 		MaxScanDepth        uint16   `toml:"max_scan_depth"`
 		Patterns            Patterns `toml:"patterns"`
 		ScanWorkers         uint16   `toml:"scan_workers"`
@@ -179,6 +180,7 @@ func DefaultConfig() *Config {
 			MaxScanDepth:        0,
 			ScanWorkers:         1,
 			Workdir:             filepath.Join(leaktkCacheDir(), "scanner"),
+			MaxDecodeDepth:      8,
 			Patterns: Patterns{
 				Autofetch:    true,
 				ExpiredAfter: 60 * 60 * 12 * 14, // 7 days

@@ -46,7 +46,10 @@ func NewScanner(cfg *config.Config) *Scanner {
 		scanWorkers:         cfg.Scanner.ScanWorkers,
 		includeResponseLogs: cfg.Scanner.IncludeResponseLogs,
 		backends: []Backend{
-			NewGitleaks(NewPatterns(&cfg.Scanner.Patterns, &http.Client{})),
+			NewGitleaks(
+				cfg.Scanner.MaxDecodeDepth,
+				NewPatterns(&cfg.Scanner.Patterns, &http.Client{}),
+			),
 		},
 	}
 
