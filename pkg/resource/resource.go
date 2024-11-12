@@ -126,6 +126,7 @@ func (r *BaseResource) ID() string {
 	return r.id
 }
 
+// Logs returns logs collected on the resource
 func (r *BaseResource) Logs() []logger.Entry {
 	return r.logs
 }
@@ -189,7 +190,7 @@ func (r *BaseResource) Info(code logger.LogCode, msg string, args ...any) {
 	}
 }
 
-// SetResourceLogs sets whether to include non-CRITICAL logs
+// IncludeLogs sets whether to include non-error logs
 func (r *BaseResource) IncludeLogs(enabled bool) {
 	r.includeLogs = enabled
 }
