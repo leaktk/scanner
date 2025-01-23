@@ -76,7 +76,7 @@ func (r *GitRepo) String() string {
 func (r *GitRepo) Clone(path string) error {
 	r.clonePath = path
 
-	cloneArgs := []string{"clone", "--mirror"}
+	cloneArgs := []string{"clone"}
 
 	if len(r.options.Proxy) > 0 {
 		cloneArgs = append(cloneArgs, "--config")
@@ -87,14 +87,17 @@ func (r *GitRepo) Clone(path string) error {
 	// things like --depth and --shallow-since behave
 	if len(r.options.Branch) > 0 {
 		if r.RemoteRefExists(r.options.Branch) {
+			cloneArgs = append(cloneArgs, "--bare")
 			cloneArgs = append(cloneArgs, "--single-branch")
 			cloneArgs = append(cloneArgs, "--branch")
 			cloneArgs = append(cloneArgs, r.options.Branch)
 		} else {
 			r.Warning(logger.CloneDetail, "ignoring invalid branch: branch=%q", r.options.Branch)
+			cloneArgs = append(cloneArgs, "--mirror")
 			cloneArgs = append(cloneArgs, "--no-single-branch")
 		}
 	} else {
+		cloneArgs = append(cloneArgs, "--mirror")
 		cloneArgs = append(cloneArgs, "--no-single-branch")
 	}
 
