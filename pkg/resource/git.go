@@ -151,6 +151,11 @@ func (r *GitRepo) EnrichResult(result *response.Result) *response.Result {
 	return result
 }
 
+// Branch returns the branch of the repo to scan
+func (r *GitRepo) Branch() string {
+	return r.options.Branch
+}
+
 // Depth returns the depth for things that have version control
 func (r *GitRepo) Depth() uint16 {
 	return r.options.Depth

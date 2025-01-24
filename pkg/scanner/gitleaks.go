@@ -97,11 +97,22 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 
 // gitScan handles when the resource is a gitRepo type
 func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo) ([]report.Finding, error) {
-	gitLogOpts := []string{"--full-history", "--all", "--ignore-missing"}
+	gitLogOpts := []string{"--full-history", "--ignore-missing"}
 
 	if len(gitRepo.Since()) > 0 {
 		gitLogOpts = append(gitLogOpts, "--since")
 		gitLogOpts = append(gitLogOpts, gitRepo.Since())
+	}
+
+	if gitRepo.Depth() > 0 {
+		gitLogOpts = append(gitLogOpts, "--max-count")
+		gitLogOpts = append(gitLogOpts, fmt.Sprint(gitRepo.Depth()))
+	}
+
+	if len(gitRepo.Branch()) > 0 {
+		gitLogOpts = append(gitLogOpts, gitRepo.Branch())
+	} else {
+		gitLogOpts = append(gitLogOpts, "--all")
 	}
 
 	// Should be the last set of args
