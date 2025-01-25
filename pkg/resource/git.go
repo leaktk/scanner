@@ -76,7 +76,7 @@ func (r *GitRepo) String() string {
 func (r *GitRepo) Clone(path string) error {
 	r.clonePath = path
 
-	cloneArgs := []string{"clone", "--mirror"}
+	cloneArgs := []string{"clone"}
 
 	if len(r.options.Proxy) > 0 {
 		cloneArgs = append(cloneArgs, "--config")
@@ -86,15 +86,16 @@ func (r *GitRepo) Clone(path string) error {
 	// The --[no-]single-branch flags are still needed with mirror due to how
 	// things like --depth and --shallow-since behave
 	if len(r.options.Branch) > 0 {
-		if r.RemoteRefExists(r.options.Branch) {
-			cloneArgs = append(cloneArgs, "--single-branch")
-			cloneArgs = append(cloneArgs, "--branch")
-			cloneArgs = append(cloneArgs, r.options.Branch)
-		} else {
-			r.Warning(logger.CloneDetail, "ignoring invalid branch: branch=%q", r.options.Branch)
-			cloneArgs = append(cloneArgs, "--no-single-branch")
+		if !r.RemoteRefExists(r.options.Branch) {
+			return fmt.Errorf("remote ref does not exist: resource_id=%q ref=%q", r.ID(), r.options.Branch)
 		}
+
+		cloneArgs = append(cloneArgs, "--bare")
+		cloneArgs = append(cloneArgs, "--single-branch")
+		cloneArgs = append(cloneArgs, "--branch")
+		cloneArgs = append(cloneArgs, r.options.Branch)
 	} else {
+		cloneArgs = append(cloneArgs, "--mirror")
 		cloneArgs = append(cloneArgs, "--no-single-branch")
 	}
 
@@ -146,6 +147,11 @@ func (r *GitRepo) ClonePath() string {
 func (r *GitRepo) EnrichResult(result *response.Result) *response.Result {
 	result.Kind = response.GitCommitResultKind
 	return result
+}
+
+// Branch returns the branch of the repo to scan
+func (r *GitRepo) Branch() string {
+	return r.options.Branch
 }
 
 // Depth returns the depth for things that have version control

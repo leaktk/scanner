@@ -41,10 +41,6 @@ func TestGit(t *testing.T) {
 		})
 
 		err := gitRepo.Clone(tempDir)
-		assert.NoError(t, err)
-		// Should increase the scope of the clone to be the same as if no branch
-		// was provided
-		assert.Greater(t, len(gitRepo.Refs()), 1)
+		assert.Error(t, err)
 	})
-
 }
