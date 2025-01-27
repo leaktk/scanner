@@ -1,7 +1,6 @@
 module github.com/leaktk/scanner
 
-go 1.22.0
-toolchain go1.22.11
+go 1.22.8
 
 require (
 	github.com/BurntSushi/toml v1.4.0
