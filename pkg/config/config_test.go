@@ -10,6 +10,7 @@ import (
 
 func TestPartialLoadConfigFromFile(t *testing.T) {
 	os.Setenv("LEAKTK_PATTERN_SERVER_AUTH_TOKEN", "x")
+	os.Unsetenv("LEAKTK_PATTERN_SERVER_URL")
 	cfg, err := LoadConfigFromFile("../../testdata/partial-config.toml")
 
 	if err != nil {
