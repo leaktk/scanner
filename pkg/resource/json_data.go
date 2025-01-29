@@ -70,7 +70,7 @@ func (r *JSONData) Clone(path string) error {
 
 	r.clonePath = path
 
-	if err = os.MkdirAll(r.clonePath, 0700); err != nil {
+	if err = os.MkdirAll(r.clonePath, 0770); err != nil {
 		return err
 	}
 
@@ -87,7 +87,7 @@ func (r *JSONData) Clone(path string) error {
 		".gitleaksbaseline",
 	} {
 		if data, err := r.ReadFile(file); err == nil {
-			if err = os.WriteFile(filepath.Join(r.clonePath, file), data, 0600); err != nil {
+			if err = os.WriteFile(filepath.Join(r.clonePath, file), data, 0660); err != nil {
 				return err
 			}
 		}

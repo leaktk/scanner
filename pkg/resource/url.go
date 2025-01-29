@@ -70,14 +70,14 @@ func (r *URL) Clone(path string) error {
 		// Scan as a JSONData resource
 		r.resource = NewJSONData(string(data), &JSONDataOptions{})
 	} else {
-		if err := os.MkdirAll(r.clonePath, 0700); err != nil {
+		if err := os.MkdirAll(r.clonePath, 0770); err != nil {
 			return fmt.Errorf("could not create clone path: path=%q error=%q", r.clonePath, err)
 		}
 
 		// Use ID(r.url) to create the dataPath so that we don't have collisions
 		// for if we follow URLs in the returned content
 		dataPath := filepath.Clean(filepath.Join(r.clonePath, id.ID(r.url)))
-		dataFile, err := os.OpenFile(dataPath, os.O_WRONLY|os.O_CREATE, 0600)
+		dataFile, err := os.OpenFile(dataPath, os.O_WRONLY|os.O_CREATE, 0660)
 		if err != nil {
 			return fmt.Errorf("could not open data file: error=%q", err)
 		}

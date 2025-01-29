@@ -100,7 +100,7 @@ func setMissingValues(cfg *Config) *Config {
 func leaktkConfigDir() string {
 	path := filepath.Join(xdg.ConfigHome, "leaktk")
 
-	if err := os.MkdirAll(path, 0700); err != nil {
+	if err := os.MkdirAll(path, 0770); err != nil {
 		logger.Error("could not create dir: path=%q", path)
 	}
 
@@ -110,7 +110,7 @@ func leaktkConfigDir() string {
 func leaktkCacheDir() string {
 	path := filepath.Join(xdg.CacheHome, "leaktk")
 
-	if err := os.MkdirAll(path, 0700); err != nil {
+	if err := os.MkdirAll(path, 0770); err != nil {
 		logger.Error("could not create dir: path=%q", path)
 	}
 
@@ -245,7 +245,7 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 func SavePatternServerAuthToken(authToken string) error {
 	path := localPatternServerAuthTokenPath()
 
-	if err := os.WriteFile(path, []byte(strings.TrimSpace(authToken)), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(strings.TrimSpace(authToken)), 0660); err != nil {
 		return err
 	}
 

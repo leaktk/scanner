@@ -27,7 +27,7 @@ func TestGitleaksScan(t *testing.T) {
 
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "gitleaks.toml")
-	err = os.WriteFile(configPath, []byte(mockGitleaksTestConfig), 0600)
+	err = os.WriteFile(configPath, []byte(mockGitleaksTestConfig), 0660)
 	assert.NoError(t, err)
 	cfg := config.DefaultConfig()
 	cfg.Scanner.Patterns.Gitleaks.ConfigPath = configPath

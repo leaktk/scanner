@@ -118,7 +118,7 @@ func (r *ContainerImage) String() string {
 
 // Clone the resource to the desired clonePath location
 func (r *ContainerImage) Clone(path string) error {
-	err := os.MkdirAll(path, 0700)
+	err := os.MkdirAll(path, 0770)
 	if err != nil {
 		return fmt.Errorf("could not create clone directory: %v", err)
 	}
@@ -258,11 +258,11 @@ func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, r
 }
 
 func (r *ContainerImage) writeFile(filename string, content []byte) error {
-	return os.WriteFile(filepath.Join(r.clonePath, filename), content, 0600)
+	return os.WriteFile(filepath.Join(r.clonePath, filename), content, 0660)
 }
 
 func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
-	file, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600) // #nosec G304
+	file, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0660) // #nosec G304
 	if err != nil {
 		return err
 	}
@@ -286,7 +286,7 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 	size := layer.Size * 10
 	layerRootDir := filepath.Join(r.ClonePath(), layer.Digest.Hex())
 	layerDir := filepath.Join(path, layer.Digest.Hex())
-	err := os.MkdirAll(layerDir, 0700)
+	err := os.MkdirAll(layerDir, 0770)
 	if err != nil {
 		return fmt.Errorf("could not create layer directory: %v", err)
 	}
@@ -325,7 +325,7 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 		}
 		info := header.FileInfo()
 		if info.IsDir() {
-			if err = os.MkdirAll(path, 0700); err != nil {
+			if err = os.MkdirAll(path, 0770); err != nil {
 				return fmt.Errorf("could not create directory: %v", err)
 			}
 			continue

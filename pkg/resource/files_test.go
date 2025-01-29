@@ -12,13 +12,13 @@ import (
 func TestFiles(t *testing.T) {
 	// Set up dir structure
 	tmpDir := t.TempDir()
-	err := os.MkdirAll(filepath.Join(tmpDir, "foo"), 0700)
+	err := os.MkdirAll(filepath.Join(tmpDir, "foo"), 0770)
 	assert.NoError(t, err)
 
 	// Write test file
 	testFileData := []byte("Hello, world!\n")
 	testFilePath := filepath.Join(tmpDir, "foo", "test-file")
-	err = os.WriteFile(testFilePath, testFileData, 0600)
+	err = os.WriteFile(testFilePath, testFileData, 0660)
 	assert.NoError(t, err)
 
 	// Create testing object

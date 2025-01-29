@@ -17,7 +17,7 @@ func TestFileExists(t *testing.T) {
 	})
 
 	t.Run("FileExists", func(t *testing.T) {
-		err := os.WriteFile(tmpFile, []byte{}, 0600)
+		err := os.WriteFile(tmpFile, []byte{}, 0660)
 		assert.NoError(t, err)
 		assert.True(t, FileExists(tmpFile))
 	})
@@ -37,7 +37,7 @@ func TestPathExists(t *testing.T) {
 	})
 
 	t.Run("FileExists", func(t *testing.T) {
-		err := os.WriteFile(tmpFile, []byte{}, 0600)
+		err := os.WriteFile(tmpFile, []byte{}, 0660)
 		assert.NoError(t, err)
 		assert.True(t, PathExists(tmpFile))
 	})
@@ -56,7 +56,7 @@ func TestPathExists(t *testing.T) {
 func TestCleanJoin(t *testing.T) {
 	t.Run("CleanJoin", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		err := os.MkdirAll(filepath.Join(tmpDir, "foo"), 0700)
+		err := os.MkdirAll(filepath.Join(tmpDir, "foo"), 0770)
 		assert.NoError(t, err)
 
 		testPathFail := "../../hello/world"

@@ -107,13 +107,13 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 			return p.gitleaksConfig, fmt.Errorf("could not parse config: error=%q", err)
 		}
 
-		if err := os.MkdirAll(filepath.Dir(p.config.Gitleaks.ConfigPath), 0700); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p.config.Gitleaks.ConfigPath), 0770); err != nil {
 			return p.gitleaksConfig, fmt.Errorf("could not create config dir: error=%q", err)
 		}
 
 		// only write the config after parsing it, that way we don't break a good
 		// existing config if the server returns an invalid response
-		if err := os.WriteFile(p.config.Gitleaks.ConfigPath, []byte(rawConfig), 0600); err != nil {
+		if err := os.WriteFile(p.config.Gitleaks.ConfigPath, []byte(rawConfig), 0660); err != nil {
 			return p.gitleaksConfig, fmt.Errorf("could not write config: path=%q error=%q", p.config.Gitleaks.ConfigPath, err)
 		}
 		p.updateGitleaksConfigHash(sha256.Sum256([]byte(rawConfig)))
