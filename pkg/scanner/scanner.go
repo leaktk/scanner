@@ -66,7 +66,7 @@ func (s *Scanner) Recv(fn func(*response.Response)) {
 
 // Send accepts a request for scanning and puts it in the queues
 func (s *Scanner) Send(request *Request) {
-	logger.Debug("queueing clone: request_id=%q", request.ID)
+	logger.Info("queueing clone: request_id=%q resource_id=%q", request.ID, request.Resource.ID())
 	s.cloneQueue.Send(&queue.Message[*Request]{
 		Priority: request.Priority(),
 		Value:    request,
@@ -112,7 +112,7 @@ func (s *Scanner) listenForCloneRequests() {
 		}
 
 		// Now that it's cloned send it on to the scan queue
-		logger.Debug("queueing scan: request_id=%q", request.ID)
+		logger.Info("queueing scan: request_id=%q resource_id=%q", request.ID, reqResource.ID())
 		s.scanQueue.Send(msg)
 	})
 }
@@ -158,6 +158,7 @@ func (s *Scanner) listenForScanRequests() {
 
 		}
 
+		logger.Info("queueing response: request_id=%q resource_id=%q", request.ID, reqResource.ID())
 		s.responseQueue.Send(&queue.Message[*response.Response]{
 			Priority: msg.Priority,
 			Value: &response.Response{
