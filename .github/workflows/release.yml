@@ -1,4 +1,4 @@
-name: goreleaser
+name: Build, sign and upload release artifacts
 
 env:
   GO_VERSION: '1.22'
