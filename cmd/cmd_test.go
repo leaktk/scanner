@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+
+	"testing"
 )
 
 func TestScanCommandToRequest(t *testing.T) {

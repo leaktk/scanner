@@ -19,8 +19,14 @@ type (
 	// for the toolchain. This may be abstracted out to a common library in
 	// the future as more components are added to the toolchain.
 	Config struct {
-		Logger  Logger  `toml:"logger"`
-		Scanner Scanner `toml:"scanner"`
+		Logger    Logger    `toml:"logger"`
+		Scanner   Scanner   `toml:"scanner"`
+		Formatter Formatter `toml:"formatter"`
+	}
+
+	// Formatter provides a general output format config
+	Formatter struct {
+		Format string `toml:"format"`
 	}
 
 	// Logger provides general logger config
@@ -170,6 +176,9 @@ func stringToBool(value string, defaultValue bool) bool {
 // values provided
 func DefaultConfig() *Config {
 	return &Config{
+		Formatter: Formatter{
+			Format: "JSON",
+		},
 		Logger: Logger{
 			Level: "INFO",
 		},
