@@ -290,9 +290,10 @@ func configure(cmd *cobra.Command, args []string) error {
 
 	// If a format is specified on the command line update the application config.
 	format, err := cmd.Flags().GetString("format")
-	if err == nil {
+	if err == nil && format != "" {
 		cfg.Formatter = config.Formatter{Format: format}
 	}
+
 	outputFormat, err = response.GetOutputFormat(cfg.Formatter.Format)
 	if err != nil {
 		logger.Fatal("%v", err.Error())

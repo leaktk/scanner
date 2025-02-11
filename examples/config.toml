@@ -6,8 +6,8 @@
 #
 [formatter]
 
-# Valid values: "csv", "human", "json", "toml", "yaml"
-format = "json"
+# Valid values: "CSV", "HUMAN", "JSON", "TOML", "YAML"
+format = "JSON"
 
 [logger]
 

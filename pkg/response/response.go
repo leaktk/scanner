@@ -79,8 +79,9 @@ type (
 	}
 )
 
-// Parts under here are for formatting the output of a response
+// Below are for formatting the output of a response, here as specific to the Response
 
+// OutputFormat is the code(int) for each format
 type OutputFormat int
 
 const (
@@ -96,6 +97,7 @@ const (
 	CSV
 )
 
+// Specifies the default format and stores any changes.
 var currentFormat = JSON
 
 // GetOutputFormat takes the string and returns OutputFormat or an error
@@ -122,25 +124,25 @@ func (*Response) SetFormat(format OutputFormat) {
 	currentFormat = format
 }
 
-// String renders a response structure to the set format, preference to JSON
+// String renders a response structure to the set format as a string
 func (r *Response) String() string {
 	var output string
 	switch currentFormat {
 	case JSON:
-		output = outputJson(r)
+		output = formatJson(r)
 	case HUMAN:
-		output = outputHuman(r)
+		output = formatHuman(r)
 	case TOML:
-		output = outputToml(r)
+		output = formatToml(r)
 	case YAML:
-		output = outputYaml(r)
+		output = formatYaml(r)
 	case CSV:
-		output = outputCSV(r)
+		output = formatCsv(r)
 	}
 	return output
 }
 
-func outputJson(r *Response) string {
+func formatJson(r *Response) string {
 	out, err := json.Marshal(r)
 	if err != nil {
 		logger.Error("could not marshal response: error=%q", err)
@@ -148,15 +150,17 @@ func outputJson(r *Response) string {
 	return string(out)
 }
 
-func outputHuman(r *Response) string {
-	headers := fields()
+func formatHuman(r *Response) string {
+	headers := flattenedResponseFields()
 	for i, header := range headers {
+		// Append a : to each label. Do it once here instead of every loop
 		headers[i] = header + ":"
 	}
-	flat := flattenResponse(r)
+	flat := flattenedResponse(r)
 	var out []string
 	for _, response := range flat {
 		for i, entry := range response {
+			// Specifies width of 26 characters for labels
 			out = append(out, fmt.Sprintf("%-26s%s", headers[i], entry))
 		}
 		out = append(out, "\n")
@@ -164,7 +168,7 @@ func outputHuman(r *Response) string {
 	return strings.Join(out, "\n")
 }
 
-func outputToml(r *Response) string {
+func formatToml(r *Response) string {
 	var buf bytes.Buffer
 
 	if err := toml.NewEncoder(&buf).Encode(r); err != nil {
@@ -173,7 +177,7 @@ func outputToml(r *Response) string {
 	return buf.String()
 }
 
-func outputYaml(r *Response) string {
+func formatYaml(r *Response) string {
 	out, err := yaml.Marshal(r)
 	if err != nil {
 		logger.Error("could not marshal response: error=%q", err)
@@ -181,15 +185,8 @@ func outputYaml(r *Response) string {
 	return string(out)
 }
 
-func fields() []string {
-	return []string{"ID", "REQUEST.ID", "RESULT.ID", "RESULT.KIND", "RESULT.SECRET", "RESULT.MATCH",
-		"RESULT.CONTEXT", "RESULT.ENTROPY", "RESULT.DATE", "RESULT.NOTES", "RESULT.RULE.ID", "RESULT.RULE.DESCRIPTION",
-		"RESULT.RULE.TAGS", "RESULT.CONTACT", "RESULT.LOCATION.VERSION", "RESULT.LOCATION.PATH",
-		"RESULT.LOCATION.RANGE"}
-}
-
-func outputCSV(r *Response) string {
-	headers := fields()
+func formatCsv(r *Response) string {
+	headers := flattenedResponseFields()
 
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
@@ -199,7 +196,7 @@ func outputCSV(r *Response) string {
 		logger.Error("could not write response: error=%q", err)
 	}
 
-	err = writer.WriteAll(flattenResponse(r))
+	err = writer.WriteAll(flattenedResponse(r))
 	if err != nil {
 		logger.Error("could not write response: error=%q", err)
 	}
@@ -207,29 +204,37 @@ func outputCSV(r *Response) string {
 	return buf.String()
 }
 
-// flattenResponse takes the response and returns a 2d list of responses
-func flattenResponse(response *Response) [][]string {
+// flattenedResponseFields provides a list containing the field labels for a flattened response
+func flattenedResponseFields() []string {
+	return []string{"ID", "REQUEST.ID", "RESULT.ID", "RESULT.KIND", "RESULT.SECRET", "RESULT.MATCH",
+		"RESULT.CONTEXT", "RESULT.ENTROPY", "RESULT.DATE", "RESULT.NOTES", "RESULT.RULE.ID", "RESULT.RULE.DESCRIPTION",
+		"RESULT.RULE.TAGS", "RESULT.CONTACT", "RESULT.LOCATION.VERSION", "RESULT.LOCATION.PATH",
+		"RESULT.LOCATION.RANGE"}
+}
+
+// flattenedResponse takes the response and returns a 2d list of responses in flattenedResponseFields order
+func flattenedResponse(response *Response) [][]string {
 	var flattened [][]string
 
 	for _, result := range response.Results {
 		flattened = append(flattened, []string{
-			sanitizeCSVField(response.ID),
-			sanitizeCSVField(response.RequestID),
-			sanitizeCSVField(result.ID),
-			sanitizeCSVField(result.Kind),
-			sanitizeCSVField(result.Secret),
-			sanitizeCSVField(result.Match),
-			sanitizeCSVField(result.Context),
-			sanitizeCSVField(fmt.Sprintf("%f", result.Entropy)),
-			sanitizeCSVField(result.Date),
-			sanitizeCSVField(flattenMapToString(result.Notes)),
-			sanitizeCSVField(result.Rule.ID),
-			sanitizeCSVField(result.Rule.Description),
-			sanitizeCSVField(strings.Join(result.Rule.Tags, ", ")),
-			sanitizeCSVField(flattenContact(result.Contact)),
-			sanitizeCSVField(result.Location.Version),
-			sanitizeCSVField(result.Location.Path),
-			sanitizeCSVField(fmt.Sprintf("L%dC%d-L%dC%d", result.Location.Start.Line,
+			sanitizeField(response.ID),
+			sanitizeField(response.RequestID),
+			sanitizeField(result.ID),
+			sanitizeField(result.Kind),
+			sanitizeField(result.Secret),
+			sanitizeField(result.Match),
+			sanitizeField(result.Context),
+			sanitizeField(fmt.Sprintf("%f", result.Entropy)),
+			sanitizeField(result.Date),
+			sanitizeField(flattenMapToString(result.Notes)),
+			sanitizeField(result.Rule.ID),
+			sanitizeField(result.Rule.Description),
+			sanitizeField(strings.Join(result.Rule.Tags, ", ")),
+			sanitizeField(flattenContact(result.Contact)),
+			sanitizeField(result.Location.Version),
+			sanitizeField(result.Location.Path),
+			sanitizeField(fmt.Sprintf("L%dC%d-L%dC%d", result.Location.Start.Line,
 				result.Location.Start.Column, result.Location.End.Line, result.Location.End.Column)),
 		})
 	}
@@ -237,7 +242,7 @@ func flattenResponse(response *Response) [][]string {
 	return flattened
 }
 
-// flattenMapToString creates a flat string with pairs "key: value"
+// flattenMapToString creates a flat string with pairs "key: value" only single depth
 func flattenMapToString(m map[string]string) string {
 	var pairs []string
 	for k, v := range m {
@@ -246,14 +251,14 @@ func flattenMapToString(m map[string]string) string {
 	return strings.Join(pairs, ", ")
 }
 
-// flattenContact creates a single string with information as "Name <Email>"
+// flattenContact creates a single string with Contact information as "Name <Email>"
 func flattenContact(contact Contact) string {
 	return fmt.Sprintf("%s <%s>", contact.Name, contact.Email)
 }
 
-// sanitizeCSVField takes a string and makes it safe for CSV by replacing newlines and escaping quotes
+// sanitizeField takes a string and makes it safe for CSV by replacing newlines and escaping quotes
 // CSV is not a great format for rich/nested data, this makes the data more consistent for the format
-func sanitizeCSVField(value string) string {
+func sanitizeField(value string) string {
 	if strings.ContainsAny(value, ",\n\"") {
 		value = strings.ReplaceAll(value, "\"", "\"\"")
 		value = strings.ReplaceAll(value, "\n", " ")
