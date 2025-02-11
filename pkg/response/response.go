@@ -2,9 +2,9 @@ package response
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
-
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -92,11 +92,13 @@ const (
 	TOML
 	// YAML displays the output in YAML format
 	YAML
+	// CSV displays the
+	CSV
 )
 
 var currentFormat = JSON
 
-// GetOutputFormat takes the string and returns OutputFormat or error
+// GetOutputFormat takes the string and returns OutputFormat or an error
 func GetOutputFormat(format string) (OutputFormat, error) {
 	format = strings.ToUpper(format)
 	switch format {
@@ -108,17 +110,19 @@ func GetOutputFormat(format string) (OutputFormat, error) {
 		return TOML, nil
 	case "YAML":
 		return YAML, nil
+	case "CSV":
+		return CSV, nil
 	default:
 		return JSON, fmt.Errorf("invalid output format option: format=%q", format)
 	}
 }
 
-// SetFormat takes the string for required format
+// SetFormat sets the format using the OutputFormat value
 func (*Response) SetFormat(format OutputFormat) {
 	currentFormat = format
 }
 
-// String renders a response structure to the JSON format
+// String renders a response structure to the set format, preference to JSON
 func (r *Response) String() string {
 	var output string
 	switch currentFormat {
@@ -130,6 +134,8 @@ func (r *Response) String() string {
 		output = outputToml(r)
 	case YAML:
 		output = outputYaml(r)
+	case CSV:
+		output = outputCSV(r)
 	}
 	return output
 }
@@ -162,4 +168,81 @@ func outputYaml(r *Response) string {
 		logger.Error("could not marshal response: error=%q", err)
 	}
 	return string(out)
+}
+
+func outputCSV(r *Response) string {
+	headers := []string{"ID", "REQUEST.ID", "RESULT.ID", "RESULT.KIND", "RESULT.SECRET", "RESULT.MATCH",
+		"RESULT.CONTEXT", "RESULT.ENTROPY", "RESULT.DATE", "RESULT.NOTES", "RESULT.RULE.ID", "RESULT.RULE.DESCRIPTION",
+		"RESULT.RULE.TAGS", "RESULT.CONTACT", "RESULT.LOCATION.VERSION", "RESULT.LOCATION.PATH",
+		"RESULT.LOCATION.RANGE"}
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	err := writer.Write(headers)
+	if err != nil {
+		logger.Error("could not write response: error=%q", err)
+	}
+
+	err = writer.WriteAll(flattenResponse(r))
+	if err != nil {
+		logger.Error("could not write response: error=%q", err)
+	}
+
+	return buf.String()
+}
+
+// flattenResponse takes the response and returns a 2d list of responses
+func flattenResponse(response *Response) [][]string {
+	var flattened [][]string
+
+	for _, result := range response.Results {
+		flattened = append(flattened, []string{
+			sanitizeCSVField(response.ID),
+			sanitizeCSVField(response.RequestID),
+			sanitizeCSVField(result.ID),
+			sanitizeCSVField(result.Kind),
+			sanitizeCSVField(result.Secret),
+			sanitizeCSVField(result.Match),
+			sanitizeCSVField(result.Context),
+			sanitizeCSVField(fmt.Sprintf("%f", result.Entropy)),
+			sanitizeCSVField(result.Date),
+			sanitizeCSVField(flattenMapToString(result.Notes)),
+			sanitizeCSVField(result.Rule.ID),
+			sanitizeCSVField(result.Rule.Description),
+			sanitizeCSVField(strings.Join(result.Rule.Tags, ", ")),
+			sanitizeCSVField(flattenContact(result.Contact)),
+			sanitizeCSVField(result.Location.Version),
+			sanitizeCSVField(result.Location.Path),
+			sanitizeCSVField(fmt.Sprintf("L%dC%d-L%dC%d", result.Location.Start.Line,
+				result.Location.Start.Column, result.Location.End.Line, result.Location.End.Column)),
+		})
+	}
+
+	return flattened
+}
+
+// flattenMapToString creates a flat string with pairs "key: value"
+func flattenMapToString(m map[string]string) string {
+	var pairs []string
+	for k, v := range m {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", k, v))
+	}
+	return strings.Join(pairs, ", ")
+}
+
+// flattenContact creates a single string with information as "Name <Email>"
+func flattenContact(contact Contact) string {
+	return fmt.Sprintf("%s <%s>", contact.Name, contact.Email)
+}
+
+// sanitizeCSVField takes a string and makes it safe for CSV by replacing newlines and escaping quotes
+// CSV is not a great format for rich/nested data, this makes the data more consistent for the format
+func sanitizeCSVField(value string) string {
+	if strings.ContainsAny(value, ",\n\"") {
+		value = strings.ReplaceAll(value, "\"", "\"\"")
+		value = strings.ReplaceAll(value, "\n", " ")
+		return fmt.Sprintf("\"%s\"", value)
+	}
+	return value
 }
