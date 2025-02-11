@@ -149,8 +149,19 @@ func outputJson(r *Response) string {
 }
 
 func outputHuman(r *Response) string {
-	fmt.Println("Clean it up!")
-	return ""
+	headers := fields()
+	for i, header := range headers {
+		headers[i] = header + ":"
+	}
+	flat := flattenResponse(r)
+	var out []string
+	for _, response := range flat {
+		for i, entry := range response {
+			out = append(out, fmt.Sprintf("%-26s%s", headers[i], entry))
+		}
+		out = append(out, "\n")
+	}
+	return strings.Join(out, "\n")
 }
 
 func outputToml(r *Response) string {
@@ -170,11 +181,15 @@ func outputYaml(r *Response) string {
 	return string(out)
 }
 
-func outputCSV(r *Response) string {
-	headers := []string{"ID", "REQUEST.ID", "RESULT.ID", "RESULT.KIND", "RESULT.SECRET", "RESULT.MATCH",
+func fields() []string {
+	return []string{"ID", "REQUEST.ID", "RESULT.ID", "RESULT.KIND", "RESULT.SECRET", "RESULT.MATCH",
 		"RESULT.CONTEXT", "RESULT.ENTROPY", "RESULT.DATE", "RESULT.NOTES", "RESULT.RULE.ID", "RESULT.RULE.DESCRIPTION",
 		"RESULT.RULE.TAGS", "RESULT.CONTACT", "RESULT.LOCATION.VERSION", "RESULT.LOCATION.PATH",
 		"RESULT.LOCATION.RANGE"}
+}
+
+func outputCSV(r *Response) string {
+	headers := fields()
 
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
