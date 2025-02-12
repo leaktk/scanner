@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,12 @@ import (
 )
 
 const nixGlobalConfigDir = "/etc/leaktk"
+
+var localConfigDir string
+
+func init() {
+	localConfigDir = filepath.Join(xdg.ConfigHome, "leaktk")
+}
 
 type (
 	// Config provides a general structure to capture the config options
@@ -97,26 +104,6 @@ func setMissingValues(cfg *Config) *Config {
 	return cfg
 }
 
-func leaktkConfigDir() string {
-	path := filepath.Join(xdg.ConfigHome, "leaktk")
-
-	if err := os.MkdirAll(path, 0700); err != nil {
-		logger.Error("could not create dir: path=%q", path)
-	}
-
-	return path
-}
-
-func leaktkCacheDir() string {
-	path := filepath.Join(xdg.CacheHome, "leaktk")
-
-	if err := os.MkdirAll(path, 0700); err != nil {
-		logger.Error("could not create dir: path=%q", path)
-	}
-
-	return path
-}
-
 func loadPatternServerAuthTokenFromFile(path string) string {
 	path = filepath.Clean(path)
 	logger.Debug("loading pattern-server-auth-token: path=%q", path)
@@ -129,8 +116,8 @@ func loadPatternServerAuthTokenFromFile(path string) string {
 	return strings.TrimSpace(string(authTokenBytes))
 }
 
-func localPatternServerAuthTokenPath() string {
-	return filepath.Join(leaktkConfigDir(), "pattern-server-auth-token")
+func patternServerAuthTokenPath(configDir string) string {
+	return filepath.Join(configDir, "pattern-server-auth-token")
 }
 
 func loadPatternServerAuthToken() string {
@@ -141,12 +128,12 @@ func loadPatternServerAuthToken() string {
 		return authTokenFromEnvVar
 	}
 
-	path := localPatternServerAuthTokenPath()
+	path := patternServerAuthTokenPath(localConfigDir)
 	if fs.FileExists(path) {
 		return loadPatternServerAuthTokenFromFile(path)
 	}
 
-	path = filepath.Join(nixGlobalConfigDir, "pattern-server-auth-token")
+	path = patternServerAuthTokenPath(nixGlobalConfigDir)
 	if fs.FileExists(path) {
 		return loadPatternServerAuthTokenFromFile(path)
 	}
@@ -179,7 +166,7 @@ func DefaultConfig() *Config {
 			IncludeResponseLogs: false,
 			MaxScanDepth:        0,
 			ScanWorkers:         1,
-			Workdir:             filepath.Join(leaktkCacheDir(), "scanner"),
+			Workdir:             filepath.Join(xdg.CacheHome, "leaktk", "scanner"),
 			MaxDecodeDepth:      8,
 			Patterns: Patterns{
 				Autofetch:    true,
@@ -228,7 +215,7 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 		logger.Debug("using default config")
 	}
 
-	path = filepath.Join(leaktkConfigDir(), "config.toml")
+	path = filepath.Join(localConfigDir, "config.toml")
 	if fs.FileExists(path) {
 		return LoadConfigFromFile(path)
 	}
@@ -243,7 +230,13 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 
 // SavePatternServerAuthToken saves the token in the path where it should go
 func SavePatternServerAuthToken(authToken string) error {
-	path := localPatternServerAuthTokenPath()
+	if !fs.PathExists(localConfigDir) {
+		if err := os.MkdirAll(localConfigDir, 0700); err != nil {
+			return fmt.Errorf("could not create dir: path=%q", localConfigDir)
+		}
+	}
+
+	path := patternServerAuthTokenPath(localConfigDir)
 
 	if err := os.WriteFile(path, []byte(strings.TrimSpace(authToken)), 0600); err != nil {
 		return err
@@ -254,7 +247,7 @@ func SavePatternServerAuthToken(authToken string) error {
 
 // RemovePatternServerAuthToken deletes the auth token
 func RemovePatternServerAuthToken() error {
-	path := localPatternServerAuthTokenPath()
+	path := patternServerAuthTokenPath(localConfigDir)
 
 	if fs.FileExists(path) {
 		if err := os.Remove(path); err != nil {

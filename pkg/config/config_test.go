@@ -4,7 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/adrg/xdg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,7 +59,7 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 
 func TestLocateAndLoadConfig(t *testing.T) {
 	// Set the env var here to prove the provided path overrides it
-	xdg.ConfigHome = "../../testdata/locator-test"
+	localConfigDir = "../../testdata/locator-test/leaktk"
 	os.Setenv("LEAKTK_CONFIG_PATH", "../../testdata/locator-test/leaktk/config.2.toml")
 
 	// Confirm load from file works
