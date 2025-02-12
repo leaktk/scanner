@@ -21,8 +21,8 @@ func TestScanCommandToRequest(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, request)
 
-	// ID should default to a random UUID
-	assert.Equal(t, 64, len(request.ID))
+	// ID should default to a random id
+	assert.Equal(t, 11, len(request.ID))
 	// Kind should default to GitRepo
 	assert.Equal(t, request.Resource.Kind(), "GitRepo")
 	assert.Equal(t, request.Resource.String(), "https://github.com/leaktk/fake-leaks.git")

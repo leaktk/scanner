@@ -5,8 +5,8 @@ go 1.22.8
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adrg/xdg v0.5.3
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/containers/image/v5 v5.34.0
-	github.com/google/uuid v1.6.0
 	github.com/h2non/filetype v1.1.3
 	github.com/klauspost/compress v1.17.11
 	github.com/rs/zerolog v1.33.0

@@ -1,23 +1,29 @@
 package id
 
 import (
-	"crypto/sha256"
-	"fmt"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/binary"
 	"strings"
 
-	"github.com/google/uuid"
+	"github.com/cespare/xxhash/v2"
+
+	"github.com/leaktk/scanner/pkg/logger"
 )
 
 // ID returns an unique ID based on the parts passed in. If none are passed in
-// then ID will be random. The ID will be a fixed length hexadecimal characters.
+// then ID will be random. The ID will be a fixed length characters.
 func ID(parts ...string) string {
-	var data []byte
+	data := make([]byte, 8)
 
 	if len(parts) > 0 {
-		data = []byte(strings.Join(parts, "\n"))
+		hash := xxhash.Sum64String(strings.Join(parts, "\n"))
+		binary.BigEndian.PutUint64(data, hash)
 	} else {
-		data = []byte(uuid.New().String())
+		if _, err := rand.Read(data); err != nil {
+			logger.Fatal("could not generate random id: error=%q", err)
+		}
 	}
 
-	return fmt.Sprintf("%x", sha256.Sum256(data))
+	return base64.RawURLEncoding.EncodeToString(data)
 }

@@ -76,7 +76,7 @@ Notes about the formats below:
 
 ```json
 {
-  "id": "db0c21127a6a849fdf8eeae65d753275f3a26a33649171fa34af458030744999",
+  "id": "85V5qL7x_bY",
   "kind": "GitRepo",
   "resource": "https://github.com/leaktk/fake-leaks.git",
   "options": {
@@ -136,23 +136,23 @@ Sets the request priority. Higher priority items will be scanned first.
 
 ```json
 {
-  "id": "8343516f29a9c80cc7862e01799f446d5fb93088d1681f8c5181b211488a94db",
+  "id": "rMr0GAfwYwd",
   "request": {
-    "id": "db0c21127a6a849fdf8eeae65d753275f3a26a33649171fa34af458030744999",
+    "id": "85V5qL7x_bY",
     "kind": "GitRepo",
     "resource": "http://github.com/leaktk/fake-leaks.git"
   },
   "logs": [],
   "results": [
     {
-      "id": "c80efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7",
+      "id": "IDsQnA1t6Em",
       "kind": "GitCommit",
       "secret": "-----BEGIN EC PRIVATE KEY-----\n...snip...\n-----END EC PRIVATE KEY-----",
       "match": "-----BEGIN EC PRIVATE KEY-----\n...snip...\n-----END EC PRIVATE KEY-----",
       "entropy": 5.763853,
       "date": "2023-08-04T12:21:12Z",
       "rule": {
-        "id": "private-key",
+        "id": "3fk1rL-aRiw",
         "description": "Private Key",
         "tags": [
           "group:leaktk-testing",
@@ -192,7 +192,7 @@ This allows you to scan various JSON structures for secrets.
 
 ```json
 {
-  "id": "580efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7",
+  "id": "OBZMFe4gBnt",
   "kind": "JSONData",
   "resource": "{\"some\": {\"key\": \"-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----\"}}"
 }
@@ -245,23 +245,23 @@ Sets the request priority. Higher priority items will be scanned first.
 
 ```json
 {
-  "id": "c88057777737115851ad94b91461d09b2ce704484813557895ba0d6d827d4ed8",
+  "id": "tMd_Av-ZTFP",
   "request": {
-    "id": "580efb11ee9013a42d6037566c7159c9aeb610696be851dc9209c85e75e5a3e7",
+    "id": "Dg9hdRRdd2M",
     "kind": "JSONData",
     "resource": "{\"some\":{\"key\": \"-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----\"}}"
   },
   "logs": [],
   "results": [
     {
-      "id": "66456b43e1efac03f9448ece59a65b0e2bf304b55506507a8aa07727e3900522",
+      "id": "ZwaaqRjgNgk",
       "kind": "JSONData",
       "secret": "-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----",
       "match": "-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----",
       "entropy": 4.490795,
       "date": "",
       "rule": {
-        "id": "private-key",
+        "id": "3fk1rL-aRiw",
         "description": "Private Key",
         "tags": [
           "group:leaktk-testing",
@@ -302,7 +302,7 @@ This allows you to scan files and directories.
 
 ```json
 {
-  "id": "1c7387179582ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420",
+  "id": "04mTfB9Lxd1",
   "kind": "Files",
   "resource": "/path/to/fake-leaks/keys/tls"
 }
@@ -323,23 +323,23 @@ Sets the request priority. Higher priority items will be scanned first.
 
 ```json
 {
-  "id": "bde3a15ca81cf6503b9c9e1a450a3bbdfa09567e77f787a6cf4a56ed3b115f87",
+  "id": "cAdqKrap5Hu",
   "request": {
-    "id": "1c7387179582ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420",
+    "id": "A18dGVI86dm",
     "kind": "Files",
     "resource": "/path/to/fake-leaks/keys/tls"
   },
   "logs": [],
   "results": [
     {
-      "id": "9376e604a7e8c4f5259ceb47f8a29c57e77c07668e317fa8c177de5e56fbe029",
+      "id": "oOp7aV7LASW",
       "kind": "General",
       "secret": "-----BEGIN EC PRIVATE KEY-----\n...snip...\n-----END EC PRIVATE KEY-----",
       "match": "-----BEGIN EC PRIVATE KEY-----\n...snip...\n-----END EC PRIVATE KEY-----",
       "entropy": 5.763853,
       "date": "",
       "rule": {
-        "id": "private-key",
+        "id": "3fk1rL-aRiw",
         "description": "Private Key",
         "tags": [
           "group:leaktk-testing",
@@ -383,7 +383,7 @@ be parsed as a `Files` request.
 
 ```json
 {
-  "id": "1c7387179582ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420",
+  "id": "r-3Y5aAIckV",
   "kind": "URL",
   "resource": "https://raw.githubusercontent.com/leaktk/fake-leaks/main/keys/tls/server.key"
 }
@@ -402,23 +402,23 @@ Sets the request priority. Higher priority items will be scanned first.
 
 ```json
 {
-  "id": "a1ef32d00c609b370d2181ea46babbbdd19deeeea68918cc676a8f12d1fc7e3b",
+  "id": "r-3Y5aAIckV",
   "request": {
-    "id": "1c7387179582ae1e9bc114bfa10bddc6317fe6a5362efd2ae4019e34cccd8420",
+    "id": "DrlFMAs-m-D",
     "kind": "URL",
     "resource": "https://raw.githubusercontent.com/leaktk/fake-leaks/main/keys/tls/server.key"
   },
   "logs": [],
   "results": [
     {
-      "id": "6c14f496a2111dfeecbfff4a61587b0b1866788a6112b420f80071f8cded0153",
+      "id": "Czoctar4oKt",
       "kind": "General",
       "secret": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
       "match": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
       "entropy": 6.0285063,
       "date": "",
       "rule": {
-        "id": "private-key",
+        "id": "3fk1rL-aRiw",
         "description": "Private Key",
         "tags": [
           "group:leaktk-testing",
@@ -461,7 +461,7 @@ the Image, Config and Manifest.
 
 ```json
 {
-  "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
+  "id": "GTykQmSnoio",
   "kind": "ContainerImage",
   "resource": "quay.io/leaktk/fake-leaks:v1.0.1"
 }
@@ -510,22 +510,22 @@ so not all images will have the information.
 #### Response
 ```json
 {
-  "id": "a1ef32d00c609b370d2181ea46b11111119deeeea68918cc676a8f12d1fc7e3b",
+  "id": "X71VJDDYKUc",
   "request": {
-    "id": "1c7387179582ae1e9bc23123a10bddc6317fe6a5362efd2ae4019e34cccd8420",
+    "id": "e6jlVhrbFBq",
     "kind": "ContainerImage",
     "resource": "quay.io/leaktk/fake-leaks:v1.0.1"
   },
   "results": [
     {
-      "id": "6c14f496a2111dfeecbfff4a61587b0b1866788a6112b420f80071f8cded0153",
+      "id": "1JYuHIigWRd",
       "kind": "ContainerLayer",
       "secret": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
       "match": "-----BEGIN PRIVATE KEY-----\n...snip...\n-----END PRIVATE KEY-----",
       "entropy": 6.0285063,
       "date": "",
       "rule": {
-        "id": "private-key",
+        "id": "3fk1rL-aRiw",
         "description": "Private Key",
         "tags": [
           "group:leaktk-testing",
