@@ -28,7 +28,6 @@ var Version = ""
 var Commit = ""
 
 var cfg *config.Config
-var outputFormat response.OutputFormat
 
 func initLogger() {
 	if err := logger.SetLoggerLevel("INFO"); err != nil {
@@ -92,13 +91,14 @@ func runScan(cmd *cobra.Command, args []string) {
 		logger.Fatal("could not generate scan request: error=%q", err.Error())
 	}
 
+	formatter, _ := response.NewFormatter(cfg.Formatter)
+
 	var wg sync.WaitGroup
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
 	go leakScanner.Recv(func(response *response.Response) {
-		response.SetFormat(outputFormat)
-		fmt.Println(response)
+		fmt.Println(formatter.Format(response))
 		wg.Done()
 	})
 
@@ -191,13 +191,14 @@ func readLine(reader *bufio.Reader) ([]byte, error) {
 func runListen(cmd *cobra.Command, args []string) {
 	var wg sync.WaitGroup
 
+	formatter, _ := response.NewFormatter(cfg.Formatter)
+
 	stdinReader := bufio.NewReader(os.Stdin)
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
 	go leakScanner.Recv(func(response *response.Response) {
-		response.SetFormat(outputFormat)
-		fmt.Println(response)
+		fmt.Println(formatter.Format(response))
 		wg.Done()
 	})
 
@@ -294,7 +295,8 @@ func configure(cmd *cobra.Command, args []string) error {
 		cfg.Formatter = config.Formatter{Format: format}
 	}
 
-	outputFormat, err = response.GetOutputFormat(cfg.Formatter.Format)
+	// Check if the OutputFormat is valid
+	_, err = response.GetOutputFormat(cfg.Formatter.Format)
 	if err != nil {
 		logger.Fatal("%v", err.Error())
 	}
