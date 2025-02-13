@@ -94,7 +94,7 @@ func formatHuman(r *Response) string {
 		// Append a : to each label. Do it once here instead of every loop
 		headers[i] = header + ":"
 	}
-	flat := flattenedResponse(r)
+	flat := flattenedResponse(r, false)
 	var out []string
 	for _, response := range flat {
 		for i, entry := range response {
@@ -134,7 +134,7 @@ func formatCsv(r *Response) string {
 		logger.Error("could not write response: error=%q", err)
 	}
 
-	err = writer.WriteAll(flattenedResponse(r))
+	err = writer.WriteAll(flattenedResponse(r, true))
 	if err != nil {
 		logger.Error("could not write response: error=%q", err)
 	}
@@ -151,30 +151,34 @@ func flattenedResponseFields() []string {
 }
 
 // flattenedResponse takes the response and returns a 2d list of responses in flattenedResponseFields order
-func flattenedResponse(response *Response) [][]string {
+func flattenedResponse(response *Response, sanitize bool) [][]string {
 	var flattened [][]string
 
 	for _, result := range response.Results {
-		flattened = append(flattened, []string{
-			sanitizeField(response.ID),
-			sanitizeField(response.RequestID),
-			sanitizeField(result.ID),
-			sanitizeField(result.Kind),
-			sanitizeField(result.Secret),
-			sanitizeField(result.Match),
-			sanitizeField(result.Context),
-			sanitizeField(fmt.Sprintf("%f", result.Entropy)),
-			sanitizeField(result.Date),
-			sanitizeField(flattenMapToString(result.Notes)),
-			sanitizeField(result.Rule.ID),
-			sanitizeField(result.Rule.Description),
-			sanitizeField(strings.Join(result.Rule.Tags, ", ")),
-			sanitizeField(flattenContact(result.Contact)),
-			sanitizeField(result.Location.Version),
-			sanitizeField(result.Location.Path),
-			sanitizeField(fmt.Sprintf("L%dC%d-L%dC%d", result.Location.Start.Line,
-				result.Location.Start.Column, result.Location.End.Line, result.Location.End.Column)),
-		})
+		entry := []string{
+			response.ID,
+			response.RequestID,
+			result.ID,
+			result.Kind,
+			result.Secret,
+			result.Match,
+			result.Context,
+			fmt.Sprintf("%f", result.Entropy),
+			result.Date,
+			flattenMapToString(result.Notes),
+			result.Rule.ID,
+			result.Rule.Description,
+			strings.Join(result.Rule.Tags, ", "),
+			flattenContact(result.Contact),
+			result.Location.Version,
+			result.Location.Path,
+			fmt.Sprintf("L%dC%d-L%dC%d", result.Location.Start.Line,
+				result.Location.Start.Column, result.Location.End.Line, result.Location.End.Column),
+		}
+		if sanitize {
+			entry = sanitizeEntry(entry)
+		}
+		flattened = append(flattened, entry)
 	}
 
 	return flattened
@@ -196,11 +200,15 @@ func flattenContact(contact Contact) string {
 
 // sanitizeField takes a string and makes it safe for CSV by replacing newlines and escaping quotes
 // CSV is not a great format for rich/nested data, this makes the data more consistent for the format
-func sanitizeField(value string) string {
-	if strings.ContainsAny(value, ",\n\"") {
-		value = strings.ReplaceAll(value, "\"", "\"\"")
-		value = strings.ReplaceAll(value, "\n", " ")
-		return fmt.Sprintf("\"%s\"", value)
+func sanitizeEntry(value []string) []string {
+	var output []string
+	for _, entry := range value {
+		if strings.ContainsAny(entry, ",\n\"") {
+			entry = strings.ReplaceAll(entry, "\"", "\"\"")
+			entry = strings.ReplaceAll(entry, "\n", " ")
+			entry = fmt.Sprintf("\"%s\"", entry)
+		}
+		output = append(output, entry)
 	}
-	return value
+	return output
 }
