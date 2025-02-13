@@ -314,7 +314,7 @@ func rootCommand() *cobra.Command {
 
 	flags := rootCommand.PersistentFlags()
 	flags.StringP("config", "c", "", "config file path")
-	flags.StringP("format", "f", "", "output format [JSON, HUMAN, CSV, TOML, YAML]")
+	flags.StringP("format", "f", "", "output format [json(default), human, csv, toml, yaml]")
 
 	rootCommand.AddCommand(loginCommand())
 	rootCommand.AddCommand(logoutCommand())

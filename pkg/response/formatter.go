@@ -26,7 +26,7 @@ const (
 	TOML
 	// YAML displays the output in YAML format
 	YAML
-	// CSV displays the
+	// CSV displays the output in CSV format
 	CSV
 )
 
@@ -60,11 +60,6 @@ func GetOutputFormat(format string) (OutputFormat, error) {
 	default:
 		return JSON, fmt.Errorf("invalid output format option: format=%q", format)
 	}
-}
-
-// SetFormat sets the format using the OutputFormat value
-func (f *Formatter) SetFormat(format OutputFormat) {
-	f.format = format
 }
 
 // Format renders a response structure to the set format as a string
