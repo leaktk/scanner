@@ -1,0 +1,11 @@
+#! /usr/bin/env bash
+
+last_version="$(git tag --sort=-v:refname | grep -P '^v\d+\.\d+\.\d+$' | head -n 1 | sed 's/v//g')"
+extra_commits="$(git rev-list "v${last_version}..HEAD" --count)"
+
+if [[ "${extra_commits}" -eq 0 ]]
+then
+  echo "${last_version}"
+else
+  echo "${last_version}+${extra_commits}-commits"
+fi
