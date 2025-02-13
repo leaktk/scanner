@@ -1,6 +1,8 @@
 package response
 
 import (
+	"encoding/json"
+
 	"github.com/leaktk/scanner/pkg/logger"
 )
 
@@ -69,3 +71,13 @@ type (
 		Email string `json:"email" toml:"email" yaml:"email"`
 	}
 )
+
+// String renders a response structure to the JSON format
+func (r *Response) String() string {
+	out, err := json.Marshal(r)
+	if err != nil {
+		logger.Error("could not marshal response: error=%q", err)
+	}
+
+	return string(out)
+}

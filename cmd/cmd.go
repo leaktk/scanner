@@ -191,14 +191,12 @@ func readLine(reader *bufio.Reader) ([]byte, error) {
 func runListen(cmd *cobra.Command, args []string) {
 	var wg sync.WaitGroup
 
-	formatter, _ := response.NewFormatter(cfg.Formatter)
-
 	stdinReader := bufio.NewReader(os.Stdin)
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
 	go leakScanner.Recv(func(response *response.Response) {
-		fmt.Println(formatter.Format(response))
+		fmt.Println(response)
 		wg.Done()
 	})
 
