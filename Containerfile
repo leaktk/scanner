@@ -1,3 +1,3 @@
 FROM scratch
-COPY scanner /usr/local/bin/scanner
-ENTRYPOINT ["/usr/local/bin/scanner"]
+COPY leaktk-scanner /usr/local/bin/leaktk-scanner
+ENTRYPOINT ["/usr/local/bin/leaktk-scanner"]
