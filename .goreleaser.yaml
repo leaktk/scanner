@@ -17,8 +17,8 @@ builds:
 archives:
   - formats: tar.xz
     name_template: >-
-      {{ .ProjectName }}-
-      {{ .Version }}-
+      leaktk-{{ .ProjectName }}-
+      {{- .Version }}-
       {{- .Os }}-
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
