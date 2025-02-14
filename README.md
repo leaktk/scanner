@@ -558,12 +558,8 @@ so not all images will have the information.
 ## TODO
 
 1. Support local scans
-1. Explore [base64 support](https://github.com/gitleaks/gitleaks/issues/807) (i.e. decoding it when spotted and scanning the contents)
-1. Confirm full Mac support
 1. Start integrating this into a pre-commit hooks project
 1. Add `leaktk-scanner sanitize` to redact things from stdin for use in pipelines
 1. Figure out a way to apply different rules in different contexts (internal/external repos, etc)
 1. Support `.github/secret_scanning.yml` files
-1. Have options for URL and JSONData to allow them to recursively pull other URLs when they see them (e.g. `follow_urls bool`, `depth uint16`) and make sure it can't loop
 1. Implement scanning with Yara
-1. Investigate a custom log handler to consume the logs from the embedded gitleaks. Log to DEBUG.
