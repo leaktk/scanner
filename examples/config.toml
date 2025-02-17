@@ -9,6 +9,10 @@
 # Valid values: "CSV", "HUMAN", "JSON", "TOML", "YAML"
 format = "JSON"
 
+# Length to truncate commonly long results to lines to, -1 disables.
+# This only applies to format = "HUMAN"
+truncate = -1
+
 [logger]
 
 # Valid Values: "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"

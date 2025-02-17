@@ -26,7 +26,8 @@ type (
 
 	// Formatter provides a general output format config
 	Formatter struct {
-		Format string `toml:"format"`
+		Format   string `toml:"format"`
+		Truncate int    `toml:"truncate"`
 	}
 
 	// Logger provides general logger config
@@ -177,7 +178,8 @@ func stringToBool(value string, defaultValue bool) bool {
 func DefaultConfig() *Config {
 	return &Config{
 		Formatter: Formatter{
-			Format: "JSON",
+			Format:   "JSON",
+			Truncate: -1,
 		},
 		Logger: Logger{
 			Level: "INFO",
