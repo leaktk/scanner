@@ -290,18 +290,13 @@ func configure(cmd *cobra.Command, args []string) error {
 	// If a format is specified on the command line update the application config.
 	format, err := cmd.Flags().GetString("format")
 	if err == nil && format != "" {
-		cfg.Formatter.Format = format
+		cfg.Formatter = config.Formatter{Format: format}
 	}
 
 	// Check if the OutputFormat is valid
 	_, err = response.GetOutputFormat(cfg.Formatter.Format)
 	if err != nil {
 		logger.Fatal("%v", err.Error())
-	}
-
-	truncate, err := cmd.Flags().GetInt("truncate")
-	if err == nil {
-		cfg.Formatter.Truncate = truncate
 	}
 
 	return err
@@ -320,7 +315,6 @@ func rootCommand() *cobra.Command {
 	flags := rootCommand.PersistentFlags()
 	flags.StringP("config", "c", "", "config file path")
 	flags.StringP("format", "f", "", "output format [json(default), human, csv, toml, yaml]")
-	flags.IntP("truncate", "t", -1, "Specify length to truncate result secret, matches and context to, -1 no truncation")
 
 	rootCommand.AddCommand(loginCommand())
 	rootCommand.AddCommand(logoutCommand())

@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -32,8 +31,7 @@ const (
 )
 
 type Formatter struct {
-	format   OutputFormat
-	truncate int
+	format OutputFormat
 }
 
 // NewFormatter creates new formatter
@@ -42,7 +40,7 @@ func NewFormatter(cfg config.Formatter) (*Formatter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Formatter{format: format, truncate: cfg.Truncate}, nil
+	return &Formatter{format: format}, nil
 }
 
 // GetOutputFormat takes the string and returns OutputFormat or an error
@@ -69,20 +67,20 @@ func (f *Formatter) Format(r *Response) string {
 	var output string
 	switch f.format {
 	case JSON:
-		output = f.formatJson(r)
+		output = formatJson(r)
 	case HUMAN:
-		output = f.formatHuman(r)
+		output = formatHuman(r)
 	case TOML:
-		output = f.formatToml(r)
+		output = formatToml(r)
 	case YAML:
-		output = f.formatYaml(r)
+		output = formatYaml(r)
 	case CSV:
-		output = f.formatCsv(r)
+		output = formatCsv(r)
 	}
 	return output
 }
 
-func (f *Formatter) formatJson(r *Response) string {
+func formatJson(r *Response) string {
 	out, err := json.Marshal(r)
 	if err != nil {
 		logger.Error("could not marshal response: error=%q", err)
@@ -90,28 +88,25 @@ func (f *Formatter) formatJson(r *Response) string {
 	return string(out)
 }
 
-func (f *Formatter) formatHuman(r *Response) string {
-	var out strings.Builder
+func formatHuman(r *Response) string {
 	headers := flattenedResponseFields()
-	truncated := []int{}
-	if f.truncate > 0 {
-		truncated = truncatableResponseFields()
+	for i, header := range headers {
+		// Append a : to each label. Do it once here instead of every loop
+		headers[i] = header + ":"
 	}
 	flat := flattenedResponse(r, false)
+	var out []string
 	for _, response := range flat {
 		for i, entry := range response {
-			if slices.Contains(truncated, i) && len(entry) > f.truncate {
-				_, _ = fmt.Fprintf(&out, "%-26s: %s...\n", headers[i], entry[:f.truncate])
-			} else {
-				_, _ = fmt.Fprintf(&out, "%-26s: %s\n", headers[i], entry)
-			}
+			// Specifies width of 26 characters for labels
+			out = append(out, fmt.Sprintf("%-26s%s", headers[i], entry))
 		}
-		out.WriteRune('\n')
+		out = append(out, "\n")
 	}
-	return out.String()
+	return strings.Join(out, "\n")
 }
 
-func (f *Formatter) formatToml(r *Response) string {
+func formatToml(r *Response) string {
 	var buf bytes.Buffer
 
 	if err := toml.NewEncoder(&buf).Encode(r); err != nil {
@@ -120,7 +115,7 @@ func (f *Formatter) formatToml(r *Response) string {
 	return buf.String()
 }
 
-func (f *Formatter) formatYaml(r *Response) string {
+func formatYaml(r *Response) string {
 	out, err := yaml.Marshal(r)
 	if err != nil {
 		logger.Error("could not marshal response: error=%q", err)
@@ -128,7 +123,7 @@ func (f *Formatter) formatYaml(r *Response) string {
 	return string(out)
 }
 
-func (f *Formatter) formatCsv(r *Response) string {
+func formatCsv(r *Response) string {
 	headers := flattenedResponseFields()
 
 	var buf bytes.Buffer
@@ -153,19 +148,6 @@ func flattenedResponseFields() []string {
 		"RESULT.CONTEXT", "RESULT.ENTROPY", "RESULT.DATE", "RESULT.NOTES", "RESULT.RULE.ID", "RESULT.RULE.DESCRIPTION",
 		"RESULT.RULE.TAGS", "RESULT.CONTACT", "RESULT.LOCATION.VERSION", "RESULT.LOCATION.PATH",
 		"RESULT.LOCATION.RANGE"}
-}
-
-// flattenedResponseFields provides a list containing the field labels for a flattened response
-func truncatableResponseFields() []int {
-	truncatableFields := []string{"RESULT.SECRET", "RESULT.MATCH", "RESULT.CONTEXT"}
-	var fields []int
-
-	for i, entry := range flattenedResponseFields() {
-		if slices.Contains(truncatableFields, entry) {
-			fields = append(fields, i)
-		}
-	}
-	return fields
 }
 
 // flattenedResponse takes the response and returns a 2d list of responses in flattenedResponseFields order
