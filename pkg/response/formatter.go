@@ -90,6 +90,8 @@ func formatJson(r *Response) string {
 
 func formatHuman(r *Response) string {
 	headers := flattenedResponseFields()
+
+	skipContext := 6 // Skip the RESULT.CONTEXT
 	for i, header := range headers {
 		// Append a : to each label. Do it once here instead of every loop
 		headers[i] = header + ":"
@@ -98,6 +100,9 @@ func formatHuman(r *Response) string {
 	var out []string
 	for _, response := range flat {
 		for i, entry := range response {
+			if i == skipContext {
+				continue
+			}
 			// Specifies width of 26 characters for labels
 			out = append(out, fmt.Sprintf("%-26s%s", headers[i], entry))
 		}
