@@ -1,0 +1,49 @@
+name: Build, sign and upload release artifacts
+
+env:
+  GO_VERSION: '1.22'
+  GO111MODULE: on
+
+on:
+  push:
+    tags:
+      - "v[0-1].[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+jobs:
+  tests:
+    uses: ./.github/workflows/testing.yml
+
+  goreleaser:
+    name: Create release artifacts
+    needs: [ tests ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # pin@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # pin@v3
+        with:
+          registry: quay.io
+          username: ${{ vars.QUAY_USER }}
+          password: ${{ secrets.QUAY_TOKEN }}
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # pin@v3
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@9ed2f89a662bf1735a48bc8557fd212fa902bebf # pin@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

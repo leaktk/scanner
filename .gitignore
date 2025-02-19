@@ -15,3 +15,5 @@ leaktk-scanner
 
 # Go workspace file
 go.work
+# Added by goreleaser init:
+dist/
