@@ -1,4 +1,4 @@
-VERSION := 0.0.1
+VERSION := $(shell ./hack/version)
 COMMIT := $(shell git rev-parse HEAD)
 BUILD_META :=
 BUILD_META += -X=github.com/leaktk/scanner/cmd.Version=$(VERSION)
