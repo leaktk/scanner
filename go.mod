@@ -17,6 +17,8 @@ require (
 	github.com/zricethezav/gitleaks/v8 v8.24.0
 )
 
+replace github.com/zricethezav/gitleaks/v8 => github.com/leaktk/gitleaks/v8 v8.24.1-0.20250221203148-08474379a4e6
+
 require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/BobuSumisu/aho-corasick v1.0.3 // indirect
