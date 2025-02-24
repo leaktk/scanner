@@ -64,20 +64,20 @@ func GetOutputFormat(format string) (OutputFormat, error) {
 
 // Format renders a response structure to the set format as a string
 func (f *Formatter) Format(r *Response) string {
-	var output string
-	switch f.format {
-	case JSON:
-		output = formatJson(r)
-	case HUMAN:
-		output = formatHuman(r)
-	case TOML:
-		output = formatToml(r)
-	case YAML:
-		output = formatYaml(r)
-	case CSV:
-		output = formatCsv(r)
-	}
-	return output
+    switch f.format {
+    case JSON:
+        return formatJson(r)
+    case HUMAN:
+        return formatHuman(r)
+    case TOML:
+        return formatToml(r)
+    case YAML:
+        return formatYaml(r)
+    case CSV:
+        return formatCsv(r)
+    default:
+        return r.String()
+    }
 }
 
 func formatJson(r *Response) string {

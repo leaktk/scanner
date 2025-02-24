@@ -91,7 +91,10 @@ func runScan(cmd *cobra.Command, args []string) {
 		logger.Fatal("could not generate scan request: error=%q", err.Error())
 	}
 
-	formatter, _ := response.NewFormatter(cfg.Formatter)
+	formatter, err := response.NewFormatter(cfg.Formatter)
+	if err != nil {
+		logger.Fatal("%v", err.Error())
+	}
 
 	var wg sync.WaitGroup
 	leakScanner := scanner.NewScanner(cfg)
