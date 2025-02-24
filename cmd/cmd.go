@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/leaktk/scanner/pkg/config"
+	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/scanner"
@@ -122,6 +123,19 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 	resource, err := flags.GetString("resource")
 	if err != nil || len(resource) == 0 {
 		return nil, errors.New("missing required field: field=\"resource\"")
+	}
+
+	if resource[0] == '@' {
+		if fs.FileExists(resource[1:]) {
+			data, err := os.ReadFile(resource[1:])
+			if err != nil {
+				return nil, fmt.Errorf("could not read resource: path=%q error=%q", resource[1:], err)
+			}
+
+			resource = string(data)
+		} else {
+			return nil, fmt.Errorf("resource path does not exist: path=%q", resource[1:])
+		}
 	}
 
 	rawOptions, err := flags.GetString("options")
