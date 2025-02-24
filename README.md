@@ -185,6 +185,20 @@ Sets the request priority. Higher priority items will be scanned first.
 }
 ```
 
+### Text
+
+Scan arbitrary strings
+
+#### Request
+
+```json
+{
+  "id": "OBZMFe4gBnx",
+  "kind": "Text",
+  "resource": "-----BEGIN PRIVATE KEY-----c5602d28d0f21422dfc7b572b17e6b138c1b49fd7f477d4c5c961e0756f1ff70-----END PRIVATE KEY-----"
+}
+```
+
 ### JSONData
 
 This allows you to scan various JSON structures for secrets.
