@@ -212,6 +212,7 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, err
 		switch scanResource.(type) {
 		case *resource.GitRepo:
 			notes["message"] = finding.Message
+			notes["gitleaks_fingerprint"] = finding.Fingerprint
 		}
 
 		result := &response.Result{

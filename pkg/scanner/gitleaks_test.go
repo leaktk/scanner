@@ -53,6 +53,8 @@ func TestGitleaksScan(t *testing.T) {
 		results, err := NewGitleaks(1, patterns).Scan(gitRepo)
 		assert.NoError(t, err)
 		assert.Greater(t, len(results), 0)
+		// This should at least be defined on git responses
+		assert.Contains(t, results[0].Notes["gitleaks_fingerprint"], ":test-rule:")
 		assert.Equal(t, results[0].Rule.ID, "test-rule")
 		assert.Equal(t, strings.ToLower(results[0].Secret), "fake")
 	})
