@@ -92,12 +92,17 @@ func runScan(cmd *cobra.Command, args []string) {
 		logger.Fatal("could not generate scan request: error=%q", err.Error())
 	}
 
+	formatter, err := response.NewFormatter(cfg.Formatter)
+	if err != nil {
+		logger.Fatal("%v", err.Error())
+	}
+
 	var wg sync.WaitGroup
 	leakScanner := scanner.NewScanner(cfg)
 
 	// Prints the output of the scanner as they come
 	go leakScanner.Recv(func(response *response.Response) {
-		fmt.Println(response)
+		fmt.Println(formatter.Format(response))
 		wg.Done()
 	})
 
@@ -294,6 +299,21 @@ func configure(cmd *cobra.Command, args []string) error {
 		if err == nil {
 			err = logger.SetLoggerLevel(cfg.Logger.Level)
 		}
+		if err != nil {
+			return err
+		}
+	}
+
+	// If a format is specified on the command line update the application config.
+	format, err := cmd.Flags().GetString("format")
+	if err == nil && format != "" {
+		cfg.Formatter = config.Formatter{Format: format}
+	}
+
+	// Check if the OutputFormat is valid
+	_, err = response.GetOutputFormat(cfg.Formatter.Format)
+	if err != nil {
+		logger.Fatal("%v", err.Error())
 	}
 
 	return err
@@ -311,6 +331,7 @@ func rootCommand() *cobra.Command {
 
 	flags := rootCommand.PersistentFlags()
 	flags.StringP("config", "c", "", "config file path")
+	flags.StringP("format", "f", "", "output format [json(default), human, csv, toml, yaml]")
 
 	rootCommand.AddCommand(loginCommand())
 	rootCommand.AddCommand(logoutCommand())
