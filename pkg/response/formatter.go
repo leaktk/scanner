@@ -89,20 +89,16 @@ func formatJson(r *Response) string {
 }
 
 func formatHuman(r *Response) string {
-	headers := flattenedResponseFields()
+	headers, responses := flattenedResponse(r)
 
-	skipContext := 6 // Skip the RESULT.CONTEXT
 	for i, header := range headers {
 		// Append a : to each label. Do it once here instead of every loop
 		headers[i] = header + ":"
 	}
-	flat := flattenedResponse(r, false)
+
 	var out []string
-	for _, response := range flat {
+	for _, response := range responses {
 		for i, entry := range response {
-			if i == skipContext {
-				continue
-			}
 			// Specifies width of 26 characters for labels
 			out = append(out, fmt.Sprintf("%-26s%s", headers[i], entry))
 		}
@@ -129,7 +125,7 @@ func formatYaml(r *Response) string {
 }
 
 func formatCsv(r *Response) string {
-	headers := flattenedResponseFields()
+	headers, responses := flattenedResponse(r)
 
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
@@ -139,7 +135,7 @@ func formatCsv(r *Response) string {
 		logger.Error("could not write response: error=%q", err)
 	}
 
-	err = writer.WriteAll(flattenedResponse(r, true))
+	err = writer.WriteAll(responses)
 	if err != nil {
 		logger.Error("could not write response: error=%q", err)
 	}
@@ -147,30 +143,20 @@ func formatCsv(r *Response) string {
 	return buf.String()
 }
 
-// flattenedResponseFields provides a list containing the field labels for a flattened response
-func flattenedResponseFields() []string {
-	return []string{"ID", "REQUEST.ID", "RESULT.ID", "RESULT.KIND", "RESULT.SECRET", "RESULT.MATCH",
-		"RESULT.CONTEXT", "RESULT.ENTROPY", "RESULT.DATE", "RESULT.NOTES", "RESULT.RULE.ID", "RESULT.RULE.DESCRIPTION",
-		"RESULT.RULE.TAGS", "RESULT.CONTACT", "RESULT.LOCATION.VERSION", "RESULT.LOCATION.PATH",
-		"RESULT.LOCATION.RANGE"}
-}
-
-// flattenedResponse takes the response and returns a 2d list of responses in flattenedResponseFields order
-func flattenedResponse(response *Response, sanitize bool) [][]string {
+// flattenedResponse takes the response and returns the responsefields and a 2d list of responses
+func flattenedResponse(response *Response) ([]string, [][]string) {
 	var flattened [][]string
 
 	for _, result := range response.Results {
-		entry := []string{
+		flattened = append(flattened, []string{
 			response.ID,
 			response.RequestID,
 			result.ID,
 			result.Kind,
 			result.Secret,
 			result.Match,
-			result.Context,
 			fmt.Sprintf("%f", result.Entropy),
 			result.Date,
-			flattenMapToString(result.Notes),
 			result.Rule.ID,
 			result.Rule.Description,
 			strings.Join(result.Rule.Tags, ", "),
@@ -179,41 +165,15 @@ func flattenedResponse(response *Response, sanitize bool) [][]string {
 			result.Location.Path,
 			fmt.Sprintf("L%dC%d-L%dC%d", result.Location.Start.Line,
 				result.Location.Start.Column, result.Location.End.Line, result.Location.End.Column),
-		}
-		if sanitize {
-			entry = sanitizeEntry(entry)
-		}
-		flattened = append(flattened, entry)
+		})
 	}
 
-	return flattened
-}
-
-// flattenMapToString creates a flat string with pairs "key: value" only single depth
-func flattenMapToString(m map[string]string) string {
-	var pairs []string
-	for k, v := range m {
-		pairs = append(pairs, fmt.Sprintf("%s: %s", k, v))
-	}
-	return strings.Join(pairs, ", ")
+	return []string{"ID", "REQUEST.ID", "RESULT.ID", "RESULT.KIND", "RESULT.SECRET", "RESULT.MATCH",
+		"RESULT.ENTROPY", "RESULT.DATE", "RESULT.RULE.ID", "RESULT.RULE.DESCRIPTION", "RESULT.RULE.TAGS",
+		"RESULT.CONTACT", "RESULT.LOCATION.VERSION", "RESULT.LOCATION.PATH", "RESULT.LOCATION.RANGE"}, flattened
 }
 
 // flattenContact creates a single string with Contact information as "Name <Email>"
 func flattenContact(contact Contact) string {
 	return fmt.Sprintf("%s <%s>", contact.Name, contact.Email)
-}
-
-// sanitizeField takes a string and makes it safe for CSV by replacing newlines and escaping quotes
-// CSV is not a great format for rich/nested data, this makes the data more consistent for the format
-func sanitizeEntry(value []string) []string {
-	var output []string
-	for _, entry := range value {
-		if strings.ContainsAny(entry, ",\n\"") {
-			entry = strings.ReplaceAll(entry, "\"", "\"\"")
-			entry = strings.ReplaceAll(entry, "\n", " ")
-			entry = fmt.Sprintf("\"%s\"", entry)
-		}
-		output = append(output, entry)
-	}
-	return output
 }
