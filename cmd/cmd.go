@@ -85,7 +85,7 @@ func logoutCommand() *cobra.Command {
 	}
 }
 
-func runScan(cmd *cobra.Command, args []string) {
+func runScan(cmd *cobra.Command, args []string) error {
 	request, err := scanCommandToRequest(cmd)
 
 	if err != nil {
@@ -95,16 +95,27 @@ func runScan(cmd *cobra.Command, args []string) {
 	var wg sync.WaitGroup
 	leakScanner := scanner.NewScanner(cfg)
 
+	// Create a channel for a result count
+	results := make(chan int)
 	// Prints the output of the scanner as they come
 	go leakScanner.Recv(func(response *response.Response) {
 		fmt.Println(response)
+		results <- len(response.Results)
+		close(results)
 		wg.Done()
 	})
 
 	wg.Add(1)
 	leakScanner.Send(request)
 
+	result := <-results
+
 	wg.Wait()
+	if result != 0 {
+		return errors.New("potential leak identified")
+	}
+
+	return nil
 }
 
 func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
@@ -175,7 +186,7 @@ func scanCommand() *cobra.Command {
 	scanCommand := &cobra.Command{
 		Use:   "scan",
 		Short: "Perform ad-hoc scans",
-		Run:   runScan,
+		RunE:  runScan,
 	}
 
 	flags := scanCommand.Flags()
@@ -242,7 +253,7 @@ func runListen(cmd *cobra.Command, args []string) {
 		leakScanner.Send(&request)
 	}
 
-	// Wait for all of the scans to complete and responses to be sent
+	// Wait for all the scans to complete and responses to be sent
 	wg.Wait()
 }
 
@@ -326,6 +337,9 @@ func Execute() {
 	if err := rootCommand().Execute(); err != nil {
 		if strings.Contains(err.Error(), "unknown flag") {
 			os.Exit(config.ExitCodeBlockingError)
+		}
+		if err.Error() == "potential leak identified" {
+			os.Exit(config.LeakExitCode)
 		}
 		logger.Fatal("%v", err.Error())
 	}
