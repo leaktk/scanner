@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/leaktk/scanner/pkg/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -75,6 +76,12 @@ func (r *GitRepo) String() string {
 // Clone the resource to the desired local location and store the path
 func (r *GitRepo) Clone(path string) error {
 	r.clonePath = path
+
+	// If we are passed a folder with a .git subfolder set it as the clonePath
+	if fs.PathExists(r.cloneURL) && fs.PathExists(filepath.Join(r.cloneURL, ".git")) {
+		r.clonePath = r.cloneURL
+		return nil
+	}
 
 	cloneArgs := []string{"clone"}
 
