@@ -184,9 +184,10 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 
 func scanCommand() *cobra.Command {
 	scanCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Perform ad-hoc scans",
-		RunE:  runScan,
+		Use:          "scan",
+		Short:        "Perform ad-hoc scans",
+		RunE:         runScan,
+		SilenceUsage: true,
 	}
 
 	flags := scanCommand.Flags()
