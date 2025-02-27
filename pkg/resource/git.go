@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/leaktk/scanner/pkg/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/leaktk/scanner/pkg/fs"
 
 	"github.com/leaktk/scanner/pkg/response"
 
@@ -42,6 +43,8 @@ type GitRepoOptions struct {
 	Proxy string `json:"proxy"`
 	// The scan priority
 	Priority int `json:"priority"`
+	// Scan staging only
+	Staged bool `json:"staged"`
 }
 
 // GitRepo provides a way to interact with a git repo
@@ -180,6 +183,11 @@ func (r *GitRepo) SetCloneTimeout(timeout time.Duration) {
 // that have versions
 func (r *GitRepo) Since() string {
 	return r.options.Since
+}
+
+// Staged returns whether to scan staged only
+func (r *GitRepo) Staged() bool {
+	return r.options.Staged
 }
 
 // ReadFile provides a way to get files out of the repo
