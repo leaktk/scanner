@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leaktk/scanner/pkg/fs"
+
 	"github.com/leaktk/scanner/pkg/response"
 
 	"github.com/leaktk/scanner/pkg/logger"
@@ -311,4 +313,22 @@ func (r *GitRepo) ScanStaged() bool {
 // ScanStaged takes priority over this.
 func (r *GitRepo) ScanUnstaged() bool {
 	return r.IsLocal() && r.options.Unstaged
+}
+
+// IsGitUrl returns true if the path starts with a valid git prefix
+// uses HasPrefix as this is faster than a more "comprehensive" regex.
+func IsGitUrl(path string) bool {
+	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "git://") {
+		return true
+	}
+	if strings.HasPrefix(path, "git@") && strings.Contains(path, ":") {
+		return true
+	}
+	return false
+}
+
+// IsGitLocal returns true if there
+func IsGitLocal(path string) bool {
+	return fs.PathExists(path) &&
+		(fs.PathExists(filepath.Join(path, ".git")) || fs.FileExists(filepath.Join(path, ".git")))
 }
