@@ -20,6 +20,7 @@ const queueSize = 1024
 
 // Scanner holds the config and state for the scanner processes
 type Scanner struct {
+	allowLocal          bool
 	backends            []Backend
 	cloneQueue          *queue.PriorityQueue[*Request]
 	cloneTimeout        time.Duration
@@ -36,6 +37,7 @@ type Scanner struct {
 // be closed when it's no longer needed.
 func NewScanner(cfg *config.Config) *Scanner {
 	scanner := &Scanner{
+		allowLocal:          cfg.Scanner.AllowLocal,
 		cloneQueue:          queue.NewPriorityQueue[*Request](queueSize),
 		cloneTimeout:        time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
 		cloneWorkers:        cfg.Scanner.CloneWorkers,
@@ -93,6 +95,20 @@ func (s *Scanner) listenForCloneRequests() {
 		request := msg.Value
 		reqResource := request.Resource
 		reqResource.IncludeLogs(s.includeResponseLogs)
+
+		if request.Resource.IsLocal() && !s.allowLocal {
+			reqResource.Error(logger.LocalScanDisabled, "local resources not allowed: request_id=%q", request.ID)
+			s.responseQueue.Send(&queue.Message[*response.Response]{
+				Priority: msg.Priority,
+				Value: &response.Response{
+					ID:        id.ID(),
+					Results:   make([]*response.Result, 0),
+					Logs:      reqResource.Logs(),
+					RequestID: request.ID,
+				},
+			})
+			return
+		}
 
 		if s.cloneTimeout > 0 {
 			logger.Debug("setting clone timeout: request_id=%q resource_id=%q timeout=%v", request.ID, reqResource.ID(), s.cloneTimeout.Seconds())

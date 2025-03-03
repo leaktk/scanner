@@ -43,6 +43,7 @@ type (
 
 	// Scanner provides scanner specific config
 	Scanner struct {
+		AllowLocal          bool     `toml:"allow_local"`
 		CloneTimeout        uint16   `toml:"clone_timeout"`
 		CloneWorkers        uint16   `toml:"clone_workers"`
 		IncludeResponseLogs bool     `toml:"include_response_logs"`
@@ -170,6 +171,7 @@ func DefaultConfig() *Config {
 			Level: "INFO",
 		},
 		Scanner: Scanner{
+			AllowLocal:          true,
 			CloneTimeout:        0,
 			CloneWorkers:        1,
 			IncludeResponseLogs: false,

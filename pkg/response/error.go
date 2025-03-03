@@ -25,7 +25,7 @@ func (e LeakTKError) String() string {
 	return fmt.Sprintf("%serror occurred, code %d (%s): %s", fatal, e.Code, errorNames[e.Code], e.Message)
 }
 
-// ErrorCode defined sthe set of error codes that can be set on a LeakTKError
+// ErrorCode defines the set of error codes that can be set on a LeakTKError
 type ErrorCode int
 
 const (
@@ -37,6 +37,8 @@ const (
 	ScanError
 	// ResourceCleanupError means we couldn't remove the resources that were cloned after a scan
 	ResourceCleanupError
+	// LocalScanDisabled means local scans are not enabled
+	LocalScanDisabled
 )
 
 var errorNames = [...]string{"NoErrorCode", "CloneError", "ScanError", "ResourceCleanupError"}
