@@ -17,6 +17,7 @@ import (
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
+	scannerResource "github.com/leaktk/scanner/pkg/resource"
 	"github.com/leaktk/scanner/pkg/response"
 	"github.com/leaktk/scanner/pkg/scanner"
 	"github.com/leaktk/scanner/version"
@@ -152,6 +153,15 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 	options := make(map[string]any)
 	if err := json.Unmarshal([]byte(rawOptions), &options); err != nil {
 		return nil, fmt.Errorf("could not parse options: error=%q", err)
+	}
+
+	// We only want to autodetect local
+	if strings.ToLower(kind) == "gitrepo" {
+		if !scannerResource.IsGitUrl(resource) {
+			if scannerResource.IsGitLocal(resource) {
+				options["local"] = true
+			}
+		}
 	}
 
 	requestData, err := json.Marshal(
