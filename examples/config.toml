@@ -4,6 +4,11 @@
 # All items in the config should have sane defaults and the
 # config is optional.
 #
+[formatter]
+
+# Valid values: "CSV", "HUMAN", "JSON", "TOML", "YAML"
+format = "JSON"
+
 [logger]
 
 # Valid Values: "ERROR", "WARN", "INFO", "DEBUG", or "TRACE"
