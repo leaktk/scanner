@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adrg/xdg v0.5.3
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/containers/image/v5 v5.34.0
+	github.com/containers/image/v5 v5.34.1
 	github.com/h2non/filetype v1.1.3
 	github.com/klauspost/compress v1.18.0
 	github.com/rs/zerolog v1.33.0
