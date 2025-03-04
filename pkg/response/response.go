@@ -9,11 +9,12 @@ import (
 // In the future we might have things like GitCommitMessage
 // GithubPullRequest, etc
 const (
+	ContainerLayerResultKind   = "ContainerLayer"
+	ContainerMetdataResultKind = "ContainerMetdata"
 	GeneralResultKind          = "General"
 	GitCommitResultKind        = "GitCommit"
 	JSONDataResultKind         = "JSONData"
-	ContainerLayerResultKind   = "ContainerLayer"
-	ContainerMetdataResultKind = "ContainerMetdata"
+	TextResultKind             = "Text"
 )
 
 type (

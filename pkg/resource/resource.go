@@ -71,6 +71,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		}
 
 		return NewJSONData(resource, &jsonDataOptions), nil
+
 	case "Files":
 		var filesOptions FilesOptions
 
@@ -82,6 +83,19 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		}
 
 		return NewFiles(resource, &filesOptions), nil
+
+	case "Text":
+		var textOptions TextOptions
+
+		if len(options) > 0 {
+			if err := json.Unmarshal(options, &textOptions); err != nil {
+				logger.Debug("TextOptions:\n%v", options)
+				return nil, fmt.Errorf("could not unmarshal TextOptions: error=%q", err)
+			}
+		}
+
+		return NewText(resource, &textOptions), nil
+
 	case "URL":
 		var urlOptions URLOptions
 
