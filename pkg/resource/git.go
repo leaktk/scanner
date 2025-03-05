@@ -72,7 +72,7 @@ func NewGitRepo(repo string, options *GitRepoOptions) *GitRepo {
 		options: options,
 	}
 
-	if gitRepo.IsLocal() {
+	if gitRepo.options.Local { // If set local, scan path in place
 		gitRepo.path = repo
 	}
 
@@ -299,8 +299,16 @@ func (r *GitRepo) Priority() int {
 }
 
 // IsLocal tells whether this is a local resource or not
+// Defaults to false
 func (r *GitRepo) IsLocal() bool {
-	return r.options.Local
+	if !r.options.Local && IsGitUrl(r.repo) { // Local not set and is a Git URI
+		return false
+	} else if r.options.Local && !IsGitUrl(r.repo) { // local set and not a Git URI
+		return true
+	} else if !r.options.Local && IsGitLocal(r.repo) { // local not set but is local
+		return true
+	}
+	return false
 }
 
 // ScanStaged tells the scanner to scan staged content in a local repo. This
