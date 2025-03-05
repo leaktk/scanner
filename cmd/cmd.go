@@ -134,7 +134,7 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 		return nil, fmt.Errorf("could not parse options: error=%q", err)
 	}
 
-	// We only want to autodetect local
+	// We only want to autodetect local - without creating a resource
 	if strings.ToLower(kind) == "gitrepo" {
 		if !scannerResource.IsGitUrl(resource) {
 			if scannerResource.IsGitLocal(resource) {
