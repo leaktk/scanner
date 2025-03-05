@@ -124,11 +124,12 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 		}
 
 		if !r.shouldFetchURL(leafNode.path) {
-			logger.Debug("not fetching URL: path=%q url=%q", leafNode.path, obj)
+			r.Debug(logger.CloneDetail, "not fetching URL: path=%q url=%q", leafNode.path, obj)
 			return nil
 		}
 
 		urlResource := NewURL(obj, &URLOptions{})
+		r.Info(logger.CloneDetail, "fetching url: url=%q", obj)
 		err := urlResource.Clone(filepath.Join(clonePath, leafNode.path))
 
 		if err != nil {
@@ -138,6 +139,7 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 			return nil
 		}
 
+		r.Info(logger.CloneDetail, "replacing url with contents: path=%q url=%q", leafNode.path, obj)
 		return r.replaceWithResource(leafNode, urlResource)
 	})
 }
