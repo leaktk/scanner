@@ -12,16 +12,29 @@ import (
 
 func TestScanCommandToRequest(t *testing.T) {
 	cmd := scanCommand()
+	args := []string{}
 
 	// Resource must be set
-	request, err := scanCommandToRequest(cmd)
+	request, err := scanCommandToRequest(cmd, args)
 	assert.Nil(t, request)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), "missing required field: field=\"resource\"")
 
+	// Can provide resource as a positional argument
+	request, err = scanCommandToRequest(cmd, []string{"https://github.com/leaktk/fake-leaks.git"})
+	assert.NoError(t, err)
+	assert.NotNil(t, request)
+
 	// Setting resource for the rest of the tests
 	_ = cmd.Flags().Set("resource", "https://github.com/leaktk/fake-leaks.git")
-	request, err = scanCommandToRequest(cmd)
+
+	// Resource has to be provided only one way, not both
+	request, err = scanCommandToRequest(cmd, []string{"https://github.com/leaktk/fake-leaks.git"})
+	assert.Error(t, err)
+	assert.Nil(t, request)
+
+	// Create a successful request
+	request, err = scanCommandToRequest(cmd, args)
 	assert.NoError(t, err)
 	assert.NotNil(t, request)
 
@@ -40,14 +53,14 @@ func TestScanCommandToRequest(t *testing.T) {
 
 	_ = cmd.Flags().Set("resource", "@"+data_path)
 	_ = cmd.Flags().Set("kind", "JSONData")
-	request, err = scanCommandToRequest(cmd)
+	request, err = scanCommandToRequest(cmd, args)
 	assert.NoError(t, err)
 	assert.Equal(t, request.Resource.Kind(), "JSONData")
 	assert.Equal(t, request.Resource.String(), "{\"some\": \"data\"}")
 
 	// If resource starts with @ and the thing is an invalid path, raise an error
 	_ = cmd.Flags().Set("resource", "@"+data_path+".invalid")
-	request, err = scanCommandToRequest(cmd)
+	request, err = scanCommandToRequest(cmd, args)
 	assert.Error(t, err)
 	assert.Nil(t, request)
 	assert.Equal(t, err.Error(), fmt.Sprintf("resource path does not exist: path=%q", data_path+".invalid"))
