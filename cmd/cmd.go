@@ -86,7 +86,7 @@ func logoutCommand() *cobra.Command {
 }
 
 func runScan(cmd *cobra.Command, args []string) {
-	request, err := scanCommandToRequest(cmd)
+	request, err := scanCommandToRequest(cmd, args)
 
 	if err != nil {
 		logger.Fatal("could not generate scan request: error=%q", err.Error())
@@ -112,7 +112,7 @@ func runScan(cmd *cobra.Command, args []string) {
 	wg.Wait()
 }
 
-func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
+func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, error) {
 	flags := cmd.Flags()
 
 	id, err := flags.GetString("id")
@@ -127,7 +127,14 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 
 	resource, err := flags.GetString("resource")
 	if err != nil || len(resource) == 0 {
-		return nil, errors.New("missing required field: field=\"resource\"")
+
+		if len(args) > 0 {
+			resource = args[0]
+		} else {
+			return nil, errors.New("missing required field: field=\"resource\"")
+		}
+	} else if len(args) > 0 {
+		return nil, errors.New("only provide resource as a positional argument or a flag but not both")
 	}
 
 	if resource[0] == '@' {
@@ -178,15 +185,17 @@ func scanCommandToRequest(cmd *cobra.Command) (*scanner.Request, error) {
 
 func scanCommand() *cobra.Command {
 	scanCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Perform ad-hoc scans",
-		Run:   runScan,
+		Use:                   "scan [flags] {-r resource|resource}",
+		DisableFlagsInUseLine: true,
+		Short:                 "Perform ad-hoc scans",
+		Args:                  cobra.MaximumNArgs(1),
+		Run:                   runScan,
 	}
 
 	flags := scanCommand.Flags()
-	flags.StringP("id", "", id.ID(), "an ID for tying responses to requests")
-	flags.StringP("kind", "k", "GitRepo", "the kind of resource being scanned")
-	flags.StringP("resource", "r", "", "what will be scanned (what goes here depends on kind)")
+	flags.StringP("id", "", id.ID(), "an ID for associating responses to requests")
+	flags.StringP("kind", "k", "GitRepo", "the kind of resource to scan")
+	flags.StringP("resource", "r", "", "the resource to scan (required)")
 	flags.StringP("options", "o", "{}", "additional request options formatted as JSON")
 
 	return scanCommand
