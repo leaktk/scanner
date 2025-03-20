@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/response"
+	"github.com/h2non/filetype"
 
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/response"
 )
 
 // Files provides a way to scan file systems
@@ -134,8 +135,29 @@ func (r *Files) Walk(fn WalkFunc) error {
 		}
 		defer file.Close()
 
-		return fn(relPath, file)
+		if r.isArchive(path, file) {
+			archive := &Archive{
+				path:   path,
+				stream: file,
+			}
+
+			return archive.Walk(fn)
+		} else {
+			return fn(relPath, file)
+		}
 	})
+}
+
+func (r *Files) isArchive(path string, file *os.File) bool {
+	buf := make([]byte, 256)
+	n, err := file.Read(buf)
+	defer file.Seek(0, 0)
+
+	if err != nil {
+		return false
+	}
+
+	return filetype.IsArchive(buf[:n])
 }
 
 // Priority returns the scan priority
