@@ -3,7 +3,7 @@ module github.com/leaktk/scanner
 go 1.22.8
 
 require (
-	github.com/BurntSushi/toml v1.4.0
+	github.com/BurntSushi/toml v1.5.0
 	github.com/adrg/xdg v0.5.3
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/containers/image/v5 v5.34.1
