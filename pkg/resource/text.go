@@ -24,6 +24,7 @@ type TextOptions struct {
 	Priority int `json:"priority"`
 }
 
+// NewText returns a configured Text resource for the scanner to scan
 func NewText(data string, options *TextOptions) *Text {
 	return &Text{
 		data:    data,
