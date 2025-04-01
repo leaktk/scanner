@@ -1,14 +1,14 @@
 package resource
 
 import (
+	"io"
 	iofs "io/fs"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/h2non/filetype"
+	"github.com/mholt/archives"
 
-	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/response"
 )
@@ -17,7 +17,7 @@ import (
 type Files struct {
 	// Provide common helper functions
 	BaseResource
-	path    string
+	fsys    *archives.DeepFS
 	options *FilesOptions
 }
 
@@ -30,7 +30,10 @@ type FilesOptions struct {
 // NewFiles returns a configured Files resource for the scanner to scan
 func NewFiles(path string, options *FilesOptions) *Files {
 	return &Files{
-		path:    filepath.Clean(path),
+		fsys: &archives.DeepFS{
+			Root:               filepath.Clean(path),
+			InnerFsysSeparator: ":",
+		},
 		options: options,
 	}
 }
@@ -42,7 +45,7 @@ func (r *Files) Kind() string {
 
 // String representation of the resource
 func (r *Files) String() string {
-	return r.path
+	return r.fsys.Root
 }
 
 // Clone the resource to the desired local location and store the path
@@ -53,7 +56,7 @@ func (r *Files) Clone(path string) error {
 
 // ClonePath returns where this repo has been cloned if cloned else ""
 func (r *Files) ClonePath() string {
-	return r.path
+	return r.fsys.Root
 }
 
 // Depth returns the depth for things that have version control
@@ -85,32 +88,25 @@ func (r *Files) Since() string {
 
 // ReadFile provides a way to access values in the JSON data
 func (r *Files) ReadFile(path string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(r.path, filepath.Clean(path)))
+	file, err := r.fsys.Open(filepath.Clean(path))
+	if err != nil {
+		return nil, err
+	}
+
+	return io.ReadAll(file)
 }
 
 // Walk traverses the JSON data structure like it's a directory tree
 func (r *Files) Walk(fn WalkFunc) error {
-	// Handle if path is a file
-	if fs.FileExists(r.path) {
-		file, err := os.Open(r.path)
-		if err != nil {
-			return err
+	return r.fsys.WalkDir(func(path string, d iofs.DirEntry, err error) error {
+		// The convention in this project is that the current dir is just an empty
+		// string
+		if path == "." {
+			path = ""
 		}
-		defer file.Close()
 
-		// path is empty because it's not in a directory
-		return fn("", file)
-	}
-
-	return filepath.WalkDir(r.path, func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			r.Error(logger.ScanError, "could not walk path: path=%q error=%q", path, err)
-			return nil
-		}
-
-		relPath, err := filepath.Rel(r.path, path)
-		if err != nil {
-			r.Error(logger.ScanError, "could generate relative path: path=%q error=%q", path, err)
 			return nil
 		}
 
@@ -124,40 +120,19 @@ func (r *Files) Walk(fn WalkFunc) error {
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {
-			r.Info(logger.ScanDetail, "skipping symlink: path=%q", relPath)
+			r.Info(logger.ScanDetail, "skipping symlink: path=%q", path)
 			return nil
 		}
 
-		file, err := os.Open(filepath.Clean(path))
+		file, err := r.fsys.Open(filepath.Clean(path))
 		if err != nil {
-			r.Error(logger.ScanError, "could not open file: path=%q error=%q", relPath, err)
+			r.Error(logger.ScanError, "could not open file: path=%q error=%q", path, err)
 			return nil
 		}
 		defer file.Close()
 
-		if r.isArchive(path, file) {
-			archive := &Archive{
-				path:   path,
-				stream: file,
-			}
-
-			return archive.Walk(fn)
-		} else {
-			return fn(relPath, file)
-		}
+		return fn(path, file)
 	})
-}
-
-func (r *Files) isArchive(path string, file *os.File) bool {
-	buf := make([]byte, 256)
-	n, err := file.Read(buf)
-	defer file.Seek(0, 0)
-
-	if err != nil {
-		return false
-	}
-
-	return filetype.IsArchive(buf[:n])
 }
 
 // Priority returns the scan priority
