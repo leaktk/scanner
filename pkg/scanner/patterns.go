@@ -158,12 +158,12 @@ func invalidConfig(cfg *gitleaksconfig.Config) bool {
 	al := &cfg.Allowlist
 
 	// Make sure something the scanner can use is set
-	return !(len(cfg.Rules) > 0 ||
-		len(al.Commits) > 0 ||
-		len(al.Description) > 0 ||
-		len(al.Paths) > 0 ||
-		len(al.Regexes) > 0 ||
-		len(al.StopWords) > 0)
+	return len(cfg.Rules) == 0 &&
+		len(al.Commits) == 0 &&
+		len(al.Description) == 0 &&
+		len(al.Paths) == 0 &&
+		len(al.Regexes) == 0 &&
+		len(al.StopWords) == 0
 }
 
 // ParseGitleaksConfig takes a gitleaks config string and returns a config object
