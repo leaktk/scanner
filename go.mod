@@ -5,20 +5,18 @@ go 1.23.0
 toolchain go1.23.7
 
 require (
-	github.com/BurntSushi/toml v1.4.0
+	github.com/BurntSushi/toml v1.5.0
 	github.com/adrg/xdg v0.5.3
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/containers/image/v5 v5.34.0
+	github.com/containers/image/v5 v5.34.3
 	github.com/h2non/filetype v1.1.3
-	github.com/klauspost/compress v1.17.11
-	github.com/rs/zerolog v1.33.0
+	github.com/klauspost/compress v1.18.0
+	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/zricethezav/gitleaks/v8 v8.24.2
 	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/zricethezav/gitleaks/v8 => github.com/leaktk/gitleaks/v8 v8.24.1-0.20250221203148-08474379a4e6
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
