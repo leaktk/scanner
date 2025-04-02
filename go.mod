@@ -2,11 +2,13 @@ module github.com/leaktk/scanner
 
 go 1.22.8
 
+toolchain go1.24.1
+
 require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/adrg/xdg v0.5.3
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/containers/image/v5 v5.34.2
+	github.com/containers/image/v5 v5.34.3
 	github.com/h2non/filetype v1.1.3
 	github.com/klauspost/compress v1.18.0
 	github.com/rs/zerolog v1.34.0
