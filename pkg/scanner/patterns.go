@@ -158,7 +158,7 @@ func invalidConfig(cfg *gitleaksconfig.Config) bool {
 	al := &cfg.Allowlist
 
 	// Make sure something the scanner can use is set
-	return !(len(cfg.Rules) > 0 ||
+	return !(len(cfg.Rules) > 0 || //nolint:staticcheck // QF1001 prefer this way
 		len(al.Commits) > 0 ||
 		len(al.Description) > 0 ||
 		len(al.Paths) > 0 ||
