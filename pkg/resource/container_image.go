@@ -14,17 +14,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
-
 	"github.com/leaktk/scanner/pkg/fs"
-
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/response"
+	"github.com/leaktk/scanner/version"
 
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/pkg/blobinfocache"
 	"github.com/containers/image/v5/types"
+	"github.com/klauspost/compress/zstd"
 )
 
 var rfc5322Regexp = regexp.MustCompile(`^(.*)\s<([^>]+)>$`)
@@ -137,7 +136,7 @@ func (r *ContainerImage) Clone(path string) error {
 // cloneRemoteResource clones a remote resource ready for scanning.
 func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, resource string) error {
 	sysCtx := &types.SystemContext{
-		DockerRegistryUserAgent: "leaktk-scanner/version@commit (os arch)",
+		DockerRegistryUserAgent: version.UserAgent(),
 	}
 
 	imgRef, err := docker.ParseReference("//" + resource)

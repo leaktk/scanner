@@ -1,8 +1,8 @@
 VERSION := $(shell ./hack/version)
 COMMIT := $(shell git rev-parse HEAD)
 BUILD_META :=
-BUILD_META += -X=github.com/leaktk/scanner/cmd.Version=$(VERSION)
-BUILD_META += -X=github.com/leaktk/scanner/cmd.Commit=$(COMMIT)
+BUILD_META += -X=github.com/leaktk/scanner/version.Version=$(VERSION)
+BUILD_META += -X=github.com/leaktk/scanner/version.Commit=$(COMMIT)
 PREFIX ?= /usr
 MODULE := $(shell grep '^module' go.mod | awk '{print $$2}')
 

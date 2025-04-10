@@ -1,4 +1,4 @@
-package cmd
+package version
 
 import (
 	"fmt"
@@ -33,4 +33,8 @@ func shortVersion() string {
 		return Version
 	}
 	return "unknown"
+}
+
+func UserAgent() string {
+	return globalUserAgent
 }
