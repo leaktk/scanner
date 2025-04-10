@@ -136,7 +136,9 @@ func (r *ContainerImage) Clone(path string) error {
 
 // cloneRemoteResource clones a remote resource ready for scanning.
 func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, resource string) error {
-	sysCtx := &types.SystemContext{}
+	sysCtx := &types.SystemContext{
+		DockerRegistryUserAgent: "leaktk-scanner/version@commit (os arch)",
+	}
 
 	imgRef, err := docker.ParseReference("//" + resource)
 	if err != nil {
