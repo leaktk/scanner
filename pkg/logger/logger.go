@@ -8,15 +8,15 @@ import (
 
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
+	glog "github.com/zricethezav/gitleaks/v8/logging"
 )
 
 func init() {
-	// Disable logging by default for gitleaks to let this set the log level
-	// instead
-	zerolog.SetGlobalLevel(zerolog.Disabled)
-
+	// Disable logging by default to make sure that gitleaks can't produce logs
+	// without being specifically configured
+	glog.Logger.Level(zerolog.Disabled)
 	// Provide a custom handler to map to this logging framework
-	zlog.Logger = zlog.Output(zerologMapper{})
+	glog.Logger = zlog.Output(zerologMapper{})
 }
 
 // zerologMapper helps translate logs from subsystems that use zerolog
@@ -189,19 +189,19 @@ func SetLoggerLevel(levelName string) error {
 	switch levelName {
 	case "DEBUG":
 		currentLogLevel = DEBUG
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		glog.Logger.Level(zerolog.DebugLevel)
 	case "INFO":
 		currentLogLevel = INFO
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		glog.Logger.Level(zerolog.InfoLevel)
 	case "WARNING":
 		currentLogLevel = WARNING
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+		glog.Logger.Level(zerolog.WarnLevel)
 	case "ERROR":
 		currentLogLevel = ERROR
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+		glog.Logger.Level(zerolog.ErrorLevel)
 	case "CRITICAL":
 		currentLogLevel = CRITICAL
-		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+		glog.Logger.Level(zerolog.FatalLevel)
 	default:
 		return fmt.Errorf("invalid log level: level=%q", levelName)
 	}

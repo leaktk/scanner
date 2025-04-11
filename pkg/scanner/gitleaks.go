@@ -133,8 +133,6 @@ func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo)
 
 // walkScan is the default way to scan most resources
 func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Resource) ([]report.Finding, error) {
-	var findings []report.Finding
-
 	err := scanResource.Walk(func(path string, reader io.Reader) error {
 		// Source: https://github.com/gitleaks/gitleaks/blob/master/detect/directory.go
 		buf := make([]byte, chunkSize)
@@ -174,14 +172,14 @@ func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Res
 				// need to add 1 since line counting starts at 1
 				finding.StartLine += (totalLines - linesInChunk) + 1
 				finding.EndLine += (totalLines - linesInChunk) + 1
-				findings = append(findings, finding)
+				detector.AddFinding(finding)
 			}
 		}
 
 		return nil
 	})
 
-	return findings, err
+	return detector.Findings(), err
 }
 
 // Scan does the gitleaks scan on the resource
