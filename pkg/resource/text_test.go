@@ -14,10 +14,10 @@ func TestText(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("ReadFile", func(t *testing.T) {
-		_, err := text.ReadFile("anything")
+		value, err := text.ReadFile("anything")
 		assert.Error(t, err)
 
-		value, err := text.ReadFile("")
+		value, err = text.ReadFile("")
 		assert.NoError(t, err)
 		assert.Equal(t, string(value), data)
 	})
