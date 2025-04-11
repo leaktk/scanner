@@ -23,6 +23,8 @@ const (
 	chunkSize = 1024 * 1024 // 1 MiB
 )
 
+var defaultRemote *detect.RemoteInfo = &detect.RemoteInfo{}
+
 // Gitleaks wraps gitleaks as a scanner backend
 type Gitleaks struct {
 	maxDecodeDepth uint16
@@ -126,7 +128,7 @@ func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo)
 		return nil, err
 	}
 
-	return detector.DetectGit(gitCmd)
+	return detector.DetectGit(gitCmd, defaultRemote)
 }
 
 // walkScan is the default way to scan most resources
