@@ -14,11 +14,9 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/zricethezav/gitleaks/v8 v8.24.2
+	github.com/zricethezav/gitleaks/v8 v8.24.3
 	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/zricethezav/gitleaks/v8 => github.com/leaktk/gitleaks/v8 v8.24.2-0.20250402205038-e4cae2f49374
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
