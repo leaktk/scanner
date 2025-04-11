@@ -22,7 +22,7 @@ func TestURL(t *testing.T) {
 			w.Header().Add("Content-Type", "application/json")
 			content = "{\"data\": \"json-data\"}"
 		default:
-			t.Errorf("invalid URL path: path=%q", r.URL.Path)
+			t.Errorf("invalid URL path path=%q", r.URL.Path)
 		}
 
 		w.WriteHeader(http.StatusOK)

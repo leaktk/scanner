@@ -31,7 +31,7 @@ func (m zerologMapper) Write(data []byte) (int, error) {
 	}
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		Error("could not decode zerolog event: error=%q", err)
+		Error("could not decode zerolog event: %w", err)
 		return 0, nil
 	}
 
@@ -178,7 +178,7 @@ func SetLoggerFormat(logFormat LogFormat) error {
 	case HUMAN:
 		currentLogFormat = HUMAN
 	default:
-		return fmt.Errorf("invalid log format: log_format=%v", logFormat)
+		return fmt.Errorf("invalid log format log_format=%v", logFormat)
 	}
 
 	return nil
@@ -203,7 +203,7 @@ func SetLoggerLevel(levelName string) error {
 		currentLogLevel = CRITICAL
 		glog.Logger.Level(zerolog.FatalLevel)
 	default:
-		return fmt.Errorf("invalid log level: level=%q", levelName)
+		return fmt.Errorf("invalid log level level=%v", levelName)
 	}
 
 	return nil

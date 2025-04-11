@@ -112,11 +112,11 @@ func setMissingValues(cfg *Config) *Config {
 
 func loadPatternServerAuthTokenFromFile(path string) string {
 	path = filepath.Clean(path)
-	logger.Debug("loading pattern-server-auth-token: path=%q", path)
+	logger.Debug("loading pattern-server-auth-token path=%q", path)
 	authTokenBytes, err := os.ReadFile(path)
 
 	if err != nil {
-		logger.Fatal("could not load pattern server auth token: error=%q", err)
+		logger.Fatal("could not load pattern server auth token: %w", err)
 	}
 
 	return strings.TrimSpace(string(authTokenBytes))
@@ -196,7 +196,7 @@ func DefaultConfig() *Config {
 // custom values pulled in from the config file
 func LoadConfigFromFile(path string) (*Config, error) {
 	path = filepath.Clean(path)
-	logger.Debug("loading config: path=%q", path)
+	logger.Debug("loading config path=%q", path)
 	cfg := DefaultConfig()
 	_, err := toml.DecodeFile(path, cfg)
 
@@ -219,7 +219,7 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 	}
 
 	if len(path) > 0 {
-		logger.Debug("loading config: path=%q", path)
+		logger.Debug("loading config path=%q", path)
 	} else {
 		logger.Debug("using default config")
 	}
@@ -241,7 +241,7 @@ func LocateAndLoadConfig(path string) (*Config, error) {
 func SavePatternServerAuthToken(authToken string) error {
 	if !fs.PathExists(localConfigDir) {
 		if err := os.MkdirAll(localConfigDir, 0700); err != nil {
-			return fmt.Errorf("could not create dir: path=%q", localConfigDir)
+			return fmt.Errorf("could not create dir path=%q", localConfigDir)
 		}
 	}
 

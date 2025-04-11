@@ -77,7 +77,7 @@ func (r *JSONData) Clone(path string) error {
 	// Load the raw json into the data variable
 	if err = json.Unmarshal([]byte(r.raw), &r.data); err != nil {
 		r.Debug(logger.ScanDetail, "JSONData:\n%v", r.raw)
-		return fmt.Errorf("could not unmarshal JSONData: error=%q", err)
+		return fmt.Errorf("could not unmarshal JSONData: %w", err)
 	}
 
 	// Support dropping specific files in the "repo" to configure scanner backends
@@ -124,22 +124,22 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 		}
 
 		if !r.shouldFetchURL(leafNode.path) {
-			r.Debug(logger.CloneDetail, "not fetching URL: path=%q url=%q", leafNode.path, obj)
+			r.Debug(logger.CloneDetail, "not fetching URL path=%q url=%q", leafNode.path, obj)
 			return nil
 		}
 
 		urlResource := NewURL(obj, &URLOptions{})
-		r.Info(logger.CloneDetail, "fetching url: url=%q", obj)
+		r.Info(logger.CloneDetail, "fetching url url=%q", obj)
 		err := urlResource.Clone(filepath.Join(clonePath, leafNode.path))
 
 		if err != nil {
 			// Not being able to retrieve a URL found inside JSONData is not a fatal error. Logging until update how
 			// we manage fatal/nonfatal errors flowing through the application.
-			r.Error(logger.CloneError, "%v", fmt.Errorf("could not fetch url: path=%q url=%q error=%q", leafNode.path, obj, err))
+			r.Error(logger.CloneError, "could not fetch url: %w path=%q url=%q", err, leafNode.path, obj)
 			return nil
 		}
 
-		r.Info(logger.CloneDetail, "replacing url with contents: path=%q url=%q", leafNode.path, obj)
+		r.Info(logger.CloneDetail, "replacing url with contents path=%q url=%q", leafNode.path, obj)
 		return r.replaceWithResource(leafNode, urlResource)
 	})
 }
@@ -188,7 +188,7 @@ func (r *JSONData) ReadFile(path string) ([]byte, error) {
 	}
 
 	// Traverse the data structure
-	doesNotExistError := fmt.Errorf("%q does not exist", path)
+	doesNotExistError := fmt.Errorf("path does not exist path=%q", path)
 	current := r.data
 	for i, component := range components {
 		switch obj := current.(type) {
@@ -196,7 +196,7 @@ func (r *JSONData) ReadFile(path string) ([]byte, error) {
 			i, err := strconv.Atoi(component)
 
 			if err != nil {
-				return []byte{}, fmt.Errorf("%q must be an integer", component)
+				return []byte{}, fmt.Errorf("component must be an integer component=%q", component)
 			}
 
 			if len(obj) <= i {
@@ -281,7 +281,7 @@ func (r *JSONData) replaceWithResource(leafNode jsonNode, resource Resource) err
 		i, err := strconv.Atoi(leafNode.key)
 
 		if err != nil {
-			return fmt.Errorf("could not set resource: path=%q error=%q", leafNode.path, err)
+			return fmt.Errorf("could not set resource: %w path=%q", err, leafNode.path)
 		}
 
 		parent[i] = resource

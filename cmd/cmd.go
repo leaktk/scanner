@@ -43,27 +43,27 @@ func runHelp(cmd *cobra.Command, args []string) {
 }
 
 func runLogin(cmd *cobra.Command, args []string) {
-	logger.Info("logging in: pattern_server=%q", cfg.Scanner.Patterns.Server.URL)
+	logger.Info("logging in pattern_server=%q", cfg.Scanner.Patterns.Server.URL)
 
 	fmt.Print("Enter auth token: ")
 
 	var authToken string
 	if _, err := fmt.Scanln(&authToken); err != nil {
-		logger.Fatal("could not login: error=%q", err)
+		logger.Fatal("could not login: %w", err)
 	}
 
 	if err := config.SavePatternServerAuthToken(authToken); err != nil {
-		logger.Fatal("could not login: error=%q", err)
+		logger.Fatal("could not login: %w", err)
 	}
 
 	logger.Info("token saved")
 }
 
 func runLogout(cmd *cobra.Command, args []string) {
-	logger.Info("logging out: pattern_server=%q", cfg.Scanner.Patterns.Server.URL)
+	logger.Info("logging out pattern_server=%q", cfg.Scanner.Patterns.Server.URL)
 
 	if err := config.RemovePatternServerAuthToken(); err != nil {
-		logger.Fatal("could not logout: error=%q", err)
+		logger.Fatal("could not logout: %w", err)
 	}
 
 	logger.Info("token removed")
@@ -89,12 +89,12 @@ func runScan(cmd *cobra.Command, args []string) {
 	request, err := scanCommandToRequest(cmd, args)
 
 	if err != nil {
-		logger.Fatal("could not generate scan request: error=%q", err.Error())
+		logger.Fatal("could not generate scan request: %w", err)
 	}
 
 	formatter, err := response.NewFormatter(cfg.Formatter)
 	if err != nil {
-		logger.Fatal("%v", err.Error())
+		logger.Fatal("%w", err)
 	}
 
 	var wg sync.WaitGroup
@@ -117,12 +117,12 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 
 	id, err := flags.GetString("id")
 	if err != nil || len(id) == 0 {
-		return nil, errors.New("missing required field: field=\"id\"")
+		return nil, errors.New("required field missing field=\"id\"")
 	}
 
 	kind, err := flags.GetString("kind")
 	if err != nil || len(kind) == 0 {
-		return nil, errors.New("missing required field: field=\"kind\"")
+		return nil, errors.New("required field missing field=\"kind\"")
 	}
 
 	resource, err := flags.GetString("resource")
@@ -131,7 +131,7 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 		if len(args) > 0 {
 			resource = args[0]
 		} else {
-			return nil, errors.New("missing required field: field=\"resource\"")
+			return nil, errors.New("required field missing field=\"resource\"")
 		}
 	} else if len(args) > 0 {
 		return nil, errors.New("only provide resource as a positional argument or a flag but not both")
@@ -141,23 +141,23 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 		if fs.FileExists(resource[1:]) {
 			data, err := os.ReadFile(resource[1:])
 			if err != nil {
-				return nil, fmt.Errorf("could not read resource: path=%q error=%q", resource[1:], err)
+				return nil, fmt.Errorf("could not read resource: %w path=%q", err, resource[1:])
 			}
 
 			resource = string(data)
 		} else {
-			return nil, fmt.Errorf("resource path does not exist: path=%q", resource[1:])
+			return nil, fmt.Errorf("resource path does not exist path=%q", resource[1:])
 		}
 	}
 
 	rawOptions, err := flags.GetString("options")
 	if err != nil {
-		return nil, fmt.Errorf("there was an issue with the options flag: error=%q", err)
+		return nil, fmt.Errorf("there was an issue with the options flag: %w", err)
 	}
 
 	options := make(map[string]any)
 	if err := json.Unmarshal([]byte(rawOptions), &options); err != nil {
-		return nil, fmt.Errorf("could not parse options: error=%q", err)
+		return nil, fmt.Errorf("could not parse options: %w", err)
 	}
 
 	requestData, err := json.Marshal(
@@ -170,14 +170,14 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not marshal requestData: error=%q", err)
+		return nil, fmt.Errorf("could not marshal requestData: %w", err)
 	}
 
 	var request scanner.Request
 
 	err = json.Unmarshal(requestData, &request)
 	if err != nil {
-		return nil, fmt.Errorf("could not unmarshal requestData: error=%q", err)
+		return nil, fmt.Errorf("could not unmarshal requestData: %w", err)
 	}
 
 	return &request, nil
@@ -235,7 +235,7 @@ func runListen(cmd *cobra.Command, args []string) {
 				break
 			}
 
-			logger.Error("error reading from stdin: error=%q", err)
+			logger.Error("error reading from stdin: %w", err)
 			continue
 		}
 
@@ -243,12 +243,12 @@ func runListen(cmd *cobra.Command, args []string) {
 		err = json.Unmarshal(line, &request)
 
 		if err != nil {
-			logger.Error("could not unmarshal request: error=%q", err)
+			logger.Error("could not unmarshal request: %w", err)
 			continue
 		}
 
 		if len(request.Resource.String()) == 0 {
-			logger.Error("no resource provided: request_id=%q", request.ID)
+			logger.Error("no resource provided request_id=%q", request.ID)
 			continue
 		}
 
@@ -322,7 +322,7 @@ func configure(cmd *cobra.Command, args []string) error {
 	// Check if the OutputFormat is valid
 	_, err = response.GetOutputFormat(cfg.Formatter.Format)
 	if err != nil {
-		logger.Fatal("%v", err.Error())
+		logger.Fatal("%w", err)
 	}
 
 	return err
@@ -357,6 +357,6 @@ func Execute() {
 		if strings.Contains(err.Error(), "unknown flag") {
 			os.Exit(config.ExitCodeBlockingError)
 		}
-		logger.Fatal("%v", err.Error())
+		logger.Fatal("%w", err)
 	}
 }

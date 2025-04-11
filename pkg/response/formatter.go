@@ -58,7 +58,7 @@ func GetOutputFormat(format string) (OutputFormat, error) {
 	case "CSV":
 		return CSV, nil
 	default:
-		return JSON, fmt.Errorf("invalid output format option: format=%q", format)
+		return JSON, fmt.Errorf("invalid output format option format=%q", format)
 	}
 }
 

@@ -446,13 +446,13 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 	// TODO: consider calling JSONData and creating Files for these instead of walking this way
 	return filepath.WalkDir(r.ClonePath(), func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
-			r.Error(logger.ScanError, "could not walk path: path=%q error=%q", path, err)
+			r.Error(logger.ScanError, "could not walk path: %w path=%q", err, path)
 			return nil
 		}
 
 		relPath, err := filepath.Rel(r.ClonePath(), path)
 		if err != nil {
-			r.Error(logger.ScanError, "could generate relative path: path=%q error=%q", path, err)
+			r.Error(logger.ScanError, "could generate relative path: %w path=%q", err, path)
 			return nil
 		}
 
@@ -466,13 +466,13 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 		}
 
 		if info.Mode()&os.ModeSymlink != 0 {
-			r.Info(logger.ScanDetail, "skipping symlink: path=%q", relPath)
+			r.Info(logger.ScanDetail, "skipping symlink path=%q", relPath)
 			return nil
 		}
 
 		file, err := os.Open(filepath.Clean(path))
 		if err != nil {
-			r.Error(logger.ScanError, "could not open file: path=%q error=%q", relPath, err)
+			r.Error(logger.ScanError, "could not open file: %w path=%q", err, relPath)
 			return nil
 		}
 		defer file.Close()
