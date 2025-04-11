@@ -8,6 +8,7 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+    - revive
   exclusions:
     generated: lax
     presets:
@@ -19,6 +20,12 @@ linters:
       - third_party$
       - builtin$
       - examples$
+
+linters-settings:
+  revive:
+    ignore-generated-header: true
+    severity: warning
+
 formatters:
   enable:
     - goimports

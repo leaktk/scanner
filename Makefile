@@ -33,10 +33,14 @@ gosec:
 	which gosec &> /dev/null || go install github.com/securego/gosec/v2/cmd/gosec@latest
 	gosec ./...
 
-.PHONY: golint
-golint:
-	which golint &> /dev/null || go install golang.org/x/lint/golint@latest
-	golint ./...
+.PHONY: lint
+lint:
+	podman run \
+		--rm -v "$(PWD):/mnt:ro" \
+		--security-opt label=disable \
+		--workdir /mnt \
+		ghcr.io/mgechev/revive:v1.3.7 \
+			-formatter stylish ./...
 
 build: format test
 	go mod tidy
@@ -47,7 +51,7 @@ format:
 	which goimports &> /dev/null || go install golang.org/x/tools/cmd/goimports@latest
 	goimports -local $(MODULE) -l -w .
 
-test: format gosec golint
+test: format gosec lint
 	go vet ./...
 	go test -race $(MODULE) ./...
 
