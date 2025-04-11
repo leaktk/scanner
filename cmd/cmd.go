@@ -150,6 +150,19 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 		}
 	}
 
+	if resource[0] == '@' {
+		if fs.FileExists(resource[1:]) {
+			data, err := os.ReadFile(resource[1:])
+			if err != nil {
+				return nil, fmt.Errorf("could not read resource: path=%q error=%q", resource[1:], err)
+			}
+
+			resource = string(data)
+		} else {
+			return nil, fmt.Errorf("resource path does not exist: path=%q", resource[1:])
+		}
+	}
+
 	rawOptions, err := flags.GetString("options")
 	if err != nil {
 		return nil, fmt.Errorf("there was an issue with the options flag: error=%q", err)
