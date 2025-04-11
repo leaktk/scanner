@@ -92,7 +92,7 @@ func (r *Text) ReadFile(path string) ([]byte, error) {
 		return []byte(r.data), nil
 	}
 
-	return []byte{}, fmt.Errorf("%q does not exist", path)
+	return []byte{}, fmt.Errorf("path does not exist path=%q", path)
 }
 
 // Walk returns the text as a single item in the "tree"

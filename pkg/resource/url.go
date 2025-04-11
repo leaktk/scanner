@@ -54,24 +54,24 @@ func (r *URL) Clone(path string) error {
 
 	resp, err := http.Get(r.url)
 	if err != nil {
-		return fmt.Errorf("http GET error: error=%q", err)
+		return fmt.Errorf("http GET error: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: status_code=%d", resp.StatusCode)
+		return fmt.Errorf("unexpected status code status_code=%q", resp.StatusCode)
 	}
 	defer resp.Body.Close()
 
 	if strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("could not read JSON response body: error=%q", err)
+			return fmt.Errorf("could not read JSON response body: %w", err)
 		}
 
 		// Scan as a JSONData resource
 		r.resource = NewJSONData(string(data), &JSONDataOptions{})
 	} else {
 		if err := os.MkdirAll(r.clonePath, 0700); err != nil {
-			return fmt.Errorf("could not create clone path: path=%q error=%q", r.clonePath, err)
+			return fmt.Errorf("could not create clone path: %w path=%q", err, r.clonePath)
 		}
 
 		// Use ID(r.url) to create the dataPath so that we don't have collisions
@@ -79,14 +79,14 @@ func (r *URL) Clone(path string) error {
 		dataPath := filepath.Clean(filepath.Join(r.clonePath, id.ID(r.url)))
 		dataFile, err := os.OpenFile(dataPath, os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			return fmt.Errorf("could not open data file: error=%q", err)
+			return fmt.Errorf("could not open data file: %w", err)
 		}
 		defer dataFile.Close()
 
 		// Store the file on disk for scanning
 		_, err = io.Copy(dataFile, resp.Body)
 		if err != nil {
-			return fmt.Errorf("could not copy data: error=%q", err)
+			return fmt.Errorf("could not copy data: %w", err)
 		}
 		// Scan as a Files resource
 		r.resource = NewFiles(dataPath, &FilesOptions{})

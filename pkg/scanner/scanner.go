@@ -66,7 +66,7 @@ func (s *Scanner) Recv(fn func(*response.Response)) {
 
 // Send accepts a request for scanning and puts it in the queues
 func (s *Scanner) Send(request *Request) {
-	logger.Info("queueing clone: request_id=%q resource_id=%q", request.ID, request.Resource.ID())
+	logger.Info("queueing clone request_id=%q resource_id=%q", request.ID, request.Resource.ID())
 	s.cloneQueue.Send(&queue.Message[*Request]{
 		Priority: request.Priority(),
 		Value:    request,
@@ -95,24 +95,24 @@ func (s *Scanner) listenForCloneRequests() {
 		reqResource.IncludeLogs(s.includeResponseLogs)
 
 		if s.cloneTimeout > 0 {
-			logger.Debug("setting clone timeout: request_id=%q resource_id=%q timeout=%v", request.ID, reqResource.ID(), s.cloneTimeout.Seconds())
+			logger.Debug("setting clone timeout request_id=%q resource_id=%q timeout=%q", request.ID, reqResource.ID(), int(s.cloneTimeout.Seconds()))
 			reqResource.SetCloneTimeout(s.cloneTimeout)
 		}
 
 		if s.maxScanDepth > 0 && reqResource.Depth() > s.maxScanDepth {
-			logger.Warning("reducing scan depth: request_id=%q resource_id=%q old_depth=%v new_depth=%v", request.ID, reqResource.ID(), reqResource.Depth(), s.maxScanDepth)
+			logger.Warning("reducing scan depth request_id=%q resource_id=%q old_depth=%q new_depth=%q", request.ID, reqResource.ID(), reqResource.Depth(), s.maxScanDepth)
 			reqResource.SetDepth(s.maxScanDepth)
 		}
 
 		if reqResource.ClonePath() == "" {
-			logger.Info("starting clone: request_id=%q resource_id=%q", request.ID, reqResource.ID())
+			logger.Info("starting clone request_id=%q resource_id=%q", request.ID, reqResource.ID())
 			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
-				reqResource.Critical(logger.CloneError, "clone error: request_id=%q error=%q", request.ID, err.Error())
+				reqResource.Critical(logger.CloneError, "clone error: %w request_id=%q", err, request.ID)
 			}
 		}
 
 		// Now that it's cloned send it on to the scan queue
-		logger.Info("queueing scan: request_id=%q resource_id=%q", request.ID, reqResource.ID())
+		logger.Info("queueing scan request_id=%q resource_id=%q", request.ID, reqResource.ID())
 		s.scanQueue.Send(msg)
 	})
 }
@@ -140,25 +140,24 @@ func (s *Scanner) listenForScanRequests() {
 
 		if fs.PathExists(reqResource.ClonePath()) {
 			for _, backend := range s.backends {
-				logger.Info("starting scan: request_id=%q resource_id=%q scanner_backend=%q", request.ID, reqResource.ID(), backend.Name())
+				logger.Info("starting scan request_id=%q resource_id=%q scanner_backend=%q", request.ID, reqResource.ID(), backend.Name())
 
 				backendResults, err := backend.Scan(reqResource)
 				if err != nil {
-					reqResource.Critical(logger.ScanError, "scan error: request_id=%q error=%q", request.ID, err.Error())
+					reqResource.Critical(logger.ScanError, "scan error: %w request_id=%q", err, request.ID)
 				}
 				if backendResults != nil {
 					results = append(results, backendResults...)
 				}
 			}
 			if err := s.removeResourceFiles(reqResource); err != nil {
-				reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
+				reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: %w request_id=%q", err, request.ID)
 			}
 		} else {
-			reqResource.Critical(logger.ScanError, "skipping scan due to missing clone path: request_id=%q", request.ID)
-
+			reqResource.Critical(logger.ScanError, "skipping scan due to missing clone path request_id=%q", request.ID)
 		}
 
-		logger.Info("queueing response: request_id=%q resource_id=%q", request.ID, reqResource.ID())
+		logger.Info("queueing response request_id=%q resource_id=%q", request.ID, reqResource.ID())
 		s.responseQueue.Send(&queue.Message[*response.Response]{
 			Priority: msg.Priority,
 			Value: &response.Response{

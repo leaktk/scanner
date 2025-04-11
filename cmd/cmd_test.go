@@ -18,7 +18,7 @@ func TestScanCommandToRequest(t *testing.T) {
 	request, err := scanCommandToRequest(cmd, args)
 	assert.Nil(t, request)
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "missing required field: field=\"resource\"")
+	assert.Equal(t, err.Error(), "required field missing field=\"resource\"")
 
 	// Can provide resource as a positional argument
 	request, err = scanCommandToRequest(cmd, []string{"https://github.com/leaktk/fake-leaks.git"})
@@ -63,5 +63,5 @@ func TestScanCommandToRequest(t *testing.T) {
 	request, err = scanCommandToRequest(cmd, args)
 	assert.Error(t, err)
 	assert.Nil(t, request)
-	assert.Equal(t, err.Error(), fmt.Sprintf("resource path does not exist: path=%q", data_path+".invalid"))
+	assert.Equal(t, err.Error(), fmt.Sprintf("resource path does not exist path=%q", data_path+".invalid"))
 }

@@ -42,7 +42,7 @@ func (p *Patterns) fetchGitleaksConfig() (string, error) {
 		p.config.Server.URL, "patterns", "gitleaks", p.config.Gitleaks.Version,
 	)
 
-	logger.Debug("patterns url: url=%q", url)
+	logger.Debug("patterns url url=%q", url)
 	if err != nil {
 		return "", err
 	}
@@ -104,17 +104,17 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 		p.gitleaksConfig, err = ParseGitleaksConfig(rawConfig)
 		if err != nil {
 			logger.Debug("fetched config:\n%s", rawConfig)
-			return p.gitleaksConfig, fmt.Errorf("could not parse config: error=%q", err)
+			return p.gitleaksConfig, fmt.Errorf("could not parse config: %w", err)
 		}
 
 		if err := os.MkdirAll(filepath.Dir(p.config.Gitleaks.ConfigPath), 0700); err != nil {
-			return p.gitleaksConfig, fmt.Errorf("could not create config dir: error=%q", err)
+			return p.gitleaksConfig, fmt.Errorf("could not create config dir: %w", err)
 		}
 
 		// only write the config after parsing it, that way we don't break a good
 		// existing config if the server returns an invalid response
 		if err := os.WriteFile(p.config.Gitleaks.ConfigPath, []byte(rawConfig), 0600); err != nil {
-			return p.gitleaksConfig, fmt.Errorf("could not write config: path=%q error=%q", p.config.Gitleaks.ConfigPath, err)
+			return p.gitleaksConfig, fmt.Errorf("could not write config: %w path=%q", err, p.config.Gitleaks.ConfigPath)
 		}
 		p.updateGitleaksConfigHash(sha256.Sum256([]byte(rawConfig)))
 	} else if p.gitleaksConfig == nil {
@@ -133,7 +133,7 @@ func (p *Patterns) Gitleaks() (*gitleaksconfig.Config, error) {
 		p.gitleaksConfig, err = ParseGitleaksConfig(string(rawConfig))
 		if err != nil {
 			logger.Debug("loaded config:\n%s\n", rawConfig)
-			return p.gitleaksConfig, fmt.Errorf("could not parse config: error=%q", err)
+			return p.gitleaksConfig, fmt.Errorf("could not parse config: %w", err)
 		}
 		p.updateGitleaksConfigHash(sha256.Sum256(rawConfig))
 	}
@@ -172,7 +172,7 @@ func ParseGitleaksConfig(rawConfig string) (glc *gitleaksconfig.Config, err erro
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("gitleaks config is invalid: error=%q", r)
+			err = fmt.Errorf("gitleaks config is invalid: %v", r)
 		}
 	}()
 

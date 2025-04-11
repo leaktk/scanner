@@ -36,12 +36,12 @@ func (r *Request) UnmarshalJSON(data []byte) error {
 
 	if err := json.Unmarshal(data, &temp); err != nil {
 		logger.Debug("Request:\n%v", data)
-		return fmt.Errorf("could not unmarshal Request: error=%q", err)
+		return fmt.Errorf("could not unmarshal Request: %w", err)
 	}
 
 	requestResource, err := resource.NewResource(temp.Kind, temp.Resource, temp.Options)
 	if err != nil {
-		return fmt.Errorf("could not create resource: error=%q", err)
+		return fmt.Errorf("could not create resource: %w", err)
 	}
 
 	r.ID = temp.ID

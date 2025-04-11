@@ -21,7 +21,7 @@ func ID(parts ...string) string {
 		binary.BigEndian.PutUint64(data, hash)
 	} else {
 		if _, err := rand.Read(data); err != nil {
-			logger.Fatal("could not generate random id: error=%q", err)
+			logger.Fatal("could not generate random id: %w", err)
 		}
 	}
 
