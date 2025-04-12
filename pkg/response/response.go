@@ -46,6 +46,9 @@ type (
 		// This can be things like a commit or some other version control identifier
 		Version string `json:"version" toml:"version" yaml:"version"`
 		Path    string `json:"path" toml:"path" yaml:"path"`
+		// InnerPath is set when traversing into archives. If traversing multiple
+		// archives deep, the path will be separated by resource.InnerPathSeparator
+		InnerPath string `json:"inner_path" toml:"inner_path" yaml:"inner_path"`
 		// If the start column isn't available it will be zero.
 		Start Point `json:"start" toml:"start" yaml:"start"`
 		// If the end information isn't available it will be the same as the

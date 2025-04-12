@@ -4,12 +4,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/response"
 )
+
+// PathSeparator marks when a resource has traversed into a subresource
+const PathSeparator = ":"
+
+// SplitPath splits a path against the resource.PathSeparator and returns the
+// inner and outer paths
+func SplitPath(path string) (outer, inner string) {
+	outer, inner, _ = strings.Cut(path, PathSeparator)
+	return
+}
+
+// Takes resource paths and joins them together using the PathSeparator
+func JoinPath(path ...string) string {
+	return strings.Join(path, PathSeparator)
+}
 
 // WalkFunc is the func signature for functions passed into the various
 // resource Walk methods.
