@@ -134,6 +134,8 @@ func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo)
 // walkScan is the default way to scan most resources
 func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Resource) ([]report.Finding, error) {
 	err := scanResource.Walk(func(path string, reader io.Reader) error {
+		scanResource.Debug(logger.ScanDetail, "processing %s", path)
+
 		// Source: https://github.com/gitleaks/gitleaks/blob/master/detect/directory.go
 		buf := make([]byte, chunkSize)
 		totalLines := 0
@@ -215,6 +217,8 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, err
 			notes["gitleaks_fingerprint"] = finding.Fingerprint
 		}
 
+		outerPath, innerPath := resource.SplitPath(finding.File)
+
 		result := &response.Result{
 			// Be careful changing how this is generated, this could result in
 			// duplicate alerts
@@ -250,8 +254,9 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, err
 				Tags:        finding.Tags,
 			},
 			Location: response.Location{
-				Version: finding.Commit,
-				Path:    finding.File,
+				Version:   finding.Commit,
+				Path:      outerPath,
+				InnerPath: innerPath,
 				Start: response.Point{
 					Line:   finding.StartLine,
 					Column: finding.StartColumn,

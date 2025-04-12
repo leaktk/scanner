@@ -30,10 +30,8 @@ type FilesOptions struct {
 
 // NewFiles returns a configured Files resource for the scanner to scan
 func NewFiles(root string, options *FilesOptions) *Files {
-	root = filepath.Clean(root)
-
 	return &Files{
-		fs:      &archives.DeepFS{Root: root},
+		fs:      &archives.DeepFS{Root: filepath.Clean(root)},
 		root:    root,
 		options: options,
 	}
@@ -136,7 +134,7 @@ func (r *Files) Walk(fn WalkFunc) error {
 		// Let the calling code know if we've entered into a sub resource
 		if dfs, ok := r.fs.(*archives.DeepFS); ok {
 			if outer, inner := dfs.SplitPath(path); len(inner) != 0 {
-				path = outer + ":" + inner
+				path = JoinPath(outer, inner)
 			}
 		}
 
