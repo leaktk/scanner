@@ -156,7 +156,7 @@ func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Res
 				return nil
 			}
 			if mimetype.MIME.Type == "application" {
-				logger.Warning("skipping binary file: path=%q", path)
+				logger.Warning("skipping binary file: path=%q type=%q", path, mimetype.MIME.Value)
 				return nil // skip binary files
 			}
 
