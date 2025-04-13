@@ -77,7 +77,7 @@ type (
 func (r *Response) String() string {
 	out, err := json.Marshal(r)
 	if err != nil {
-		logger.Error("could not marshal response: error=%q", err)
+		logger.Error("could not marshal response: %w", err)
 	}
 
 	return string(out)

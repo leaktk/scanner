@@ -54,7 +54,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		if len(options) > 0 {
 			if err := json.Unmarshal(options, &gitRepoOptions); err != nil {
 				logger.Debug("GitOptions:\n%v", options)
-				return nil, fmt.Errorf("could not unmarshal GitOptions: error=%q", err)
+				return nil, fmt.Errorf("could not unmarshal GitOptions: %w", err)
 			}
 		}
 
@@ -66,7 +66,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		if len(options) > 0 {
 			if err := json.Unmarshal(options, &jsonDataOptions); err != nil {
 				logger.Debug("JSONDataOptions:\n%v", options)
-				return nil, fmt.Errorf("could not unmarshal JSONDataOptions: error=%q", err)
+				return nil, fmt.Errorf("could not unmarshal JSONDataOptions: %w", err)
 			}
 		}
 
@@ -78,7 +78,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		if len(options) > 0 {
 			if err := json.Unmarshal(options, &filesOptions); err != nil {
 				logger.Debug("FilesOptions:\n%v", options)
-				return nil, fmt.Errorf("could not unmarshal FilesOptions: error=%q", err)
+				return nil, fmt.Errorf("could not unmarshal FilesOptions: %w", err)
 			}
 		}
 
@@ -90,7 +90,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		if len(options) > 0 {
 			if err := json.Unmarshal(options, &textOptions); err != nil {
 				logger.Debug("TextOptions:\n%v", options)
-				return nil, fmt.Errorf("could not unmarshal TextOptions: error=%q", err)
+				return nil, fmt.Errorf("could not unmarshal TextOptions: %w", err)
 			}
 		}
 
@@ -102,7 +102,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		if len(options) > 0 {
 			if err := json.Unmarshal(options, &urlOptions); err != nil {
 				logger.Debug("URLOptions:\n%v", options)
-				return nil, fmt.Errorf("could not unmarshal URLOptions: error=%q", err)
+				return nil, fmt.Errorf("could not unmarshal URLOptions: %w", err)
 			}
 		}
 
@@ -113,13 +113,24 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		if len(options) > 0 {
 			if err := json.Unmarshal(options, &containerOptions); err != nil {
 				logger.Debug("ContainerImageOptions:\n%v", options)
-				return nil, fmt.Errorf("could not unmarshal ContainerImageOptions: error=%q", err)
+				return nil, fmt.Errorf("could not unmarshal ContainerImageOptions: %w", err)
 			}
 		}
 
 		return NewContainerImage(resource, &containerOptions), nil
+	case "GCS":
+		var gcsOptions GCSOptions
+
+		if len(options) > 0 {
+			if err := json.Unmarshal(options, &gcsOptions); err != nil {
+				logger.Debug("GCSOptions:\n%v", options)
+				return nil, fmt.Errorf("could not unmarshal GCSOptions: %w", err)
+			}
+		}
+
+		return NewGCS(resource, &gcsOptions), nil
 	default:
-		return nil, fmt.Errorf("unsupported kind: kind=%q", kind)
+		return nil, fmt.Errorf("unsupported kind: %s", kind)
 	}
 }
 
@@ -147,7 +158,7 @@ func (r *BaseResource) Logs() []logger.Entry {
 // Critical forwards to the logger and adds to the resource logs used for critical errors that interrupt
 // the scanner flow.
 func (r *BaseResource) Critical(code logger.LogCode, msg string, args ...any) {
-	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	resourceMsg := fmt.Sprintf("%s resource_id=%q", msg, r.id)
 	if entry := logger.Critical(resourceMsg, args...); entry != nil {
 		entry.Message = fmt.Errorf(msg, args...).Error()
 		entry.Code = code.String()
@@ -157,7 +168,7 @@ func (r *BaseResource) Critical(code logger.LogCode, msg string, args ...any) {
 
 // Debug forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Debug(code logger.LogCode, msg string, args ...any) {
-	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	resourceMsg := fmt.Sprintf("%s resource_id=%q", msg, r.id)
 	if entry := logger.Debug(resourceMsg, args...); entry != nil {
 		if r.includeLogs {
 			entry.Message = fmt.Errorf(msg, args...).Error()
@@ -169,7 +180,7 @@ func (r *BaseResource) Debug(code logger.LogCode, msg string, args ...any) {
 
 // Error forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Error(code logger.LogCode, msg string, args ...any) {
-	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	resourceMsg := fmt.Sprintf("%s resource_id=%q", msg, r.id)
 	if entry := logger.Error(resourceMsg, args...); entry != nil {
 		if r.includeLogs {
 			entry.Message = fmt.Errorf(msg, args...).Error()
@@ -181,7 +192,7 @@ func (r *BaseResource) Error(code logger.LogCode, msg string, args ...any) {
 
 // Warning forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Warning(code logger.LogCode, msg string, args ...any) {
-	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	resourceMsg := fmt.Sprintf("%s resource_id=%q", msg, r.id)
 	if entry := logger.Warning(resourceMsg, args...); entry != nil {
 		if r.includeLogs {
 			entry.Message = fmt.Errorf(msg, args...).Error()
@@ -193,7 +204,7 @@ func (r *BaseResource) Warning(code logger.LogCode, msg string, args ...any) {
 
 // Info forwards to the logger and adds to the resource logs based on log level
 func (r *BaseResource) Info(code logger.LogCode, msg string, args ...any) {
-	resourceMsg := fmt.Sprintf("resource_id=%s %s", r.id, msg)
+	resourceMsg := fmt.Sprintf("%s resource_id=%q", msg, r.id)
 	if entry := logger.Info(resourceMsg, args...); entry != nil {
 		if r.includeLogs {
 			r.logs = append(r.logs, *entry)

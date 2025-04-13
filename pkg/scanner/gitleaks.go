@@ -65,7 +65,7 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	gitleaksIgnorePath := filepath.Join(scanResource.ClonePath(), ".gitleaksignore")
 	if fs.FileExists(gitleaksIgnorePath) {
 		if err = detector.AddGitleaksIgnore(gitleaksIgnorePath); err != nil {
-			return nil, fmt.Errorf("could not add gitleaks ignore: error=%q", err)
+			return nil, fmt.Errorf("could not add gitleaks ignore: %w", err)
 		}
 	}
 
@@ -73,17 +73,17 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	gitleaksBaselinePath := filepath.Join(scanResource.ClonePath(), ".gitleaksbaseline")
 	if fs.FileExists(gitleaksBaselinePath) {
 		if err = detector.AddBaseline(gitleaksBaselinePath, scanResource.ClonePath()); err != nil {
-			return nil, fmt.Errorf("could not add baseline: error=%q", err)
+			return nil, fmt.Errorf("could not add baseline: %w", err)
 		}
 	}
 
 	rawClonedConfig, err := scanResource.ReadFile(".gitleaks.toml")
 	if err == nil {
-		logger.Debug("gitleaks config: resource_id=%q config=%q", scanResource.ID(), rawClonedConfig)
+		logger.Debug("gitleaks config resource_id=%q config=%q", scanResource.ID(), rawClonedConfig)
 		clonedConfig, err := ParseGitleaksConfig(string(rawClonedConfig))
 
 		if err != nil {
-			logger.Error("could not load cloned .gitleaks.toml: resource_id=%q error=%q", scanResource.ID(), err)
+			logger.Error("could not load cloned .gitleaks.toml: %w resource_id=%q", err, scanResource.ID())
 		} else {
 			logger.Debug("loading cloned .gitleaks.toml")
 			detector.Config.Allowlist.Commits = append(detector.Config.Allowlist.Commits, clonedConfig.Allowlist.Commits...)
@@ -141,7 +141,7 @@ func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Res
 		for {
 			n, err := reader.Read(buf)
 			if err != nil && err != io.EOF {
-				logger.Error("could not read file: path=%q", path)
+				logger.Error("could not read file path=%q", path)
 				return nil
 			}
 
@@ -152,11 +152,11 @@ func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Res
 			// TODO: optimization could be introduced here
 			mimetype, err := filetype.Match(buf[:n])
 			if err != nil {
-				logger.Error("could not determine file type: path=%q", path)
+				logger.Error("could not determine file type path=%q", path)
 				return nil
 			}
 			if mimetype.MIME.Type == "application" {
-				logger.Warning("skipping binary file: path=%q", path)
+				logger.Warning("skipping binary file path=%q", path)
 				return nil // skip binary files
 			}
 
@@ -201,7 +201,7 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, err
 	}
 
 	if err != nil {
-		logger.Error("gitleaks error: error=%q", err)
+		logger.Error("gitleaks error: %w", err)
 	}
 
 	results := make([]*response.Result, len(findings))

@@ -20,12 +20,12 @@ import (
 func init() {
 	// Make sure git never prompts for a password
 	if err := os.Setenv("GIT_TERMINAL_PROMPT", "0"); err != nil {
-		logger.Error("could not set GIT_TERMINAL_PROMPT=0: error=%q", err)
+		logger.Error("could not set GIT_TERMINAL_PROMPT=0: %w", err)
 	}
 
 	// Make sure replace is disabled so we can scan all of the refs
 	if err := os.Setenv("GIT_NO_REPLACE_OBJECTS", "1"); err != nil {
-		logger.Error("could not set GIT_NO_REPLACE_OBJECTS=1: error=%q", err)
+		logger.Error("could not set GIT_NO_REPLACE_OBJECTS=1: %w", err)
 	}
 }
 
@@ -87,7 +87,7 @@ func (r *GitRepo) Clone(path string) error {
 	// things like --depth and --shallow-since behave
 	if len(r.options.Branch) > 0 {
 		if !r.RemoteRefExists(r.options.Branch) {
-			return fmt.Errorf("remote ref does not exist: resource_id=%q ref=%q", r.ID(), r.options.Branch)
+			return fmt.Errorf("remote ref does not exist resource_id=%q ref=%q", r.ID(), r.options.Branch)
 		}
 
 		cloneArgs = append(cloneArgs, "--bare")
@@ -126,13 +126,13 @@ func (r *GitRepo) Clone(path string) error {
 	output, err := gitClone.CombinedOutput()
 
 	if err != nil {
-		return fmt.Errorf("git clone: resource_id=%q command=%q error=%q output=%q", r.ID(), gitClone.String(), err.Error(), output)
+		return fmt.Errorf("git clone: %w resource_id=%q command=%q output=%q", err, r.ID(), gitClone.String(), output)
 	}
 
-	r.Debug(logger.CloneDetail, "git clone: resource_id=%q command=%q output=%q", r.ID(), gitClone.String(), output)
+	r.Debug(logger.CloneDetail, "git clone resource_id=%q command=%q output=%q", r.ID(), gitClone.String(), output)
 
 	if ctx != nil && ctx.Err() == context.DeadlineExceeded {
-		return fmt.Errorf("clone timeout exceeded resource_id=%q error=%q", r.ID(), ctx.Err().Error())
+		return fmt.Errorf("clone timeout exceeded: %w resource_id=%q", ctx.Err(), r.ID())
 	}
 
 	return nil
@@ -219,7 +219,7 @@ func (r *GitRepo) Walk(fn WalkFunc) error {
 	output, err := cmd.Output()
 
 	if err != nil {
-		return fmt.Errorf("could not list files: error=%q", err)
+		return fmt.Errorf("could not list files: %w", err)
 	}
 
 	for _, path := range strings.Split(string(output), "\n") {
@@ -253,7 +253,7 @@ func (r *GitRepo) Refs() []string {
 	refs := []string{}
 
 	if err != nil {
-		r.Error(logger.CommandError, "could not list refs: error=%q", err)
+		r.Error(logger.CommandError, "could not list refs: %w", err)
 		return refs
 	}
 

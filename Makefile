@@ -38,8 +38,7 @@ golint:
 	which golint &> /dev/null || go install golang.org/x/lint/golint@latest
 	golint ./...
 
-build: format test
-	go mod tidy
+build:
 	go build $(LDFLAGS) -o leaktk-scanner
 
 format:
