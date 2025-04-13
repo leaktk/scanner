@@ -1,13 +1,13 @@
 package scanner
 
 import (
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/fs"
+	"github.com/leaktk/scanner/pkg/http"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/queue"
@@ -48,7 +48,7 @@ func NewScanner(cfg *config.Config) *Scanner {
 		backends: []Backend{
 			NewGitleaks(
 				cfg.Scanner.MaxDecodeDepth,
-				NewPatterns(&cfg.Scanner.Patterns, &http.Client{}),
+				NewPatterns(&cfg.Scanner.Patterns, http.NewClient()),
 			),
 		},
 	}
