@@ -16,8 +16,10 @@ import (
 	"github.com/leaktk/scanner/pkg/response"
 )
 
-var getClientMu sync.Mutex
-var storageClient *storage.Client
+var (
+    getClientMu sync.Mutex
+    storageClient *storage.Client
+)
 
 // newStorageClient returns a usable storage client for resources. Since
 // storage.Client is safe across multiple threads, it returns the same
