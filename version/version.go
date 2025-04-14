@@ -14,6 +14,7 @@ var Commit = ""
 // GlobalUserAgent the useragent used by our http requests
 var GlobalUserAgent = fmt.Sprintf("leaktk-scanner/%s (%s %s)", shortVersion(), runtime.GOOS, runtime.GOARCH)
 
+// PrintVersion prints the version details to stdout
 func PrintVersion() {
 	if len(Version) > 0 {
 		fmt.Printf("Version: %v\n", Version)
@@ -34,8 +35,4 @@ func shortVersion() string {
 		return Version
 	}
 	return "unknown"
-}
-
-func UserAgent() string {
-	return GlobalUserAgent
 }

@@ -136,7 +136,7 @@ func (r *ContainerImage) Clone(path string) error {
 // cloneRemoteResource clones a remote resource ready for scanning.
 func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, resource string) error {
 	sysCtx := &types.SystemContext{
-		DockerRegistryUserAgent: version.UserAgent(),
+		DockerRegistryUserAgent: version.GlobalUserAgent,
 	}
 
 	imgRef, err := docker.ParseReference("//" + resource)
