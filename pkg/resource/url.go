@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/response"
-
+	httpclient "github.com/leaktk/scanner/pkg/http"
 	"github.com/leaktk/scanner/pkg/id"
+	"github.com/leaktk/scanner/pkg/response"
 )
 
 // URL provides a to pull remote content by a URL
@@ -52,7 +52,8 @@ func (r *URL) String() string {
 func (r *URL) Clone(path string) error {
 	r.clonePath = path
 
-	resp, err := http.Get(r.url)
+	client := httpclient.NewClient()
+	resp, err := client.Get(r.url)
 	if err != nil {
 		return fmt.Errorf("http GET error: error=%q", err)
 	}
