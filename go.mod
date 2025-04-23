@@ -1,6 +1,7 @@
 module github.com/leaktk/scanner
 
-go 1.23.0
+go 1.23.3
+
 toolchain go1.24.1
 
 require (
