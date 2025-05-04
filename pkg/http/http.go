@@ -7,16 +7,10 @@ import (
 	"github.com/leaktk/scanner/version"
 )
 
-// HTTPClient provides an interface for working with Go's http client or
-// swapping it out with other types for testing
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
 var once sync.Once
 var client *http.Client
 
-// NewClient creates a http client with preferred configuration
+// NewClient creates an http client with preferred configuration
 func NewClient() *http.Client {
 	once.Do(func() {
 		client = &http.Client{
