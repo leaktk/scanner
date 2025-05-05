@@ -21,7 +21,7 @@ import (
 // Patterns acts as an abstraction for fetching different scanner patterns
 // and keeping them up to date and cached
 type Patterns struct {
-	client             HTTPClient
+	client             *http.Client
 	config             *config.Patterns
 	gitleaksConfigHash [32]byte
 	gitleaksConfig     *gitleaksconfig.Config
@@ -29,7 +29,7 @@ type Patterns struct {
 }
 
 // NewPatterns returns a configured instance of Patterns
-func NewPatterns(cfg *config.Patterns, client HTTPClient) *Patterns {
+func NewPatterns(cfg *config.Patterns, client *http.Client) *Patterns {
 	return &Patterns{
 		client: client,
 		config: cfg,
@@ -38,16 +38,16 @@ func NewPatterns(cfg *config.Patterns, client HTTPClient) *Patterns {
 
 func (p *Patterns) fetchGitleaksConfig() (string, error) {
 	logger.Info("fetching gitleaks patterns")
-	url, err := url.JoinPath(
+	patternUrl, err := url.JoinPath(
 		p.config.Server.URL, "patterns", "gitleaks", p.config.Gitleaks.Version,
 	)
 
-	logger.Debug("patterns url: url=%q", url)
+	logger.Debug("patterns url: url=%q", patternUrl)
 	if err != nil {
 		return "", err
 	}
 
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", patternUrl, nil)
 	if err != nil {
 		return "", err
 	}

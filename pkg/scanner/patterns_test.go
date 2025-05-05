@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/leaktk/scanner/pkg/config"
+	httpclient "github.com/leaktk/scanner/pkg/http"
 )
 
 const mockConfig = `
@@ -44,7 +45,7 @@ func TestPatternsFetchGitleaksConfig(t *testing.T) {
 		cfg.Scanner.Patterns.Server.URL = ts.URL
 		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
 
-		client := &http.Client{}
+		client := httpclient.NewClient()
 		p := NewPatterns(&cfg.Scanner.Patterns, client)
 
 		rawConfig, err := p.fetchGitleaksConfig()
@@ -57,7 +58,7 @@ func TestPatternsFetchGitleaksConfig(t *testing.T) {
 		cfg.Scanner.Patterns.Server.URL = "invalid-url"
 		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
 
-		client := &http.Client{}
+		client := httpclient.NewClient()
 		p := NewPatterns(&cfg.Scanner.Patterns, client)
 
 		_, err := p.fetchGitleaksConfig()
@@ -75,7 +76,7 @@ func TestPatternsFetchGitleaksConfig(t *testing.T) {
 		cfg.Scanner.Patterns.Server.URL = ts.URL
 		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
 
-		client := &http.Client{}
+		client := httpclient.NewClient()
 		p := NewPatterns(&cfg.Scanner.Patterns, client)
 
 		_, err := p.fetchGitleaksConfig()
@@ -99,7 +100,7 @@ func TestPatternsFetchGitleaksConfig(t *testing.T) {
 		cfg.Scanner.Patterns.Server.AuthToken = "test-token"
 		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
 
-		client := &http.Client{}
+		client := httpclient.NewClient()
 		p := NewPatterns(&cfg.Scanner.Patterns, client)
 
 		rawConfig, err := p.fetchGitleaksConfig()
@@ -223,7 +224,7 @@ func TestPatternsGitleaks(t *testing.T) {
 		cfg.Scanner.Patterns.Gitleaks.ConfigPath = configFilePath
 		cfg.Scanner.Patterns.Gitleaks.Version = "x.y.z"
 
-		return NewPatterns(&cfg.Scanner.Patterns, &http.Client{})
+		return NewPatterns(&cfg.Scanner.Patterns, httpclient.NewClient())
 	}
 
 	t.Run("AutofetchEnabledAndConfigExpired", func(t *testing.T) {

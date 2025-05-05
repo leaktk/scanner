@@ -11,22 +11,16 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/leaktk/scanner/pkg/response"
-
 	"github.com/spf13/cobra"
 
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/response"
 	"github.com/leaktk/scanner/pkg/scanner"
+	"github.com/leaktk/scanner/version"
 )
-
-// Version number set by the build
-var Version = ""
-
-// Commit id set by the build
-var Commit = ""
 
 var cfg *config.Config
 
@@ -269,15 +263,7 @@ func listenCommand() *cobra.Command {
 }
 
 func runVersion(cmd *cobra.Command, args []string) {
-	if len(Version) > 0 {
-		fmt.Printf("Version: %v\n", Version)
-
-		if len(Commit) > 0 {
-			fmt.Printf("Commit: %v\n", Commit)
-		}
-	} else {
-		fmt.Println("Version information not available")
-	}
+	version.PrintVersion()
 }
 
 func versionCommand() *cobra.Command {
