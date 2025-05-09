@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -22,7 +23,7 @@ import (
 // mockResource implements a dummy resource
 type mockResource struct {
 	cloneErr     error
-	clonePath    string
+	path         string
 	cloneTimeout time.Duration
 	depth        uint16
 	resource.BaseResource
@@ -37,13 +38,13 @@ func (m *mockResource) ReadFile(path string) ([]byte, error) {
 }
 
 func (m *mockResource) Clone(path string) error {
-	m.clonePath = path
-	_ = os.MkdirAll(m.clonePath, 0700)
+	m.path = path
+	_ = os.MkdirAll(m.path, 0700)
 	return m.cloneErr
 }
 
-func (m *mockResource) ClonePath() string {
-	return m.clonePath
+func (m *mockResource) Path() string {
+	return m.path
 }
 
 func (m *mockResource) Depth() uint16 {
@@ -78,6 +79,10 @@ func (m *mockResource) Priority() int {
 	return 0
 }
 
+func (m *mockResource) IsLocal() bool {
+	return false
+}
+
 // mockBackend implements a dummy scanner backend
 
 type mockBackend struct {
@@ -94,7 +99,7 @@ func (b *mockBackend) Scan(resource resource.Resource) ([]*response.Result, erro
 		&response.Result{
 			Notes: map[string]string{
 				"depth":         fmt.Sprint(resource.Depth()),
-				"clone_path":    resource.ClonePath(),
+				"clone_path":    resource.Path(),
 				"clone_timeout": fmt.Sprintf("%d", int(mockResource.cloneTimeout.Seconds())),
 			},
 		},
@@ -135,12 +140,44 @@ func TestScanner(t *testing.T) {
 		go scanner.Recv(func(response *response.Response) {
 			// Depth was reduced to the max scan depth
 			assert.Equal(t, response.Results[0].Notes["depth"], fmt.Sprint(request.Resource.Depth()))
-			assert.Equal(t, response.Results[0].Notes["clone_path"], request.Resource.ClonePath())
+			assert.Equal(t, response.Results[0].Notes["clone_path"], request.Resource.Path())
 			assert.Equal(t, response.Results[0].Notes["clone_timeout"], fmt.Sprint(cfg.Scanner.CloneTimeout))
 			wg.Done()
 		})
 
 		wg.Wait()
+	})
+
+	t.Run("LocalScanSuccess", func(t *testing.T) {
+		repoDir := t.TempDir()
+
+		err := exec.Command("git", "-C", repoDir, "init").Run()
+		assert.NoError(t, err)
+
+		request := &Request{
+			ID: "test-local-request",
+			Resource: resource.NewGitRepo(repoDir, &resource.GitRepoOptions{
+				Local: true,
+			}),
+		}
+
+		_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		var wg sync.WaitGroup
+
+		scanner := NewScanner(cfg)
+		scanner.Send(request)
+		wg.Add(1)
+
+		go scanner.Recv(func(response *response.Response) {
+			assert.Equal(t, response.RequestID, request.ID)
+			wg.Done()
+		})
+		wg.Wait()
+
+		// Now confirm the repo hasn't been deleted
+		assert.DirExists(t, repoDir)
 	})
 
 	t.Run("GitleaksDecode", func(t *testing.T) {

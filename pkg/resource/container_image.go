@@ -43,7 +43,7 @@ func extractRFC5322Mailbox(mailbox string) []string {
 type ContainerImage struct {
 	// Provide common helper functions
 	BaseResource
-	clonePath    string
+	path         string
 	cloneTimeout time.Duration
 	location     string
 	options      *ContainerImageOptions
@@ -115,14 +115,14 @@ func (r *ContainerImage) String() string {
 	return r.location
 }
 
-// Clone the resource to the desired clonePath location
+// Clone the resource to the desired path location
 func (r *ContainerImage) Clone(path string) error {
 	err := os.MkdirAll(path, 0700)
 	if err != nil {
 		return fmt.Errorf("could not create clone directory: %v", err)
 	}
 
-	r.clonePath = path
+	r.path = path
 	if r.cloneTimeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), r.cloneTimeout)
 		defer cancel()
@@ -259,7 +259,7 @@ func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, r
 }
 
 func (r *ContainerImage) writeFile(filename string, content []byte) error {
-	return os.WriteFile(filepath.Join(r.clonePath, filename), content, 0600)
+	return os.WriteFile(filepath.Join(r.path, filename), content, 0600)
 }
 
 func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
@@ -285,7 +285,7 @@ func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
 func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, path string) error {
 	// The maximum file size should be less than 10x the layer size.
 	size := layer.Size * 10
-	layerRootDir := filepath.Join(r.ClonePath(), layer.Digest.Hex())
+	layerRootDir := filepath.Join(r.Path(), layer.Digest.Hex())
 	layerDir := filepath.Join(path, layer.Digest.Hex())
 	err := os.MkdirAll(layerDir, 0700)
 	if err != nil {
@@ -346,9 +346,9 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 	return nil
 }
 
-// ClonePath returns where this repo has been cloned if cloned else ""
-func (r *ContainerImage) ClonePath() string {
-	return r.clonePath
+// Path returns where this repo has been cloned if cloned else ""
+func (r *ContainerImage) Path() string {
+	return r.path
 }
 
 // Depth returns the depth for things that have version control
@@ -439,19 +439,19 @@ func (r *ContainerImage) skipLayer(digest string) bool {
 
 // ReadFile provides a way to access values in the resource
 func (r *ContainerImage) ReadFile(path string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(r.ClonePath(), filepath.Clean(path)))
+	return os.ReadFile(filepath.Join(r.Path(), filepath.Clean(path)))
 }
 
 // Walk traverses the resource like a directory tree
 func (r *ContainerImage) Walk(fn WalkFunc) error {
 	// TODO: consider calling JSONData and creating Files for these instead of walking this way
-	return filepath.WalkDir(r.ClonePath(), func(path string, d iofs.DirEntry, err error) error {
+	return filepath.WalkDir(r.Path(), func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			r.Error(logger.ScanError, "could not walk path: path=%q error=%q", path, err)
 			return nil
 		}
 
-		relPath, err := filepath.Rel(r.ClonePath(), path)
+		relPath, err := filepath.Rel(r.Path(), path)
 		if err != nil {
 			r.Error(logger.ScanError, "could generate relative path: path=%q error=%q", path, err)
 			return nil
@@ -480,4 +480,9 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 
 		return fn(relPath, file)
 	})
+}
+
+// IsLocal returns whether this is a local resource or not
+func (r *ContainerImage) IsLocal() bool {
+	return false
 }

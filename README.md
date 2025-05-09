@@ -75,6 +75,8 @@ Notes about the formats below:
 
 #### Request
 
+Remote:
+
 ```json
 {
   "id": "85V5qL7x_bY",
@@ -85,6 +87,24 @@ Notes about the formats below:
     "depth": 1,
     "proxy": "http://squid.example.com:3128",
     "since": "2020-01-01"
+    "local": false,
+  }
+}
+```
+
+Local:
+
+```json
+{
+  "id": "db0c21127a6a849fdf8eeae65d753275f3a26a33649171fa34af458030744999",
+  "kind": "GitRepo",
+  "resource": "./fake-leaks.git",
+  "options": {
+    "branch": "main",
+    "depth": 1,
+    "local": true,
+    "unstaged": false,
+    "staged": true,
   }
 }
 ```
@@ -110,6 +130,15 @@ scan if `single_branch` is set to true.
 * Type: `uint16`
 * Default: excluded
 
+**local**
+
+Scans a local git repo instead of fetching a remote one. When listening
+for jsonl requests this must be explicitly set. When running single scans
+it's inferred by the resource.
+
+* Type: `bool`
+* Default: `false`
+
 **since**
 
 Is a date formatted `yyyy-mm-dd` used for filtering commits. Sets
@@ -117,6 +146,14 @@ Is a date formatted `yyyy-mm-dd` used for filtering commits. Sets
 
 * Type: `string`
 * Default: excluded
+
+**staged**
+
+Only scan staged changes. This takes priority over `unstaged` and is ignored
+for non-local repos.
+
+* Type: `bool`
+* Default: `false`
 
 **proxy**
 
@@ -132,6 +169,14 @@ Sets the request priority. Higher priority items will be scanned first.
 
 * Type: `int`
 * Default: `0`
+
+**unstaged**
+
+Scan current changes rather than the history. `staged` takes priority over this
+and is ignored for non-local repos.
+
+* Type: `bool`
+* Default: `false`
 
 #### Response
 

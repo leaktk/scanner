@@ -20,6 +20,7 @@ const queueSize = 1024
 
 // Scanner holds the config and state for the scanner processes
 type Scanner struct {
+	allowLocal          bool
 	backends            []Backend
 	cloneQueue          *queue.PriorityQueue[*Request]
 	cloneTimeout        time.Duration
@@ -36,6 +37,7 @@ type Scanner struct {
 // be closed when it's no longer needed.
 func NewScanner(cfg *config.Config) *Scanner {
 	scanner := &Scanner{
+		allowLocal:          cfg.Scanner.AllowLocal,
 		cloneQueue:          queue.NewPriorityQueue[*Request](queueSize),
 		cloneTimeout:        time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
 		cloneWorkers:        cfg.Scanner.CloneWorkers,
@@ -94,6 +96,20 @@ func (s *Scanner) listenForCloneRequests() {
 		reqResource := request.Resource
 		reqResource.IncludeLogs(s.includeResponseLogs)
 
+		if request.Resource.IsLocal() && !s.allowLocal {
+			reqResource.Error(logger.LocalScanDisabled, "local resources not allowed: request_id=%q", request.ID)
+			s.responseQueue.Send(&queue.Message[*response.Response]{
+				Priority: msg.Priority,
+				Value: &response.Response{
+					ID:        id.ID(),
+					Results:   make([]*response.Result, 0),
+					Logs:      reqResource.Logs(),
+					RequestID: request.ID,
+				},
+			})
+			return
+		}
+
 		if s.cloneTimeout > 0 {
 			logger.Debug("setting clone timeout: request_id=%q resource_id=%q timeout=%v", request.ID, reqResource.ID(), s.cloneTimeout.Seconds())
 			reqResource.SetCloneTimeout(s.cloneTimeout)
@@ -104,9 +120,9 @@ func (s *Scanner) listenForCloneRequests() {
 			reqResource.SetDepth(s.maxScanDepth)
 		}
 
-		if reqResource.ClonePath() == "" {
+		if reqResource.Path() == "" {
 			logger.Info("starting clone: request_id=%q resource_id=%q", request.ID, reqResource.ID())
-			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
+			if err := reqResource.Clone(s.resourcePath(reqResource)); err != nil {
 				reqResource.Critical(logger.CloneError, "clone error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		}
@@ -121,7 +137,7 @@ func (s *Scanner) resourceFilesPath(reqResource resource.Resource) string {
 	return filepath.Join(s.resourceDir, reqResource.ID())
 }
 
-func (s *Scanner) resourceClonePath(reqResource resource.Resource) string {
+func (s *Scanner) resourcePath(reqResource resource.Resource) string {
 	return filepath.Join(s.resourceFilesPath(reqResource), "clone")
 }
 
@@ -138,7 +154,7 @@ func (s *Scanner) listenForScanRequests() {
 
 		results := make([]*response.Result, 0)
 
-		if fs.PathExists(reqResource.ClonePath()) {
+		if fs.PathExists(reqResource.Path()) {
 			for _, backend := range s.backends {
 				logger.Info("starting scan: request_id=%q resource_id=%q scanner_backend=%q", request.ID, reqResource.ID(), backend.Name())
 
@@ -154,7 +170,7 @@ func (s *Scanner) listenForScanRequests() {
 				reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		} else {
-			reqResource.Critical(logger.ScanError, "skipping scan due to missing clone path: request_id=%q", request.ID)
+			reqResource.Critical(logger.ScanError, "skipping scan due to missing path: request_id=%q", request.ID)
 
 		}
 

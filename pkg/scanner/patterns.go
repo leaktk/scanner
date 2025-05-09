@@ -38,16 +38,16 @@ func NewPatterns(cfg *config.Patterns, client *http.Client) *Patterns {
 
 func (p *Patterns) fetchGitleaksConfig() (string, error) {
 	logger.Info("fetching gitleaks patterns")
-	patternUrl, err := url.JoinPath(
+	patternURL, err := url.JoinPath(
 		p.config.Server.URL, "patterns", "gitleaks", p.config.Gitleaks.Version,
 	)
 
-	logger.Debug("patterns url: url=%q", patternUrl)
+	logger.Debug("patterns url: url=%q", patternURL)
 	if err != nil {
 		return "", err
 	}
 
-	request, err := http.NewRequest("GET", patternUrl, nil)
+	request, err := http.NewRequest("GET", patternURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -155,15 +155,24 @@ func (p *Patterns) updateGitleaksConfigHash(hash [32]byte) {
 }
 
 func invalidConfig(cfg *gitleaksconfig.Config) bool {
-	al := &cfg.Allowlist
+	// If there are Rules the config is valid
+	if len(cfg.Rules) > 0 {
+		return false
+	}
 
-	// Make sure something the scanner can use is set
-	return !(len(cfg.Rules) > 0 || //nolint:staticcheck // QF1001 prefer this way
-		len(al.Commits) > 0 ||
-		len(al.Description) > 0 ||
-		len(al.Paths) > 0 ||
-		len(al.Regexes) > 0 ||
-		len(al.StopWords) > 0)
+	// If there are no Allowlists entries the config is invalid
+	if len(cfg.Allowlists) < 1 {
+		return true
+	}
+
+	// The allowlist should at least ignore something
+	for _, al := range cfg.Allowlists {
+		if len(al.Paths) == 0 && len(al.Regexes) == 0 && len(al.StopWords) == 0 && len(al.Commits) == 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ParseGitleaksConfig takes a gitleaks config string and returns a config object

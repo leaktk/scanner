@@ -11,9 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/response"
-
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/response"
 )
 
 // Configure git env
@@ -35,12 +34,18 @@ type GitRepoOptions struct {
 	Branch string `json:"branch"`
 	// Only scan this many commits (reduced if larger than the max scan depth)
 	Depth uint16 `json:"depth"`
+	// Scan an already cloned repo in-place
+	Local bool `json:"local"`
+	// Only scan staged items (implies Unstaged)
+	Staged bool `json:"staged"`
 	// Only scan since this date
 	Since string `json:"since"`
 	// Work through a proxy for this request
 	Proxy string `json:"proxy"`
 	// The scan priority
 	Priority int `json:"priority"`
+	// Scan changes rather than history
+	Unstaged bool `json:"unstaged"`
 }
 
 // GitRepo provides a way to interact with a git repo
@@ -48,18 +53,28 @@ type GitRepo struct {
 	// Provide common helper functions
 	BaseResource
 
-	clonePath    string
+	path         string
 	cloneTimeout time.Duration
-	cloneURL     string
+	repo         string
 	options      *GitRepoOptions
 }
 
 // NewGitRepo returns a configured git repo resource for the scanner to scan
-func NewGitRepo(cloneURL string, options *GitRepoOptions) *GitRepo {
-	return &GitRepo{
-		cloneURL: cloneURL,
-		options:  options,
+func NewGitRepo(repo string, options *GitRepoOptions) *GitRepo {
+	// TODO: overwrite options.Local if the resource is a file path
+	// It *might* make sense to do outside of NewGitRepo though so that
+	// git --local clones are still possible
+	gitRepo := GitRepo{
+		repo:    repo,
+		options: options,
 	}
+
+	// "repo" is the path if the repo is local
+	if gitRepo.IsLocal() {
+		gitRepo.path = repo
+	}
+
+	return &gitRepo
 }
 
 // Kind of resource (always returns GitRepo here
@@ -69,12 +84,16 @@ func (r *GitRepo) Kind() string {
 
 // String representation of the resource
 func (r *GitRepo) String() string {
-	return r.cloneURL
+	return r.repo
 }
 
 // Clone the resource to the desired local location and store the path
 func (r *GitRepo) Clone(path string) error {
-	r.clonePath = path
+	if r.path != "" {
+		return fmt.Errorf("resource path already set: path=%q", r.path)
+	}
+
+	r.path = path
 
 	cloneArgs := []string{"clone"}
 
@@ -111,7 +130,7 @@ func (r *GitRepo) Clone(path string) error {
 	}
 
 	// Include the clone URL
-	cloneArgs = append(cloneArgs, r.String(), r.ClonePath())
+	cloneArgs = append(cloneArgs, r.String(), r.Path())
 	var gitClone *exec.Cmd
 	var ctx context.Context
 
@@ -138,9 +157,9 @@ func (r *GitRepo) Clone(path string) error {
 	return nil
 }
 
-// ClonePath returns where this repo has been cloned if cloned else ""
-func (r *GitRepo) ClonePath() string {
-	return r.clonePath
+// Path returns where the repo is on disk
+func (r *GitRepo) Path() string {
+	return r.path
 }
 
 // EnrichResult enriches the result with contextual information
@@ -178,14 +197,14 @@ func (r *GitRepo) Since() string {
 // ReadFile provides a way to get files out of the repo
 func (r *GitRepo) ReadFile(path string) ([]byte, error) {
 	object := fmt.Sprintf("HEAD:%s", filepath.Clean(path))
-	return exec.Command("git", "-C", r.ClonePath(), "show", object).Output() // #nosec G204
+	return exec.Command("git", "-C", r.Path(), "show", object).Output() // #nosec G204
 }
 
 // GitDirPath returns the path to the git dir so that other things don't need
 // to know how the repo was cloned
 func (r *GitRepo) GitDirPath() string {
-	// Since --mirror implies --bare, the GitDirPath is the ClonePath
-	return r.ClonePath()
+	// Since --mirror implies --bare, the GitDirPath is the Path
+	return r.Path()
 }
 
 // ShallowCommits returns a list of shallow commits in a git repo
@@ -215,7 +234,7 @@ func (r *GitRepo) ShallowCommits() []string {
 // exists this way so even a bare repo can be crawled if needed. To crawl
 // different branches, change HEAD.
 func (r *GitRepo) Walk(fn WalkFunc) error {
-	cmd := exec.Command("git", "-C", r.ClonePath(), "ls-tree", "-r", "--name-only", "--full-tree", "HEAD") // #nosec G204
+	cmd := exec.Command("git", "-C", r.Path(), "ls-tree", "-r", "--name-only", "--full-tree", "HEAD") // #nosec G204
 	output, err := cmd.Output()
 
 	if err != nil {
@@ -240,7 +259,7 @@ func (r *GitRepo) Walk(fn WalkFunc) error {
 	return nil
 }
 
-// RemoteRefExists checks the remote repository to see if the ref exists
+// RemoteRefExists checks the remote repo to see if the ref exists
 func (r *GitRepo) RemoteRefExists(ref string) bool {
 	cmd := exec.Command("git", "ls-remote", "--exit-code", "--quiet", r.String(), ref) // #nosec G204
 	return cmd.Run() == nil
@@ -248,7 +267,7 @@ func (r *GitRepo) RemoteRefExists(ref string) bool {
 
 // Refs returns the unique OIDs in a repo
 func (r *GitRepo) Refs() []string {
-	cmd := exec.Command("git", "-C", r.ClonePath(), "show-ref", "--hash") // #nosec G204
+	cmd := exec.Command("git", "-C", r.Path(), "show-ref", "--hash") // #nosec G204
 	out, err := cmd.Output()
 	refs := []string{}
 
@@ -275,4 +294,21 @@ func (r *GitRepo) Refs() []string {
 // Priority returns the scan priority
 func (r *GitRepo) Priority() int {
 	return r.options.Priority
+}
+
+// IsLocal returns whether this is a local resource or not
+func (r *GitRepo) IsLocal() bool {
+	return r.options.Local
+}
+
+// ScanStaged tells the scanner to scan staged content in a local repo. This
+// takes priority over ScanUnstaged
+func (r *GitRepo) ScanStaged() bool {
+	return r.IsLocal() && r.options.Staged
+}
+
+// ScanUnstaged tells the scanner to scan unstaged content in a local repo.
+// ScanStaged takes priority over this.
+func (r *GitRepo) ScanUnstaged() bool {
+	return r.IsLocal() && r.options.Unstaged
 }

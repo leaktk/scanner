@@ -50,8 +50,8 @@ func (r *Files) Clone(path string) error {
 	return nil
 }
 
-// ClonePath returns where this repo has been cloned if cloned else ""
-func (r *Files) ClonePath() string {
+// Path returns where this repo has been cloned if cloned else ""
+func (r *Files) Path() string {
 	return r.path
 }
 
@@ -141,4 +141,9 @@ func (r *Files) Walk(fn WalkFunc) error {
 // Priority returns the scan priority
 func (r *Files) Priority() int {
 	return r.options.Priority
+}
+
+// IsLocal returns whether this is a local resource or not
+func (r *Files) IsLocal() bool {
+	return true
 }

@@ -93,6 +93,8 @@ const (
 	ScanError
 	// ResourceCleanupError means we couldn't remove the resources that were cloned after a scan
 	ResourceCleanupError
+	// LocalScanDisabled are for when a local scan is attempted but disabled in config
+	LocalScanDisabled
 	// CommandError means there was an error with an external command
 	CommandError
 	// CloneDetail are log entries that are informational
