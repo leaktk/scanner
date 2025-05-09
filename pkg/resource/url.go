@@ -14,6 +14,9 @@ import (
 	"github.com/leaktk/scanner/pkg/response"
 )
 
+// URLKind defines what kind value maps to this resource
+const URLKind = "URL"
+
 // URL provides a to pull remote content by a URL
 type URL struct {
 	// Provide common helper functions
@@ -40,7 +43,7 @@ func NewURL(url string, options *URLOptions) *URL {
 
 // Kind of resource (always returns URL here)
 func (r *URL) Kind() string {
-	return "URL"
+	return URLKind
 }
 
 // String representation of the resource

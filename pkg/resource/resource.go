@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leaktk/scanner/pkg/id"
+	"github.com/leaktk/scanner/pkg/kind"
 	"github.com/leaktk/scanner/pkg/logger"
 	"github.com/leaktk/scanner/pkg/response"
 )
@@ -44,12 +45,12 @@ type Resource interface {
 
 // NewResource handles building out the resource from kind, the resource string
 // and the options as a raw json message
-func NewResource(kind, resource string, options json.RawMessage) (Resource, error) {
+func NewResource(resourceKind, resource string, options json.RawMessage) (Resource, error) {
 	// When adding different kinds, make sure to provide the corresponding
 	// request.<Kind>Options() (*<Kind>) that returns nil if that isn't the
 	// type of options on the object.
-	switch kind {
-	case "GitRepo":
+	switch kind.NormalizeKind(resourceKind) {
+	case kind.NormalizeKind(GitRepoKind):
 		var gitRepoOptions GitRepoOptions
 
 		if len(options) > 0 {
@@ -61,7 +62,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 		return NewGitRepo(resource, &gitRepoOptions), nil
 
-	case "JSONData":
+	case kind.NormalizeKind(JSONDataKind):
 		var jsonDataOptions JSONDataOptions
 
 		if len(options) > 0 {
@@ -73,7 +74,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 		return NewJSONData(resource, &jsonDataOptions), nil
 
-	case "Files":
+	case kind.NormalizeKind(FilesKind):
 		var filesOptions FilesOptions
 
 		if len(options) > 0 {
@@ -85,7 +86,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 		return NewFiles(resource, &filesOptions), nil
 
-	case "Text":
+	case kind.NormalizeKind(TextKind):
 		var textOptions TextOptions
 
 		if len(options) > 0 {
@@ -97,7 +98,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 		return NewText(resource, &textOptions), nil
 
-	case "URL":
+	case kind.NormalizeKind(URLKind):
 		var urlOptions URLOptions
 
 		if len(options) > 0 {
@@ -108,7 +109,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 		}
 
 		return NewURL(resource, &urlOptions), nil
-	case "ContainerImage":
+	case kind.NormalizeKind(ContainerImageKind):
 		var containerOptions ContainerImageOptions
 
 		if len(options) > 0 {
@@ -120,7 +121,7 @@ func NewResource(kind, resource string, options json.RawMessage) (Resource, erro
 
 		return NewContainerImage(resource, &containerOptions), nil
 	default:
-		return nil, fmt.Errorf("unsupported kind: kind=%q", kind)
+		return nil, fmt.Errorf("unsupported kind: kind=%q", resourceKind)
 	}
 }
 

@@ -26,6 +26,9 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
+// ContainerImageKind defines what kind value maps to this resource
+const ContainerImageKind = "ContainerImage"
+
 var rfc5322Regexp = regexp.MustCompile(`^(.*)\s<([^>]+)>$`)
 
 // Extracts RFC5322 style Mailboxes i.e "John Smith <jsmith@example.com>"
@@ -107,7 +110,7 @@ func (r *ContainerImage) Contact() response.Contact {
 
 // Kind of resource (always returns ContainerImage here)
 func (r *ContainerImage) Kind() string {
-	return "ContainerImage"
+	return ContainerImageKind
 }
 
 // String representation of the resource

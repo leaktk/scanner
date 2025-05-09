@@ -15,6 +15,9 @@ import (
 	"github.com/leaktk/scanner/pkg/response"
 )
 
+// GitRepoKind defines what kind value maps to this resource
+const GitRepoKind = "GitRepo"
+
 // Configure git env
 func init() {
 	// Make sure git never prompts for a password
@@ -79,7 +82,7 @@ func NewGitRepo(repo string, options *GitRepoOptions) *GitRepo {
 
 // Kind of resource (always returns GitRepo here
 func (r *GitRepo) Kind() string {
-	return "GitRepo"
+	return GitRepoKind
 }
 
 // String representation of the resource

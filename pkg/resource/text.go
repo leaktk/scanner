@@ -9,6 +9,9 @@ import (
 	"github.com/leaktk/scanner/pkg/response"
 )
 
+// TextKind defines what kind value maps to this resource
+const TextKind = "Text"
+
 // Text provides a way to interact with plain text
 type Text struct {
 	// Provide common helper functions
@@ -34,7 +37,7 @@ func NewText(data string, options *TextOptions) *Text {
 
 // Kind of resource (always returns Text here)
 func (r *Text) Kind() string {
-	return "Text"
+	return TextKind
 }
 
 // String representation of the resource

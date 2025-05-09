@@ -47,9 +47,10 @@ format:
 	which goimports &> /dev/null || go install golang.org/x/tools/cmd/goimports@latest
 	goimports -local $(MODULE) -l -w .
 
-test: format gosec golint
+test: format
 	go vet ./...
 	go test -race $(MODULE) ./...
+	make gosec golint
 
 install:
 	install ./leaktk-scanner $(DESTDIR)$(PREFIX)/bin/leaktk-scanner

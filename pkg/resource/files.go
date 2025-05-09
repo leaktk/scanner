@@ -12,6 +12,9 @@ import (
 	"github.com/leaktk/scanner/pkg/logger"
 )
 
+// FilesKind defines what kind value maps to this resource
+const FilesKind = "Files"
+
 // Files provides a way to scan file systems
 type Files struct {
 	// Provide common helper functions
@@ -36,7 +39,7 @@ func NewFiles(path string, options *FilesOptions) *Files {
 
 // Kind of resource (always returns Files here)
 func (r *Files) Kind() string {
-	return "Files"
+	return FilesKind
 }
 
 // String representation of the resource

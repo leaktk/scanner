@@ -17,6 +17,9 @@ import (
 	"github.com/leaktk/scanner/pkg/response"
 )
 
+// JSONDataKind defines what kind value maps to this resource
+const JSONDataKind = "JSONData"
+
 var urlRegexp = regexp.MustCompile(`^https?:\/\/\S+$`)
 
 // JSONData provides a way to interact with a json data as a resource
@@ -56,7 +59,7 @@ func NewJSONData(raw string, options *JSONDataOptions) *JSONData {
 
 // Kind of resource (always returns JSONData here)
 func (r *JSONData) Kind() string {
-	return "JSONData"
+	return JSONDataKind
 }
 
 // String representation of the resource

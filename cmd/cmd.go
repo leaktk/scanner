@@ -16,7 +16,9 @@ import (
 	"github.com/leaktk/scanner/pkg/config"
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
+	"github.com/leaktk/scanner/pkg/kind"
 	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/scanner/pkg/resource"
 	"github.com/leaktk/scanner/pkg/response"
 	"github.com/leaktk/scanner/pkg/scanner"
 	"github.com/leaktk/scanner/version"
@@ -114,8 +116,8 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 		return nil, errors.New("missing required field: field=\"id\"")
 	}
 
-	kind, err := flags.GetString("kind")
-	if err != nil || len(kind) == 0 {
+	resourceKind, err := flags.GetString("kind")
+	if err != nil || len(resourceKind) == 0 {
 		return nil, errors.New("missing required field: field=\"kind\"")
 	}
 
@@ -156,7 +158,7 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 
 	// automatically set the is local flag
 	if _, isSet := options["local"]; !isSet {
-		if strings.ToLower(kind) == "gitrepo" {
+		if kind.KindsMatch(resourceKind, resource.GitRepoKind) {
 			options["local"] = fs.PathExists(requestResource)
 		}
 	}
@@ -164,7 +166,7 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 	requestData, err := json.Marshal(
 		map[string]any{
 			"id":       id,
-			"kind":     kind,
+			"kind":     resourceKind,
 			"resource": requestResource,
 			"options":  options,
 		},
