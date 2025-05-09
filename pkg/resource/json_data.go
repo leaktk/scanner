@@ -23,10 +23,10 @@ var urlRegexp = regexp.MustCompile(`^https?:\/\/\S+$`)
 type JSONData struct {
 	// Provide common helper functions
 	BaseResource
-	raw       string
-	data      any
-	clonePath string
-	options   *JSONDataOptions
+	raw     string
+	data    any
+	path    string
+	options *JSONDataOptions
 }
 
 // JSONDataOptions are options for the JSONData resource
@@ -68,9 +68,9 @@ func (r *JSONData) String() string {
 func (r *JSONData) Clone(path string) error {
 	var err error
 
-	r.clonePath = path
+	r.path = path
 
-	if err = os.MkdirAll(r.clonePath, 0700); err != nil {
+	if err = os.MkdirAll(r.path, 0700); err != nil {
 		return err
 	}
 
@@ -87,7 +87,7 @@ func (r *JSONData) Clone(path string) error {
 		".gitleaksbaseline",
 	} {
 		if data, err := r.ReadFile(file); err == nil {
-			if err = os.WriteFile(filepath.Join(r.clonePath, file), data, 0600); err != nil {
+			if err = os.WriteFile(filepath.Join(r.path, file), data, 0600); err != nil {
 				return err
 			}
 		}
@@ -95,7 +95,7 @@ func (r *JSONData) Clone(path string) error {
 
 	// Fetch URLs in jsonNodes and replace the node with a resource object
 	if len(r.options.FetchURLs) > 0 {
-		err = r.fetchURLs(jsonNode{value: r.data}, r.clonePath)
+		err = r.fetchURLs(jsonNode{value: r.data}, r.path)
 	}
 
 	return err
@@ -111,7 +111,7 @@ func (r *JSONData) shouldFetchURL(path string) bool {
 	return false
 }
 
-func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
+func (r *JSONData) fetchURLs(rootNode jsonNode, path string) error {
 	return r.walkRecusrive(rootNode, func(leafNode jsonNode) error {
 		// We only want string objects
 		obj, isString := leafNode.value.(string)
@@ -130,7 +130,7 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 
 		urlResource := NewURL(obj, &URLOptions{})
 		r.Info(logger.CloneDetail, "fetching url: url=%q", obj)
-		err := urlResource.Clone(filepath.Join(clonePath, leafNode.path))
+		err := urlResource.Clone(filepath.Join(path, leafNode.path))
 
 		if err != nil {
 			// Not being able to retrieve a URL found inside JSONData is not a fatal error. Logging until update how
@@ -146,7 +146,7 @@ func (r *JSONData) fetchURLs(rootNode jsonNode, clonePath string) error {
 
 // Path returns where this repo has been cloned if cloned else ""
 func (r *JSONData) Path() string {
-	return r.clonePath
+	return r.path
 }
 
 // Depth returns the depth for things that have version control

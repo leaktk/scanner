@@ -43,7 +43,7 @@ func extractRFC5322Mailbox(mailbox string) []string {
 type ContainerImage struct {
 	// Provide common helper functions
 	BaseResource
-	clonePath    string
+	path         string
 	cloneTimeout time.Duration
 	location     string
 	options      *ContainerImageOptions
@@ -115,14 +115,14 @@ func (r *ContainerImage) String() string {
 	return r.location
 }
 
-// Clone the resource to the desired clonePath location
+// Clone the resource to the desired path location
 func (r *ContainerImage) Clone(path string) error {
 	err := os.MkdirAll(path, 0700)
 	if err != nil {
 		return fmt.Errorf("could not create clone directory: %v", err)
 	}
 
-	r.clonePath = path
+	r.path = path
 	if r.cloneTimeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), r.cloneTimeout)
 		defer cancel()
@@ -259,7 +259,7 @@ func (r *ContainerImage) cloneRemoteResource(ctx context.Context, path string, r
 }
 
 func (r *ContainerImage) writeFile(filename string, content []byte) error {
-	return os.WriteFile(filepath.Join(r.clonePath, filename), content, 0600)
+	return os.WriteFile(filepath.Join(r.path, filename), content, 0600)
 }
 
 func (r *ContainerImage) copyN(dst string, src io.Reader, n int64) error {
@@ -348,7 +348,7 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 
 // Path returns where this repo has been cloned if cloned else ""
 func (r *ContainerImage) Path() string {
-	return r.clonePath
+	return r.path
 }
 
 // Depth returns the depth for things that have version control

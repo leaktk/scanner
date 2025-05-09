@@ -122,7 +122,7 @@ func (s *Scanner) listenForCloneRequests() {
 
 		if reqResource.Path() == "" {
 			logger.Info("starting clone: request_id=%q resource_id=%q", request.ID, reqResource.ID())
-			if err := reqResource.Clone(s.resourceClonePath(reqResource)); err != nil {
+			if err := reqResource.Clone(s.resourcePath(reqResource)); err != nil {
 				reqResource.Critical(logger.CloneError, "clone error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		}
@@ -137,7 +137,7 @@ func (s *Scanner) resourceFilesPath(reqResource resource.Resource) string {
 	return filepath.Join(s.resourceDir, reqResource.ID())
 }
 
-func (s *Scanner) resourceClonePath(reqResource resource.Resource) string {
+func (s *Scanner) resourcePath(reqResource resource.Resource) string {
 	return filepath.Join(s.resourceFilesPath(reqResource), "clone")
 }
 
@@ -170,7 +170,7 @@ func (s *Scanner) listenForScanRequests() {
 				reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
 			}
 		} else {
-			reqResource.Critical(logger.ScanError, "skipping scan due to missing clone path: request_id=%q", request.ID)
+			reqResource.Critical(logger.ScanError, "skipping scan due to missing path: request_id=%q", request.ID)
 
 		}
 

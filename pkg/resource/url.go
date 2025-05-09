@@ -18,10 +18,10 @@ import (
 type URL struct {
 	// Provide common helper functions
 	BaseResource
-	clonePath string
-	resource  Resource
-	url       string
-	options   *URLOptions
+	path     string
+	resource Resource
+	url      string
+	options  *URLOptions
 }
 
 // URLOptions are options for the URL resource
@@ -50,7 +50,7 @@ func (r *URL) String() string {
 
 // Clone the resource to the desired local location and store the path
 func (r *URL) Clone(path string) error {
-	r.clonePath = path
+	r.path = path
 
 	client := httpclient.NewClient()
 	resp, err := client.Get(r.url)
@@ -71,13 +71,13 @@ func (r *URL) Clone(path string) error {
 		// Scan as a JSONData resource
 		r.resource = NewJSONData(string(data), &JSONDataOptions{})
 	} else {
-		if err := os.MkdirAll(r.clonePath, 0700); err != nil {
-			return fmt.Errorf("could not create clone path: path=%q error=%q", r.clonePath, err)
+		if err := os.MkdirAll(r.path, 0700); err != nil {
+			return fmt.Errorf("could not create path: path=%q error=%q", r.path, err)
 		}
 
 		// Use ID(r.url) to create the dataPath so that we don't have collisions
 		// for if we follow URLs in the returned content
-		dataPath := filepath.Clean(filepath.Join(r.clonePath, id.ID(r.url)))
+		dataPath := filepath.Clean(filepath.Join(r.path, id.ID(r.url)))
 		dataFile, err := os.OpenFile(dataPath, os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			return fmt.Errorf("could not open data file: error=%q", err)
@@ -93,12 +93,12 @@ func (r *URL) Clone(path string) error {
 		r.resource = NewFiles(dataPath, &FilesOptions{})
 	}
 
-	return r.resource.Clone(r.clonePath)
+	return r.resource.Clone(r.path)
 }
 
 // Path returns where this repo has been cloned if cloned else ""
 func (r *URL) Path() string {
-	return r.clonePath
+	return r.path
 }
 
 // Depth returns the depth for things that have version control

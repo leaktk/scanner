@@ -13,9 +13,9 @@ import (
 type Text struct {
 	// Provide common helper functions
 	BaseResource
-	data      string
-	clonePath string
-	options   *TextOptions
+	data    string
+	path    string
+	options *TextOptions
 }
 
 // TextOptions are options for the Text resource
@@ -46,9 +46,9 @@ func (r *Text) String() string {
 func (r *Text) Clone(path string) error {
 	var err error
 
-	r.clonePath = path
+	r.path = path
 
-	if err = os.MkdirAll(r.clonePath, 0700); err != nil {
+	if err = os.MkdirAll(r.path, 0700); err != nil {
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (r *Text) Clone(path string) error {
 
 // Path returns where this text has been cloned if cloned else ""
 func (r *Text) Path() string {
-	return r.clonePath
+	return r.path
 }
 
 // Depth returns the depth for things that have version control

@@ -23,7 +23,7 @@ import (
 // mockResource implements a dummy resource
 type mockResource struct {
 	cloneErr     error
-	clonePath    string
+	path         string
 	cloneTimeout time.Duration
 	depth        uint16
 	resource.BaseResource
@@ -38,13 +38,13 @@ func (m *mockResource) ReadFile(path string) ([]byte, error) {
 }
 
 func (m *mockResource) Clone(path string) error {
-	m.clonePath = path
-	_ = os.MkdirAll(m.clonePath, 0700)
+	m.path = path
+	_ = os.MkdirAll(m.path, 0700)
 	return m.cloneErr
 }
 
 func (m *mockResource) Path() string {
-	return m.clonePath
+	return m.path
 }
 
 func (m *mockResource) Depth() uint16 {
@@ -155,8 +155,10 @@ func TestScanner(t *testing.T) {
 		assert.NoError(t, err)
 
 		request := &Request{
-			ID:       "test-local-request",
-			Resource: resource.NewGitRepo(repoDir, &resource.GitRepoOptions{}),
+			ID: "test-local-request",
+			Resource: resource.NewGitRepo(repoDir, &resource.GitRepoOptions{
+				Local: true,
+			}),
 		}
 
 		_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
