@@ -170,14 +170,14 @@ func TestParseGitleaksConfig(t *testing.T) {
 		cfg, err := ParseGitleaksConfig(mockConfig)
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
-		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+		assert.Equal(t, "testdata", cfg.Allowlists[0].Paths[0].String())
 	})
 
 	t.Run("AllowlistOnlyConfig", func(t *testing.T) {
 		cfg, err := ParseGitleaksConfig(mockAllowlistOnlyConfig)
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
-		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+		assert.Equal(t, "testdata", cfg.Allowlists[0].Paths[0].String())
 	})
 
 	t.Run("InvalidConfig", func(t *testing.T) {
@@ -231,7 +231,7 @@ func TestPatternsGitleaks(t *testing.T) {
 		cfg, err := getPatterns(true, 5, 10, 15).Gitleaks()
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
-		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+		assert.Equal(t, "testdata", cfg.Allowlists[0].Paths[0].String())
 
 		// Verify the config file was updated
 		data, err := os.ReadFile(configFilePath)
@@ -243,7 +243,7 @@ func TestPatternsGitleaks(t *testing.T) {
 		cfg, err := getPatterns(true, 5, 15, 10).Gitleaks()
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
-		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+		assert.Equal(t, "testdata", cfg.Allowlists[0].Paths[0].String())
 
 		// Verify the config file was updated
 		data, err := os.ReadFile(configFilePath)
@@ -261,7 +261,7 @@ func TestPatternsGitleaks(t *testing.T) {
 		cfg, err := getPatterns(false, 5, 15, 10).Gitleaks()
 		assert.NoError(t, err)
 		assert.NotNil(t, cfg)
-		assert.Equal(t, "testdata", cfg.Allowlist.Paths[0].String())
+		assert.Equal(t, "testdata", cfg.Allowlists[0].Paths[0].String())
 	})
 
 	t.Run("ValidateGitleaksConfigHash", func(t *testing.T) {

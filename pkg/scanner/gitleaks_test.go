@@ -21,26 +21,33 @@ regex = '''(?i)(fake)'''
 secretGroup = 1
 `
 
+const mockInvalidGitleaksTestConfig = `
+[[rules]]
+id = "test-rule"
+description = "A rule for finding some value in the fake-leaks repo"
+regex = '''(?!@#!i)(fake)'''
+secretGroup = 1
+`
+
 func TestGitleaksScan(t *testing.T) {
 	err := logger.SetLoggerLevel("CRITICAL")
 	assert.NoError(t, err)
 
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "gitleaks.toml")
-	err = os.WriteFile(configPath, []byte(mockGitleaksTestConfig), 0600)
-	assert.NoError(t, err)
-	cfg := config.DefaultConfig()
-	cfg.Scanner.Patterns.Gitleaks.ConfigPath = configPath
-
-	// Configured patterns
-	patterns := NewPatterns(
-		&cfg.Scanner.Patterns,
-		// There shouldn't be a need for a HTTP client since the patterns are fresh
-		nil,
-	)
-
 	t.Run("Success", func(t *testing.T) {
 		assert.NoError(t, err)
+		tempDir := t.TempDir()
+		configPath := filepath.Join(tempDir, "gitleaks.toml")
+		err = os.WriteFile(configPath, []byte(mockGitleaksTestConfig), 0600)
+		assert.NoError(t, err)
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = configPath
+
+		// Configured patterns
+		patterns := NewPatterns(
+			&cfg.Scanner.Patterns,
+			// There shouldn't be a need for a HTTP client since the patterns are fresh
+			nil,
+		)
 
 		gitRepo := resource.NewGitRepo("https://github.com/leaktk/fake-leaks.git", &resource.GitRepoOptions{
 			Branch: "main",
@@ -57,5 +64,34 @@ func TestGitleaksScan(t *testing.T) {
 		assert.Contains(t, results[0].Notes["gitleaks_fingerprint"], ":test-rule:")
 		assert.Equal(t, results[0].Rule.ID, "test-rule")
 		assert.Equal(t, strings.ToLower(results[0].Secret), "fake")
+	})
+
+	t.Run("Invalid Config", func(t *testing.T) {
+		assert.NoError(t, err)
+		tempDir := t.TempDir()
+		configPath := filepath.Join(tempDir, "gitleaks.toml")
+		err = os.WriteFile(configPath, []byte(mockInvalidGitleaksTestConfig), 0600)
+		assert.NoError(t, err)
+		cfg := config.DefaultConfig()
+		cfg.Scanner.Patterns.Gitleaks.ConfigPath = configPath
+
+		// Configured patterns
+		patterns := NewPatterns(
+			&cfg.Scanner.Patterns,
+			// There shouldn't be a need for a HTTP client since the patterns are fresh
+			nil,
+		)
+
+		gitRepo := resource.NewGitRepo("https://github.com/leaktk/fake-leaks.git", &resource.GitRepoOptions{
+			Branch: "main",
+			Depth:  1000,
+		})
+
+		err = gitRepo.Clone(filepath.Join(tempDir, "clone"))
+		assert.NoError(t, err)
+
+		results, err := NewGitleaks(1, patterns).Scan(gitRepo)
+		assert.Error(t, err)
+		assert.Equal(t, len(results), 0)
 	})
 }
