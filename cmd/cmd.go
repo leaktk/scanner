@@ -17,7 +17,6 @@ import (
 	"github.com/leaktk/scanner/pkg/fs"
 	"github.com/leaktk/scanner/pkg/id"
 	"github.com/leaktk/scanner/pkg/logger"
-	scannerResource "github.com/leaktk/scanner/pkg/resource"
 	"github.com/leaktk/scanner/pkg/response"
 	"github.com/leaktk/scanner/pkg/scanner"
 	"github.com/leaktk/scanner/version"
@@ -120,11 +119,11 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 		return nil, errors.New("missing required field: field=\"kind\"")
 	}
 
-	resource, err := flags.GetString("resource")
-	if err != nil || len(resource) == 0 {
+	requestResource, err := flags.GetString("resource")
+	if err != nil || len(requestResource) == 0 {
 
 		if len(args) > 0 {
-			resource = args[0]
+			requestResource = args[0]
 		} else {
 			return nil, errors.New("missing required field: field=\"resource\"")
 		}
@@ -132,16 +131,16 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 		return nil, errors.New("only provide resource as a positional argument or a flag but not both")
 	}
 
-	if resource[0] == '@' {
-		if fs.FileExists(resource[1:]) {
-			data, err := os.ReadFile(resource[1:])
+	if requestResource[0] == '@' {
+		if fs.FileExists(requestResource[1:]) {
+			data, err := os.ReadFile(requestResource[1:])
 			if err != nil {
-				return nil, fmt.Errorf("could not read resource: path=%q error=%q", resource[1:], err)
+				return nil, fmt.Errorf("could not read resource: path=%q error=%q", requestResource[1:], err)
 			}
 
-			resource = string(data)
+			requestResource = string(data)
 		} else {
-			return nil, fmt.Errorf("resource path does not exist: path=%q", resource[1:])
+			return nil, fmt.Errorf("resource path does not exist: path=%q", requestResource[1:])
 		}
 	}
 
@@ -155,12 +154,10 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 		return nil, fmt.Errorf("could not parse options: error=%q", err)
 	}
 
-	// We only want to autodetect local - without creating a resource
-	if strings.ToLower(kind) == "gitrepo" {
-		if !scannerResource.IsGitURL(resource) {
-			if scannerResource.IsGitLocal(resource) {
-				options["local"] = true
-			}
+	// automatically set the is local flag
+	if _, isSet := options["local"]; !isSet {
+		if strings.ToLower(kind) == "gitrepo" {
+			options["local"] = fs.PathExists(requestResource)
 		}
 	}
 
@@ -168,7 +165,7 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 		map[string]any{
 			"id":       id,
 			"kind":     kind,
-			"resource": resource,
+			"resource": requestResource,
 			"options":  options,
 		},
 	)
