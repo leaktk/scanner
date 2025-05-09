@@ -330,7 +330,7 @@ func (r *JSONData) Priority() int {
 	return r.options.Priority
 }
 
-// IsLocal tells whether this is a local resource or not
+// IsLocal returns whether this is a local resource or not
 func (r *JSONData) IsLocal() bool {
 	return false
 }

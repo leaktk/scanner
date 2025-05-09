@@ -157,7 +157,7 @@ func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, 
 
 	// We only want to autodetect local - without creating a resource
 	if strings.ToLower(kind) == "gitrepo" {
-		if !scannerResource.IsGitUrl(resource) {
+		if !scannerResource.IsGitURL(resource) {
 			if scannerResource.IsGitLocal(resource) {
 				options["local"] = true
 			}

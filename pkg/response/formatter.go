@@ -30,6 +30,7 @@ const (
 	CSV
 )
 
+// Formatter handles the output format for the response
 type Formatter struct {
 	format OutputFormat
 }
@@ -66,7 +67,7 @@ func GetOutputFormat(format string) (OutputFormat, error) {
 func (f *Formatter) Format(r *Response) string {
 	switch f.format {
 	case JSON:
-		return formatJson(r)
+		return formatJSON(r)
 	case HUMAN:
 		return formatHuman(r)
 	case TOML:
@@ -80,7 +81,7 @@ func (f *Formatter) Format(r *Response) string {
 	}
 }
 
-func formatJson(r *Response) string {
+func formatJSON(r *Response) string {
 	out, err := json.Marshal(r)
 	if err != nil {
 		logger.Error("could not marshal response: error=%q", err)

@@ -482,7 +482,7 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 	})
 }
 
-// IsLocal tells whether this is a local resource or not
+// IsLocal returns whether this is a local resource or not
 func (r *ContainerImage) IsLocal() bool {
 	return false
 }

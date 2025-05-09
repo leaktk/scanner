@@ -298,12 +298,12 @@ func (r *GitRepo) Priority() int {
 	return r.options.Priority
 }
 
-// IsLocal tells whether this is a local resource or not
+// IsLocal returns whether this is a local resource or not
 // Defaults to false
 func (r *GitRepo) IsLocal() bool {
-	if !r.options.Local && IsGitUrl(r.repo) { // Local not set and is a Git URI
+	if !r.options.Local && IsGitURL(r.repo) { // Local not set and is a Git URI
 		return false
-	} else if r.options.Local && !IsGitUrl(r.repo) { // local set and not a Git URI
+	} else if r.options.Local && !IsGitURL(r.repo) { // local set and not a Git URI
 		return true
 	} else if !r.options.Local && IsGitLocal(r.repo) { // local not set but is local
 		return true
@@ -323,9 +323,9 @@ func (r *GitRepo) ScanUnstaged() bool {
 	return r.IsLocal() && r.options.Unstaged
 }
 
-// IsGitUrl returns true if the path starts with a valid git prefix
+// IsGitURL returns true if the path starts with a valid git prefix
 // uses HasPrefix as this is faster than a more "comprehensive" regex.
-func IsGitUrl(path string) bool {
+func IsGitURL(path string) bool {
 	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "git://") {
 		return true
 	}

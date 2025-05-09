@@ -38,16 +38,16 @@ func NewPatterns(cfg *config.Patterns, client *http.Client) *Patterns {
 
 func (p *Patterns) fetchGitleaksConfig() (string, error) {
 	logger.Info("fetching gitleaks patterns")
-	patternUrl, err := url.JoinPath(
+	patternURL, err := url.JoinPath(
 		p.config.Server.URL, "patterns", "gitleaks", p.config.Gitleaks.Version,
 	)
 
-	logger.Debug("patterns url: url=%q", patternUrl)
+	logger.Debug("patterns url: url=%q", patternURL)
 	if err != nil {
 		return "", err
 	}
 
-	request, err := http.NewRequest("GET", patternUrl, nil)
+	request, err := http.NewRequest("GET", patternURL, nil)
 	if err != nil {
 		return "", err
 	}

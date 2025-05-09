@@ -24,6 +24,7 @@ type TextOptions struct {
 	Priority int `json:"priority"`
 }
 
+// NewText returns a configured Text resource for the scanner to scan
 func NewText(data string, options *TextOptions) *Text {
 	return &Text{
 		data:    data,
@@ -54,8 +55,8 @@ func (r *Text) Clone(path string) error {
 	return nil
 }
 
-// ClonePath returns where this repo has been cloned if cloned else ""
-func (r *Text) ClonePath() string {
+// Path returns where this text has been cloned if cloned else ""
+func (r *Text) Path() string {
 	return r.clonePath
 }
 
@@ -68,6 +69,11 @@ func (r *Text) Depth() uint16 {
 func (r *Text) EnrichResult(result *response.Result) *response.Result {
 	result.Kind = response.TextResultKind
 	return result
+}
+
+// IsLocal returns whether this is a local resource or not
+func (r *Text) IsLocal() bool {
+	return false
 }
 
 // SetDepth allows you to adjust the depth for the resource

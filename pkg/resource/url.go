@@ -143,7 +143,7 @@ func (r *URL) Priority() int {
 	return r.options.Priority
 }
 
-// IsLocal tells whether this is a local resource or not
+// IsLocal returns whether this is a local resource or not
 func (r *URL) IsLocal() bool {
 	return false
 }

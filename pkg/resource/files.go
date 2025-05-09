@@ -143,7 +143,7 @@ func (r *Files) Priority() int {
 	return r.options.Priority
 }
 
-// IsLocal tells whether this is a local resource or not
+// IsLocal returns whether this is a local resource or not
 func (r *Files) IsLocal() bool {
 	return true
 }
