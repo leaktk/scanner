@@ -155,23 +155,24 @@ func (p *Patterns) updateGitleaksConfigHash(hash [32]byte) {
 }
 
 func invalidConfig(cfg *gitleaksconfig.Config) bool {
-	// If there are Rules the config is valid.
+	// If there are Rules the config is valid
 	if len(cfg.Rules) > 0 {
 		return false
 	}
 
-	// If there are no Allowlists entries the config is invalid.
+	// If there are no Allowlists entries the config is invalid
 	if len(cfg.Allowlists) < 1 {
 		return true
 	}
 
-	al := cfg.Allowlists[0]
-	// Make sure something the scanner can use is set
-	return !(len(al.Commits) > 0 || //nolint:staticcheck // QF1001 prefer this way
-		len(al.Description) > 0 ||
-		len(al.Paths) > 0 ||
-		len(al.Regexes) > 0 ||
-		len(al.StopWords) > 0)
+	// The allowlist should at least ignore something
+	for _, al := range cfg.Allowlists {
+		if len(al.Paths) == 0 && len(al.Regexes) == 0 && len(al.StopWords) == 0 && len(al.Commits) == 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ParseGitleaksConfig takes a gitleaks config string and returns a config object

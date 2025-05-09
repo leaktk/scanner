@@ -69,7 +69,8 @@ func NewGitRepo(repo string, options *GitRepoOptions) *GitRepo {
 		options: options,
 	}
 
-	if gitRepo.options.Local { // If set local, scan path in place
+	// "repo" is the path if the repo is local
+	if gitRepo.IsLocal() {
 		gitRepo.path = repo
 	}
 
@@ -296,7 +297,6 @@ func (r *GitRepo) Priority() int {
 }
 
 // IsLocal returns whether this is a local resource or not
-// Defaults to false
 func (r *GitRepo) IsLocal() bool {
 	return r.options.Local
 }
