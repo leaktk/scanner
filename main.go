@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/leaktk/scanner/cmd"
+	"github.com/leaktk/leaktk/cmd"
 )
 
 func main() {

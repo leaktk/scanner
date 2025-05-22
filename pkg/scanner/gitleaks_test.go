@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/leaktk/scanner/pkg/config"
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/leaktk/pkg/config"
+	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/resource"
 )
 
 const mockGitleaksTestConfig = `

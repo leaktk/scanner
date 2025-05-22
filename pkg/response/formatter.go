@@ -10,8 +10,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"gopkg.in/yaml.v3"
 
-	"github.com/leaktk/scanner/pkg/config"
-	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/config"
+	"github.com/leaktk/leaktk/pkg/logger"
 )
 
 // OutputFormat is the code(int) for each format
