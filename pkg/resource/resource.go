@@ -6,9 +6,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/id"
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/response"
+	"github.com/leaktk/leaktk/pkg/id"
+	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/response"
 )
 
 // WalkFunc is the func signature for functions passed into the various
