@@ -14,8 +14,8 @@ import (
 	"github.com/BurntSushi/toml"
 	gitleaksconfig "github.com/zricethezav/gitleaks/v8/config"
 
-	"github.com/leaktk/scanner/pkg/config"
-	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/config"
+	"github.com/leaktk/leaktk/pkg/logger"
 )
 
 // Patterns acts as an abstraction for fetching different scanner patterns

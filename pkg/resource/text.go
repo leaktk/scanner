@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/response"
+	"github.com/leaktk/leaktk/pkg/response"
 )
 
 // Text provides a way to interact with plain text

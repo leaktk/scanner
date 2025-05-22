@@ -11,8 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/leaktk/scanner/pkg/config"
-	httpclient "github.com/leaktk/scanner/pkg/http"
+	"github.com/leaktk/leaktk/pkg/config"
+	httpclient "github.com/leaktk/leaktk/pkg/http"
 )
 
 const mockConfig = `

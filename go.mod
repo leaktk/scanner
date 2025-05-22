@@ -1,4 +1,4 @@
-module github.com/leaktk/scanner
+module github.com/leaktk/leaktk
 
 go 1.23.3
 

@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/leaktk/scanner/pkg/response"
+	"github.com/leaktk/leaktk/pkg/response"
 
 	"github.com/h2non/filetype"
 	"github.com/zricethezav/gitleaks/v8/detect"
 	"github.com/zricethezav/gitleaks/v8/report"
 	"github.com/zricethezav/gitleaks/v8/sources"
 
-	"github.com/leaktk/scanner/pkg/fs"
-	"github.com/leaktk/scanner/pkg/id"
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/leaktk/pkg/fs"
+	"github.com/leaktk/leaktk/pkg/id"
+	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/resource"
 )
 
 const (
