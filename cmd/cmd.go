@@ -80,6 +80,11 @@ func logoutCommand() *cobra.Command {
 }
 
 func runScan(cmd *cobra.Command, args []string) {
+	leakExitCode, err := cmd.Flags().GetInt("leak-exit-code")
+	if err != nil {
+		logger.Fatal("invalid leak-exit-code: error=%q", err.Error())
+	}
+
 	request, err := scanCommandToRequest(cmd, args)
 
 	if err != nil {
@@ -93,17 +98,24 @@ func runScan(cmd *cobra.Command, args []string) {
 
 	var wg sync.WaitGroup
 	leakScanner := scanner.NewScanner(cfg)
+	leaksFound := false
 
 	// Prints the output of the scanner as they come
 	go leakScanner.Recv(func(response *response.Response) {
+		if !leaksFound && len(response.Results) > 0 {
+			leaksFound = true
+		}
 		fmt.Println(formatter.Format(response))
 		wg.Done()
 	})
 
 	wg.Add(1)
 	leakScanner.Send(request)
-
 	wg.Wait()
+
+	if leaksFound {
+		os.Exit(leakExitCode)
+	}
 }
 
 func scanCommandToRequest(cmd *cobra.Command, args []string) (*scanner.Request, error) {
@@ -198,6 +210,7 @@ func scanCommand() *cobra.Command {
 	flags.StringP("kind", "k", "GitRepo", "the kind of resource to scan")
 	flags.StringP("resource", "r", "", "the resource to scan (required)")
 	flags.StringP("options", "o", "{}", "additional request options formatted as JSON")
+	flags.Int("leak-exit-code", 0, "the exit code when leaks are found (default 0)")
 
 	return scanCommand
 }
