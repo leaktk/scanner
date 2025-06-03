@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/leaktk/scanner/version"
+	"github.com/leaktk/leaktk/version"
 )
 
 var once sync.Once

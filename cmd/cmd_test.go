@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/leaktk/scanner/pkg/fs"
+	"github.com/leaktk/leaktk/pkg/fs"
 )
 
 func TestScanCommandToRequest(t *testing.T) {

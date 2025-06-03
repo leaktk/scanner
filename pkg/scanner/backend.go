@@ -1,8 +1,8 @@
 package scanner
 
 import (
-	"github.com/leaktk/scanner/pkg/resource"
-	"github.com/leaktk/scanner/pkg/response"
+	"github.com/leaktk/leaktk/pkg/resource"
+	"github.com/leaktk/leaktk/pkg/response"
 )
 
 // Backend is an interface for a scanner backend leveraged by leaktk

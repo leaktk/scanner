@@ -5,14 +5,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/config"
-	"github.com/leaktk/scanner/pkg/fs"
-	"github.com/leaktk/scanner/pkg/http"
-	"github.com/leaktk/scanner/pkg/id"
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/queue"
-	"github.com/leaktk/scanner/pkg/resource"
-	"github.com/leaktk/scanner/pkg/response"
+	"github.com/leaktk/leaktk/pkg/config"
+	"github.com/leaktk/leaktk/pkg/fs"
+	"github.com/leaktk/leaktk/pkg/http"
+	"github.com/leaktk/leaktk/pkg/id"
+	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/queue"
+	"github.com/leaktk/leaktk/pkg/resource"
+	"github.com/leaktk/leaktk/pkg/response"
 )
 
 // Set initial queue size. The queue can grow over time if needed
