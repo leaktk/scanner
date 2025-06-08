@@ -32,3 +32,19 @@ request even if there were errors. More info on the formats are in the
 - (Coming Soon) Monitoring Sources
 - (Coming Soon) Analyzing Results
 - (Coming Soon) Git Hook Setup
+
+## Project Status
+
+This project is actively used in prod and has proven to be reliable. However,
+it is still pre-1.0 and its API may change.
+
+What that means for you:
+
+- Is it ready to use? Yep!
+- Can I use it as a library? It's probably best to hold off for now.
+- Will the CLI's input/output change? Probably, but we're trying to minimize
+  that since that impacts us too.
+
+If you plan to use this before v1.0.0 is released, we recommend that
+you pin to a specific version and check for compatibility changes between
+releases.
