@@ -1,7 +1,7 @@
 version: 2
 
 builds:
-  - binary: {{ .ProjectName }}
+  - binary: "{{ .ProjectName }}"
     env:
       - CGO_ENABLED=0
     goos:
