@@ -13,13 +13,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/leaktk/scanner/pkg/config"
-	"github.com/leaktk/scanner/pkg/fs"
-	"github.com/leaktk/scanner/pkg/id"
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/response"
-	"github.com/leaktk/scanner/pkg/scanner"
-	"github.com/leaktk/scanner/version"
+	"github.com/leaktk/leaktk/pkg/config"
+	"github.com/leaktk/leaktk/pkg/fs"
+	"github.com/leaktk/leaktk/pkg/id"
+	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/response"
+	"github.com/leaktk/leaktk/pkg/scanner"
+	"github.com/leaktk/leaktk/version"
 )
 
 var cfg *config.Config
@@ -338,8 +338,8 @@ func rootCommand() *cobra.Command {
 	cobra.OnInitialize(initLogger)
 
 	rootCommand := &cobra.Command{
-		Use:               "leaktk-scanner",
-		Short:             "LeakTK Scanner: Scan for secrets",
+		Use:               "leaktk",
+		Short:             "LeakTK: The Leak ToolKit",
 		Run:               runHelp,
 		PersistentPreRunE: configure,
 	}

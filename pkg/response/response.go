@@ -3,7 +3,7 @@ package response
 import (
 	"encoding/json"
 
-	"github.com/leaktk/scanner/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/logger"
 )
 
 // In the future we might have things like GitCommitMessage

@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/fs"
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/response"
-	"github.com/leaktk/scanner/version"
+	"github.com/leaktk/leaktk/pkg/fs"
+	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/response"
+	"github.com/leaktk/leaktk/version"
 
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/manifest"

@@ -2,6 +2,6 @@
 
 ## Reporting a Vulnerability
 
-To report a vulnerability please submit a Private vulnerability here: https://github.com/leaktk/scanner/security/advisories/new
+To report a vulnerability please submit a Private vulnerability here: https://github.com/leaktk/leaktk/security/advisories/new
 
 Vulnerabilities have a 30 day disclosure time by default.

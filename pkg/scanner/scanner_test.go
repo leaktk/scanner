@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/resource"
-	"github.com/leaktk/scanner/pkg/response"
+	"github.com/leaktk/leaktk/pkg/resource"
+	"github.com/leaktk/leaktk/pkg/response"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/leaktk/scanner/pkg/config"
+	"github.com/leaktk/leaktk/pkg/config"
 )
 
 // mockResource implements a dummy resource

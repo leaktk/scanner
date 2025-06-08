@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/resource"
+	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/resource"
 )
 
 // Request to the scanner to scan some resource

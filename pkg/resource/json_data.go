@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leaktk/scanner/pkg/fs"
-	"github.com/leaktk/scanner/pkg/logger"
-	"github.com/leaktk/scanner/pkg/response"
+	"github.com/leaktk/leaktk/pkg/fs"
+	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/response"
 )
 
 var urlRegexp = regexp.MustCompile(`^https?:\/\/\S+$`)

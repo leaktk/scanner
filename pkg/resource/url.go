@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	httpclient "github.com/leaktk/scanner/pkg/http"
-	"github.com/leaktk/scanner/pkg/id"
-	"github.com/leaktk/scanner/pkg/response"
+	httpclient "github.com/leaktk/leaktk/pkg/http"
+	"github.com/leaktk/leaktk/pkg/id"
+	"github.com/leaktk/leaktk/pkg/response"
 )
 
 // URL provides a to pull remote content by a URL
