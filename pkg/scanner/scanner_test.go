@@ -71,8 +71,11 @@ func (m *mockResource) String() string {
 	return ""
 }
 
-func (m *mockResource) Walk(fn resource.WalkFunc) error {
-	return fn("/", bytes.NewReader([]byte{}))
+func (m *mockResource) Objects(yield resource.ObjectsFunc) error {
+	return yield(resource.Object{
+		Path:    "/",
+		Content: bytes.NewReader([]byte{}),
+	})
 }
 
 func (m *mockResource) Priority() int {
@@ -92,7 +95,7 @@ func (b *mockBackend) Name() string {
 	return "mock"
 }
 
-func (b *mockBackend) Scan(resource resource.Resource) ([]*response.Result, error) {
+func (b *mockBackend) Scan(_ context.Context, resource resource.Resource) ([]*response.Result, error) {
 	mockResource, _ := resource.(*mockResource)
 
 	return []*response.Result{

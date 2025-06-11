@@ -9,7 +9,6 @@ require (
 	github.com/adrg/xdg v0.5.3
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/containers/image/v5 v5.35.0
-	github.com/h2non/filetype v1.1.3
 	github.com/klauspost/compress v1.18.0
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.9.1
@@ -48,6 +47,7 @@ require (
 	github.com/gitleaks/go-gitdiff v0.9.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
+	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect

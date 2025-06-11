@@ -1,14 +1,14 @@
 package scanner
 
 import (
+	"context"
 	"fmt"
-	"io"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/leaktk/leaktk/pkg/response"
 
-	"github.com/h2non/filetype"
 	"github.com/zricethezav/gitleaks/v8/detect"
 	"github.com/zricethezav/gitleaks/v8/report"
 	"github.com/zricethezav/gitleaks/v8/sources"
@@ -23,19 +23,28 @@ const (
 	chunkSize = 1024 * 1024 // 1 MiB
 )
 
-var defaultRemote *detect.RemoteInfo = &detect.RemoteInfo{}
+var (
+	defaultRemote *detect.RemoteInfo = &detect.RemoteInfo{}
+	bufPool                          = sync.Pool{
+		New: func() any {
+			return make([]byte, chunkSize)
+		},
+	}
+)
 
 // Gitleaks wraps gitleaks as a scanner backend
 type Gitleaks struct {
-	maxDecodeDepth uint16
-	patterns       *Patterns
+	maxArchiveDepth uint16
+	maxDecodeDepth  uint16
+	patterns        *Patterns
 }
 
 // NewGitleaks returns a configured gitleaks backend instance
-func NewGitleaks(maxDecodeDepth uint16, patterns *Patterns) *Gitleaks {
+func NewGitleaks(maxArchiveDepth, maxDecodeDepth uint16, patterns *Patterns) *Gitleaks {
 	return &Gitleaks{
-		maxDecodeDepth: maxDecodeDepth,
-		patterns:       patterns,
+		maxArchiveDepth: maxArchiveDepth,
+		maxDecodeDepth:  maxDecodeDepth,
+		patterns:        patterns,
 	}
 }
 
@@ -55,11 +64,12 @@ func (g *Gitleaks) newDetector(scanResource resource.Resource) (*detect.Detector
 	detector := detect.NewDetector(*cfg)
 	detector.FollowSymlinks = false
 	detector.IgnoreGitleaksAllow = false
+	detector.MaxArchiveDepth = int(g.maxArchiveDepth)
+	detector.MaxDecodeDepth = int(g.maxDecodeDepth)
 	detector.MaxTargetMegaBytes = 0
 	detector.NoColor = true
 	detector.Redact = 0
 	detector.Verbose = false
-	detector.MaxDecodeDepth = int(g.maxDecodeDepth)
 
 	// TODO: move this to scanResource.ReadFile and have JSONData.Clone not write files to disk
 	gitleaksIgnorePath := filepath.Join(scanResource.Path(), ".gitleaksignore")
@@ -137,59 +147,29 @@ func (g *Gitleaks) gitScan(detector *detect.Detector, gitRepo *resource.GitRepo)
 	return detector.DetectGit(gitCmd, defaultRemote)
 }
 
-// walkScan is the default way to scan most resources
-func (g *Gitleaks) walkScan(detector *detect.Detector, scanResource resource.Resource) ([]report.Finding, error) {
-	err := scanResource.Walk(func(path string, reader io.Reader) error {
-		// Source: https://github.com/gitleaks/gitleaks/blob/master/detect/directory.go
-		buf := make([]byte, chunkSize)
-		totalLines := 0
+// objectsScan is the default way to scan most resources
+func (g *Gitleaks) objectsScan(ctx context.Context, detector *detect.Detector, scanResource resource.Resource) ([]report.Finding, error) {
+	err := scanResource.Objects(func(obj resource.Object) error {
+		buf := bufPool.Get().([]byte)
 
-		for {
-			n, err := reader.Read(buf)
-			if err != nil && err != io.EOF {
-				logger.Error("could not read file: path=%q", path)
-				return nil
-			}
+		// DetectSource adds findings to the detector
+		_, err := detector.DetectSource(ctx, &sources.File{
+			Buffer:          buf,
+			Content:         obj.Content,
+			MaxArchiveDepth: detector.MaxArchiveDepth,
+			Path:            obj.Path,
+			Config:          &detector.Config,
+		})
 
-			if n == 0 {
-				break
-			}
-
-			// TODO: optimization could be introduced here
-			mimetype, err := filetype.Match(buf[:n])
-			if err != nil {
-				logger.Error("could not determine file type: path=%q", path)
-				return nil
-			}
-			if mimetype.MIME.Type == "application" {
-				logger.Warning("skipping binary file: path=%q", path)
-				return nil // skip binary files
-			}
-
-			// Count the number of newlines in this chunk
-			linesInChunk := strings.Count(string(buf[:n]), "\n")
-			totalLines += linesInChunk
-			fragment := detect.Fragment{
-				Raw:      string(buf[:n]),
-				FilePath: path,
-			}
-
-			for _, finding := range detector.Detect(fragment) {
-				// need to add 1 since line counting starts at 1
-				finding.StartLine += (totalLines - linesInChunk) + 1
-				finding.EndLine += (totalLines - linesInChunk) + 1
-				detector.AddFinding(finding)
-			}
-		}
-
-		return nil
+		bufPool.Put(buf)
+		return err
 	})
 
 	return detector.Findings(), err
 }
 
 // Scan does the gitleaks scan on the resource
-func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, error) {
+func (g *Gitleaks) Scan(ctx context.Context, scanResource resource.Resource) ([]*response.Result, error) {
 	var findings []report.Finding
 	var err error
 	var resultKind string
@@ -203,7 +183,7 @@ func (g *Gitleaks) Scan(scanResource resource.Resource) ([]*response.Result, err
 	case *resource.GitRepo:
 		findings, err = g.gitScan(detector, scanResource)
 	default:
-		findings, err = g.walkScan(detector, scanResource)
+		findings, err = g.objectsScan(ctx, detector, scanResource)
 	}
 
 	if err != nil {

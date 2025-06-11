@@ -230,10 +230,8 @@ func (r *GitRepo) ShallowCommits() []string {
 	return shallowCommits
 }
 
-// Walk traverses the HEAD of a git repo like it's a directory tree. This
-// exists this way so even a bare repo can be crawled if needed. To crawl
-// different branches, change HEAD.
-func (r *GitRepo) Walk(fn WalkFunc) error {
+// Objects yields the objects contained in this resource
+func (r *GitRepo) Objects(yield ObjectsFunc) error {
 	cmd := exec.Command("git", "-C", r.Path(), "ls-tree", "-r", "--name-only", "--full-tree", "HEAD") // #nosec G204
 	output, err := cmd.Output()
 
@@ -251,7 +249,12 @@ func (r *GitRepo) Walk(fn WalkFunc) error {
 			return err
 		}
 
-		if err := fn(path, bytes.NewReader(data)); err != nil {
+		obj := Object{
+			Path:    path,
+			Content: bytes.NewReader(data),
+		}
+
+		if err := yield(obj); err != nil {
 			return err
 		}
 	}

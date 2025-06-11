@@ -133,9 +133,9 @@ func (r *URL) ReadFile(path string) ([]byte, error) {
 	return r.resource.ReadFile(path)
 }
 
-// Walk traverses the resource like a directory tree
-func (r *URL) Walk(fn WalkFunc) error {
-	return r.resource.Walk(fn)
+// Objects returns the objects contained in this resource
+func (r *URL) Objects(yield ObjectsFunc) error {
+	return r.resource.Objects(yield)
 }
 
 // Priority returns the scan priority

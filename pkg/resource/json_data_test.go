@@ -153,15 +153,15 @@ func TestJSONData(t *testing.T) {
 		}
 	})
 
-	t.Run("Walk", func(t *testing.T) {
+	t.Run("Objects", func(t *testing.T) {
 		toCheck := map[string]string{}
 
 		// Build out a dict to check
 		for _, test := range tests {
-			// Ignore the error tests for this one since walk should only return
+			// Ignore the error tests for this one since objects should only return
 			// valid paths
 			if !test.err {
-				// Walk only returns relative paths
+				// Objects only returns relative paths
 				if filepath.IsAbs(test.path) {
 					relPath, err := filepath.Rel(string(filepath.Separator), test.path)
 					assert.NoError(t, err)
@@ -172,15 +172,15 @@ func TestJSONData(t *testing.T) {
 			}
 		}
 
-		// Walk the tests to make sure the items are present
-		_ = jsonData.Walk(func(path string, reader io.Reader) error {
-			data, err := io.ReadAll(reader)
+		// Objects the tests to make sure the items are present
+		_ = jsonData.Objects(func(obj Object) error {
+			data, err := io.ReadAll(obj.Content)
 			assert.NoError(t, err)
-			expected, exists := toCheck[path]
+			expected, exists := toCheck[obj.Path]
 
 			if exists {
 				assert.Equal(t, expected, string(data))
-				delete(toCheck, path)
+				delete(toCheck, obj.Path)
 			}
 
 			return nil
@@ -208,11 +208,11 @@ func TestJSONData(t *testing.T) {
 
 		// Make sure the URL was left unresolved
 		invalidMatched := false
-		_ = jsonData.Walk(func(path string, reader io.Reader) error {
+		_ = jsonData.Objects(func(obj Object) error {
 			// Should not have resolved the URL
-			if path == "invalid" {
+			if obj.Path == "invalid" {
 				invalidMatched = true
-				data, err := io.ReadAll(reader)
+				data, err := io.ReadAll(obj.Content)
 				assert.NoError(t, err)
 				assert.Equal(t, string(data), "https://raw.githubusercontent.com/leaktk/fake-leaks/main/this-url-doesnt-exist-8UaehX5b24MzZiaeJ428FK5R")
 			}

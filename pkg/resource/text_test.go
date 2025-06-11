@@ -22,9 +22,9 @@ func TestText(t *testing.T) {
 		assert.Equal(t, string(value), data)
 	})
 
-	t.Run("Walk", func(t *testing.T) {
-		_ = text.Walk(func(path string, reader io.Reader) error {
-			value, err := io.ReadAll(reader)
+	t.Run("Objects", func(t *testing.T) {
+		_ = text.Objects(func(obj Object) error {
+			value, err := io.ReadAll(obj.Content)
 			assert.NoError(t, err)
 			assert.Equal(t, string(value), text.String())
 			return nil

@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"time"
@@ -49,6 +50,7 @@ func NewScanner(cfg *config.Config) *Scanner {
 		includeResponseLogs: cfg.Scanner.IncludeResponseLogs,
 		backends: []Backend{
 			NewGitleaks(
+				cfg.Scanner.MaxArchiveDepth,
 				cfg.Scanner.MaxDecodeDepth,
 				NewPatterns(&cfg.Scanner.Patterns, http.NewClient()),
 			),
@@ -158,7 +160,7 @@ func (s *Scanner) listenForScanRequests() {
 			for _, backend := range s.backends {
 				logger.Info("starting scan: request_id=%q resource_id=%q scanner_backend=%q", request.ID, reqResource.ID(), backend.Name())
 
-				backendResults, err := backend.Scan(reqResource)
+				backendResults, err := backend.Scan(context.Background(), reqResource)
 				if err != nil {
 					reqResource.Critical(logger.ScanError, "scan error: request_id=%q error=%q", request.ID, err.Error())
 				}

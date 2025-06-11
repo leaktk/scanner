@@ -442,12 +442,12 @@ func (r *ContainerImage) ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(filepath.Join(r.Path(), filepath.Clean(path)))
 }
 
-// Walk traverses the resource like a directory tree
-func (r *ContainerImage) Walk(fn WalkFunc) error {
+// Objects yields the objects contained in this resource
+func (r *ContainerImage) Objects(yield ObjectsFunc) error {
 	// TODO: consider calling JSONData and creating Files for these instead of walking this way
 	return filepath.WalkDir(r.Path(), func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
-			r.Error(logger.ScanError, "could not walk path: path=%q error=%q", path, err)
+			r.Error(logger.ScanError, "could not get objects at path: path=%q error=%q", path, err)
 			return nil
 		}
 
@@ -478,7 +478,10 @@ func (r *ContainerImage) Walk(fn WalkFunc) error {
 		}
 		defer file.Close()
 
-		return fn(relPath, file)
+		return yield(Object{
+			Path:    relPath,
+			Content: file,
+		})
 	})
 }
 

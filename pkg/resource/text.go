@@ -101,9 +101,12 @@ func (r *Text) ReadFile(path string) ([]byte, error) {
 	return []byte{}, fmt.Errorf("%q does not exist", path)
 }
 
-// Walk returns the text as a single item in the "tree"
-func (r *Text) Walk(fn WalkFunc) error {
-	return fn("", strings.NewReader(r.data))
+// Objects yields the objects contained in this resource
+func (r *Text) Objects(yield ObjectsFunc) error {
+	return yield(Object{
+		Path:    "",
+		Content: strings.NewReader(r.data),
+	})
 }
 
 // Priority returns the scan priority

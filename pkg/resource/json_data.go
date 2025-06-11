@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -295,34 +294,43 @@ func (r *JSONData) replaceWithResource(leafNode jsonNode, resource Resource) err
 
 // prefixPath handles providing the full clone path for sub-resources.
 // When a node in the tree is replaced with a resource, the resource isn't
-// aware of its place in the tree when you call Walk on it. This adds that path
+// aware of its place in the tree when you call Objects on it. This adds that path
 // back.
-func (r *JSONData) prefixPath(leafNode jsonNode, fn WalkFunc) WalkFunc {
-	return func(path string, reader io.Reader) error {
-		return fn(filepath.Join(leafNode.path, path), reader)
+func (r *JSONData) prefixPath(leafNode jsonNode, yield ObjectsFunc) ObjectsFunc {
+	return func(obj Object) error {
+		return yield(Object{
+			Path:    filepath.Join(leafNode.path, obj.Path),
+			Content: obj.Content,
+		})
 	}
 }
 
-// walkFuncToJSONWalkFunc takes a normal WalkFunc and wraps it in a
+// objectsFuncToJSONWalkFunc takes a normal ObjectsFunc and wraps it in a
 // jsonWalkFunc so it can be used in this resource. The custom jsonWalkFunc
 // exists since there are multiple cases where we need to walk through the json
 // data structure that wouldn't apply to other resources.
-func (r *JSONData) walkFuncToJSONWalkFunc(fn WalkFunc) jsonWalkFunc {
+func (r *JSONData) objectsFuncToJSONWalkFunc(yield ObjectsFunc) jsonWalkFunc {
 	return func(leafNode jsonNode) error {
 		switch obj := leafNode.value.(type) {
 		case nil: // Handle nil
-			return fn(leafNode.path, bytes.NewReader([]byte{}))
+			return yield(Object{
+				Path:    leafNode.path,
+				Content: bytes.NewReader([]byte{}),
+			})
 		case Resource:
-			return obj.Walk(r.prefixPath(leafNode, fn))
+			return obj.Objects(r.prefixPath(leafNode, yield))
 		default: // Handle bool, float64, and string
-			return fn(leafNode.path, bytes.NewReader([]byte(fmt.Sprintf("%v", obj))))
+			return yield(Object{
+				Path:    leafNode.path,
+				Content: bytes.NewReader([]byte(fmt.Sprintf("%v", obj))),
+			})
 		}
 	}
 }
 
-// Walk traverses the JSON data structure like it's a directory tree
-func (r *JSONData) Walk(fn WalkFunc) error {
-	return r.walkRecusrive(jsonNode{value: r.data}, r.walkFuncToJSONWalkFunc(fn))
+// Objects yields the objects contained in this resource
+func (r *JSONData) Objects(yield ObjectsFunc) error {
+	return r.walkRecusrive(jsonNode{value: r.data}, r.objectsFuncToJSONWalkFunc(yield))
 }
 
 // Priority returns the scan priority

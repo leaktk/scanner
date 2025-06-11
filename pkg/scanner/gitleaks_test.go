@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,7 +58,7 @@ func TestGitleaksScan(t *testing.T) {
 		err = gitRepo.Clone(filepath.Join(tempDir, "clone"))
 		assert.NoError(t, err)
 
-		results, err := NewGitleaks(1, patterns).Scan(gitRepo)
+		results, err := NewGitleaks(1, 1, patterns).Scan(context.Background(), gitRepo)
 		assert.NoError(t, err)
 		assert.Greater(t, len(results), 0)
 		// This should at least be defined on git responses
@@ -90,7 +91,7 @@ func TestGitleaksScan(t *testing.T) {
 		err = gitRepo.Clone(filepath.Join(tempDir, "clone"))
 		assert.NoError(t, err)
 
-		results, err := NewGitleaks(1, patterns).Scan(gitRepo)
+		results, err := NewGitleaks(1, 1, patterns).Scan(context.Background(), gitRepo)
 		assert.Error(t, err)
 		assert.Equal(t, len(results), 0)
 	})

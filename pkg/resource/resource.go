@@ -3,7 +3,6 @@ package resource
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/leaktk/leaktk/pkg/id"
@@ -11,9 +10,9 @@ import (
 	"github.com/leaktk/leaktk/pkg/response"
 )
 
-// WalkFunc is the func signature for functions passed into the various
-// resource Walk methods.
-type WalkFunc func(path string, reader io.Reader) error
+// ObjectsFunc is the func signature for functions passed into the various
+// resource Objects methods.
+type ObjectsFunc func(obj Object) error
 
 // Resource provides a standard interface for acting with resources in the
 // scanner
@@ -36,8 +35,7 @@ type Resource interface {
 	IncludeLogs(enabled bool)
 	Since() string
 	String() string
-	// Walk is the main way to pick through resource data (except for GitRepo)
-	Walk(WalkFunc) error
+	Objects(ObjectsFunc) error
 	Warning(code logger.LogCode, msg string, args ...any)
 	IsLocal() bool
 }

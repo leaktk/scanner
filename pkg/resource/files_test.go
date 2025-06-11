@@ -30,11 +30,11 @@ func TestFiles(t *testing.T) {
 		assert.Equal(t, string(testFileData), string(readData))
 	})
 
-	t.Run("Walk", func(t *testing.T) {
-		_ = files.Walk(func(path string, reader io.Reader) error {
-			data, err := io.ReadAll(reader)
+	t.Run("Objects", func(t *testing.T) {
+		_ = files.Objects(func(obj Object) error {
+			data, err := io.ReadAll(obj.Content)
 			assert.NoError(t, err)
-			assert.Equal(t, path, filepath.Join("foo", "test-file"))
+			assert.Equal(t, obj.Path, filepath.Join("foo", "test-file"))
 			assert.Equal(t, string(testFileData), string(data))
 			return nil
 		})

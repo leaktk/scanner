@@ -33,7 +33,7 @@ func TestURL(t *testing.T) {
 	ts.Start()
 	defer ts.Close()
 
-	t.Run("Walk", func(t *testing.T) {
+	t.Run("Objects", func(t *testing.T) {
 		tsURL, err := url.JoinPath(ts.URL, "general")
 		assert.NoError(t, err)
 
@@ -41,10 +41,10 @@ func TestURL(t *testing.T) {
 		err = urlResource.Clone(t.TempDir())
 		assert.NoError(t, err)
 
-		_ = urlResource.Walk(func(path string, reader io.Reader) error {
-			data, err := io.ReadAll(reader)
+		_ = urlResource.Objects(func(obj Object) error {
+			data, err := io.ReadAll(obj.Content)
 			assert.NoError(t, err)
-			assert.Equal(t, path, "")
+			assert.Equal(t, obj.Path, "")
 			assert.Equal(t, string(data), "general-content")
 			return nil
 		})
@@ -55,10 +55,10 @@ func TestURL(t *testing.T) {
 		err = urlResource.Clone(t.TempDir())
 		assert.NoError(t, err)
 
-		_ = urlResource.Walk(func(path string, reader io.Reader) error {
-			data, err := io.ReadAll(reader)
+		_ = urlResource.Objects(func(obj Object) error {
+			data, err := io.ReadAll(obj.Content)
 			assert.NoError(t, err)
-			assert.Equal(t, path, "data")
+			assert.Equal(t, obj.Path, "data")
 			assert.Equal(t, string(data), "json-data")
 			return nil
 		})

@@ -87,8 +87,8 @@ func (r *Files) ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(filepath.Join(r.path, filepath.Clean(path)))
 }
 
-// Walk traverses the JSON data structure like it's a directory tree
-func (r *Files) Walk(fn WalkFunc) error {
+// Objects yields the objects contained in this resource
+func (r *Files) Objects(yield ObjectsFunc) error {
 	// Handle if path is a file
 	if fs.FileExists(r.path) {
 		file, err := os.Open(r.path)
@@ -97,13 +97,15 @@ func (r *Files) Walk(fn WalkFunc) error {
 		}
 		defer file.Close()
 
-		// path is empty because it's not in a directory
-		return fn("", file)
+		return yield(Object{
+			Path:    filepath.Base(r.path),
+			Content: file,
+		})
 	}
 
 	return filepath.WalkDir(r.path, func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
-			r.Error(logger.ScanError, "could not walk path: path=%q error=%q", path, err)
+			r.Error(logger.ScanError, "could not get objects at path: path=%q error=%q", path, err)
 			return nil
 		}
 
@@ -134,7 +136,10 @@ func (r *Files) Walk(fn WalkFunc) error {
 		}
 		defer file.Close()
 
-		return fn(relPath, file)
+		return yield(Object{
+			Path:    relPath,
+			Content: file,
+		})
 	})
 }
 

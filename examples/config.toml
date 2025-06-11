@@ -21,6 +21,8 @@ clone_timeout = 0 # 0 means no timeout
 clone_workers = 1
 # How deep should the scanner decode encoded values
 max_decode_depth = 8 # 0 means no decoding
+# Allow scanning into nested archives up to this depth
+max_archive_depth = 8 # 0 means no decoding
 # How many commits can be scanned
 max_scan_depth = 0 # 0 means no max depth.
 # How many scans can happen at once
