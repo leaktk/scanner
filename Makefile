@@ -39,14 +39,16 @@ golint:
 	which golint &> /dev/null || go install golang.org/x/lint/golint@latest
 	golint ./...
 
-build: format test
+build: import
 	go mod tidy
 	go build $(LDFLAGS)
 
-format:
-	go fmt ./...
+import:
 	which goimports &> /dev/null || go install golang.org/x/tools/cmd/goimports@latest
 	goimports -local $(MODULE) -l -w .
+
+format: import
+	go fmt ./...
 
 test: format gosec golint
 	go vet ./...

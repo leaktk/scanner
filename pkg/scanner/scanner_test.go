@@ -25,7 +25,7 @@ type mockResource struct {
 	cloneErr     error
 	path         string
 	cloneTimeout time.Duration
-	depth        uint16
+	depth        int
 	resource.BaseResource
 }
 
@@ -47,7 +47,7 @@ func (m *mockResource) Path() string {
 	return m.path
 }
 
-func (m *mockResource) Depth() uint16 {
+func (m *mockResource) Depth() int {
 	return m.depth
 }
 
@@ -55,7 +55,7 @@ func (m *mockResource) EnrichResult(result *response.Result) *response.Result {
 	return result
 }
 
-func (m *mockResource) SetDepth(depth uint16) {
+func (m *mockResource) SetDepth(depth int) {
 	m.depth = depth
 }
 
@@ -71,8 +71,11 @@ func (m *mockResource) String() string {
 	return ""
 }
 
-func (m *mockResource) Walk(fn resource.WalkFunc) error {
-	return fn("/", bytes.NewReader([]byte{}))
+func (m *mockResource) Objects(yield resource.ObjectsFunc) error {
+	return yield(resource.Object{
+		Path:    "/",
+		Content: bytes.NewReader([]byte{}),
+	})
 }
 
 func (m *mockResource) Priority() int {
@@ -92,7 +95,7 @@ func (b *mockBackend) Name() string {
 	return "mock"
 }
 
-func (b *mockBackend) Scan(resource resource.Resource) ([]*response.Result, error) {
+func (b *mockBackend) Scan(_ context.Context, resource resource.Resource) ([]*response.Result, error) {
 	mockResource, _ := resource.(*mockResource)
 
 	return []*response.Result{

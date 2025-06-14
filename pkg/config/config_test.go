@@ -31,7 +31,7 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 			actual:   cfg.Scanner.Workdir,
 		},
 		{
-			expected: uint32(43200),
+			expected: 43200,
 			actual:   cfg.Scanner.Patterns.RefreshAfter,
 		},
 		{
@@ -47,7 +47,7 @@ func TestPartialLoadConfigFromFile(t *testing.T) {
 			actual:   cfg.Logger.Level,
 		},
 		{
-			expected: uint16(0),
+			expected: 0,
 			actual:   cfg.Scanner.MaxScanDepth,
 		},
 	}

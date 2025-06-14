@@ -1,0 +1,139 @@
+package gitleaks
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/zricethezav/gitleaks/v8/sources"
+
+	"github.com/leaktk/leaktk/pkg/fs"
+	httpclient "github.com/leaktk/leaktk/pkg/http"
+	"github.com/leaktk/leaktk/pkg/logger"
+)
+
+var urlRegexp = regexp.MustCompile(`^https?:\/\/\S+$`)
+
+// JSON is a source for yielding fragments from strings in json data
+// and from URLs contained in the data that match FetchURLPatterns
+type JSON struct {
+	FetchURLPatterns []string
+	Path             string
+	RawMessage       json.RawMessage
+	data             any
+}
+
+type jsonNode struct {
+	path  string
+	value any
+}
+
+// Fragments yields the fragments contained in this resource
+func (s *JSON) Fragments(ctx context.Context, yield sources.FragmentsFunc) error {
+	if s.data == nil {
+		if err := json.Unmarshal([]byte(s.RawMessage), &s.data); err != nil {
+			return fmt.Errorf("could not unmarshal json data: %w", err)
+		}
+	}
+
+	return s.walkAndYield(ctx, jsonNode{path: s.Path, value: s.data}, yield)
+}
+
+func (s *JSON) walkAndYield(ctx context.Context, currentNode jsonNode, yield sources.FragmentsFunc) error {
+	switch obj := currentNode.value.(type) {
+	case map[string]any:
+		for key, value := range obj {
+			childNode := jsonNode{
+				path:  filepath.Join(currentNode.path, key),
+				value: value,
+			}
+			if err := s.walkAndYield(ctx, childNode, yield); err != nil {
+				return err
+			}
+		}
+		return nil
+	case []any:
+		for i, value := range obj {
+			childNode := jsonNode{
+				path:  filepath.Join(currentNode.path, strconv.Itoa(i)),
+				value: value,
+			}
+			if err := s.walkAndYield(ctx, childNode, yield); err != nil {
+				return err
+			}
+		}
+		return nil
+	case string:
+		if s.shouldFetchURL(currentNode.path) && urlRegexp.MatchString(obj) {
+			client := httpclient.NewClient()
+			resp, err := client.Get(obj)
+
+			if err != nil {
+				logger.Error("json fetch url failed: %v path=%q", err, currentNode.path)
+				return nil
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				logger.Error(
+					"json fetch url failed with an unexpected status code: status_code=%d path=%q",
+					resp.StatusCode,
+					currentNode.path,
+				)
+				file := &sources.File{
+					Path:    currentNode.path,
+					Content: strings.NewReader(obj),
+				}
+				return file.Fragments(ctx, yield)
+			}
+			defer resp.Body.Close()
+
+			// Handle when the URL returns more json
+			if strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
+				data, err := io.ReadAll(resp.Body)
+				if err != nil {
+					logger.Error("could not read fetched json response body: %s path=%q", err, currentNode.path)
+					return nil
+				}
+				jsonData := &JSON{
+					RawMessage: data,
+					Path:       currentNode.path,
+				}
+				return jsonData.Fragments(ctx, yield)
+			}
+
+			file := &sources.File{
+				Path:    currentNode.path,
+				Content: resp.Body,
+			}
+			return file.Fragments(ctx, yield)
+		}
+
+		file := &sources.File{
+			Path:    currentNode.path,
+			Content: strings.NewReader(obj),
+		}
+		return file.Fragments(ctx, yield)
+	default:
+		return nil
+	}
+}
+
+func (s *JSON) shouldFetchURL(path string) bool {
+	if len(s.FetchURLPatterns) == 0 {
+		return false
+	}
+
+	for _, pattern := range s.FetchURLPatterns {
+		if fs.Match(pattern, path) {
+			return true
+		}
+	}
+
+	return false
+}
