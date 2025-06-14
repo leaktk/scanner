@@ -44,8 +44,6 @@ level = "INFO"
 [scanner]
 # How long a clone can run before it's canceled
 clone_timeout = 0 # 0 means no timeout
-# How many clones to run at once
-clone_workers = 1
 # How deep should the scanner decode encoded values
 max_decode_depth = 8 # 0 means no decoding
 # Allow scanning into nested archives up to this depth

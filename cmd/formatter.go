@@ -1,4 +1,4 @@
-package response
+package cmd
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/leaktk/leaktk/pkg/config"
 	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/proto"
 )
 
 // OutputFormat is the code(int) for each format
@@ -37,15 +38,14 @@ type Formatter struct {
 
 // NewFormatter creates new formatter
 func NewFormatter(cfg config.Formatter) (*Formatter, error) {
-	format, err := GetOutputFormat(cfg.Format)
+	format, err := getOutputFormat(cfg.Format)
 	if err != nil {
 		return nil, err
 	}
 	return &Formatter{format: format}, nil
 }
 
-// GetOutputFormat takes the string and returns OutputFormat or an error
-func GetOutputFormat(format string) (OutputFormat, error) {
+func getOutputFormat(format string) (OutputFormat, error) {
 	format = strings.ToUpper(format)
 	switch format {
 	case "JSON":
@@ -64,7 +64,7 @@ func GetOutputFormat(format string) (OutputFormat, error) {
 }
 
 // Format renders a response structure to the set format as a string
-func (f *Formatter) Format(r *Response) string {
+func (f *Formatter) Format(r *proto.Response) string {
 	switch f.format {
 	case JSON:
 		return formatJSON(r)
@@ -77,7 +77,7 @@ func (f *Formatter) Format(r *Response) string {
 	case CSV:
 		return formatCsv(r)
 	default:
-		return r.String()
+		return formatJSON(r)
 	}
 }
 

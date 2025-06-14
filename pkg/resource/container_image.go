@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	iofs "io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,7 +15,7 @@ import (
 
 	"github.com/leaktk/leaktk/pkg/fs"
 	"github.com/leaktk/leaktk/pkg/logger"
-	"github.com/leaktk/leaktk/pkg/response"
+	"github.com/leaktk/leaktk/pkg/proto"
 	"github.com/leaktk/leaktk/version"
 
 	"github.com/containers/image/v5/docker"
@@ -39,24 +38,12 @@ func extractRFC5322Mailbox(mailbox string) []string {
 	return nil
 }
 
-// ContainerImage provides a pull and hold a container
-type ContainerImage struct {
-	// Provide common helper functions
-	BaseResource
-	path         string
-	cloneTimeout time.Duration
-	location     string
-	options      *ContainerImageOptions
-	manifest     *string
-	labels       map[string]string
-}
-
 // ContainerImageOptions are options for the ContainerImage resource
 type ContainerImageOptions struct {
 	// A preferred arch, if it exists - defaults to first
 	Arch string `json:"arch"`
 	// Set the number of layers to download, counting from the top down.
-	Depth uint16 `json:"depth"`
+	Depth int `json:"depth"`
 	// A list of layer hashes to exclude from clone and scan
 	Exclusions []string `json:"exclusions"`
 	// The scan priority
@@ -65,57 +52,39 @@ type ContainerImageOptions struct {
 	Since string `json:"since"`
 }
 
-// NewContainerImage returns a configured ContainerImage resource for the scanner to scan
-func NewContainerImage(location string, options *ContainerImageOptions) *ContainerImage {
-	return &ContainerImage{
-		location: location,
-		options:  options,
-	}
-}
-
 // Contact Attempts to identify author information returning name and email if found
 // The order was selected for most completeness with a preference to maintainer and OCI spec
 // Returns the name and email
-func (r *ContainerImage) Contact() response.Contact {
+func (r *ContainerImage) Contact() proto.Contact {
 	var email string
 	if e, ok := r.labels["email"]; ok {
 		email = strings.TrimSpace(e)
 	}
 	if authors, ok := r.labels["org.opencontainers.image.authors"]; ok {
 		if match := extractRFC5322Mailbox(authors); match != nil {
-			return response.Contact{Name: match[0], Email: match[1]}
+			return proto.Contact{Name: match[0], Email: match[1]}
 		}
-		return response.Contact{Name: strings.TrimSpace(authors), Email: email}
+		return proto.Contact{Name: strings.TrimSpace(authors), Email: email}
 	}
 	if maintainer, ok := r.labels["org.opencontainers.image.maintainers"]; ok {
 		if match := extractRFC5322Mailbox(maintainer); match != nil {
-			return response.Contact{Name: match[0], Email: match[1]}
+			return proto.Contact{Name: match[0], Email: match[1]}
 		}
-		return response.Contact{Name: strings.TrimSpace(maintainer), Email: email}
+		return proto.Contact{Name: strings.TrimSpace(maintainer), Email: email}
 	}
 	if maintainer, ok := r.labels["maintainer"]; ok {
 		if match := extractRFC5322Mailbox(maintainer); match != nil {
-			return response.Contact{Name: match[0], Email: match[1]}
+			return proto.Contact{Name: match[0], Email: match[1]}
 		}
-		return response.Contact{Name: strings.TrimSpace(maintainer), Email: email}
+		return proto.Contact{Name: strings.TrimSpace(maintainer), Email: email}
 	}
 	if author, ok := r.labels["author"]; ok {
-		return response.Contact{Name: strings.TrimSpace(author), Email: email}
+		return proto.Contact{Name: strings.TrimSpace(author), Email: email}
 	}
-	return response.Contact{Email: email}
+	return proto.Contact{Email: email}
 }
 
-// Kind of resource (always returns ContainerImage here)
-func (r *ContainerImage) Kind() string {
-	return "ContainerImage"
-}
-
-// String representation of the resource
-func (r *ContainerImage) String() string {
-	return r.location
-}
-
-// Clone the resource to the desired path location
+// TODO: Just scan these on the fly using readers
 func (r *ContainerImage) Clone(path string) error {
 	err := os.MkdirAll(path, 0700)
 	if err != nil {
@@ -346,16 +315,6 @@ func (r *ContainerImage) extractLayer(t io.Reader, layer manifest.LayerInfo, pat
 	return nil
 }
 
-// Path returns where this repo has been cloned if cloned else ""
-func (r *ContainerImage) Path() string {
-	return r.path
-}
-
-// Depth returns the depth for things that have version control
-func (r *ContainerImage) Depth() uint16 {
-	return r.options.Depth
-}
-
 // layerDepth returns the layers to scan based on the depth provided
 func (r *ContainerImage) layerDepth(layers []manifest.LayerInfo, dates []*time.Time) ([]manifest.LayerInfo, []*time.Time) {
 	if len(layers) != len(dates) {
@@ -376,40 +335,19 @@ func (r *ContainerImage) layerDepth(layers []manifest.LayerInfo, dates []*time.T
 }
 
 // EnrichResult adds contextual information to each result
-func (r *ContainerImage) EnrichResult(result *response.Result) *response.Result {
+func (r *ContainerImage) EnrichResult(result *proto.Result) *proto.Result {
 	if hash, file, found := strings.Cut(result.Location.Path, string(os.PathSeparator)); found {
 		result.Location.Version = hash
 		result.Location.Path = file
-		result.Kind = response.ContainerLayerResultKind
+		result.Kind = proto.ContainerLayerResultKind
 	} else {
-		result.Kind = response.ContainerMetdataResultKind
+		result.Kind = proto.ContainerMetdataResultKind
 	}
 
 	result.Notes = r.labels
 	result.Contact = r.Contact()
 
 	return result
-}
-
-// Priority returns the scan priority
-func (r *ContainerImage) Priority() int {
-	return r.options.Priority
-}
-
-// SetDepth allows you to adjust the depth for the resource
-func (r *ContainerImage) SetDepth(depth uint16) {
-	r.options.Depth = depth
-}
-
-// SetCloneTimeout lets you adjust the timeout before the clone aborts
-func (r *ContainerImage) SetCloneTimeout(timeout time.Duration) {
-	r.cloneTimeout = timeout
-}
-
-// Since returns the date after which things should be scanned for containers
-// that have history
-func (r *ContainerImage) Since() string {
-	return r.options.Since
 }
 
 func (r *ContainerImage) sinceTime() *time.Time {
@@ -434,58 +372,5 @@ func (r *ContainerImage) skipLayer(digest string) bool {
 			return true
 		}
 	}
-	return false
-}
-
-// ReadFile provides a way to access values in the resource
-func (r *ContainerImage) ReadFile(path string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(r.Path(), filepath.Clean(path)))
-}
-
-// Objects yields the objects contained in this resource
-func (r *ContainerImage) Objects(yield ObjectsFunc) error {
-	// TODO: consider calling JSONData and creating Files for these instead of walking this way
-	return filepath.WalkDir(r.Path(), func(path string, d iofs.DirEntry, err error) error {
-		if err != nil {
-			r.Error(logger.ScanError, "could not get objects at path: path=%q error=%q", path, err)
-			return nil
-		}
-
-		relPath, err := filepath.Rel(r.Path(), path)
-		if err != nil {
-			r.Error(logger.ScanError, "could generate relative path: path=%q error=%q", path, err)
-			return nil
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		info, err := d.Info()
-		if err != nil {
-			return nil
-		}
-
-		if info.Mode()&os.ModeSymlink != 0 {
-			r.Info(logger.ScanDetail, "skipping symlink: path=%q", relPath)
-			return nil
-		}
-
-		file, err := os.Open(filepath.Clean(path))
-		if err != nil {
-			r.Error(logger.ScanError, "could not open file: path=%q error=%q", relPath, err)
-			return nil
-		}
-		defer file.Close()
-
-		return yield(Object{
-			Path:    relPath,
-			Content: file,
-		})
-	})
-}
-
-// IsLocal returns whether this is a local resource or not
-func (r *ContainerImage) IsLocal() bool {
 	return false
 }

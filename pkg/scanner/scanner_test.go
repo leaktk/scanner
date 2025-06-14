@@ -25,7 +25,7 @@ type mockResource struct {
 	cloneErr     error
 	path         string
 	cloneTimeout time.Duration
-	depth        uint16
+	depth        int
 	resource.BaseResource
 }
 
@@ -47,7 +47,7 @@ func (m *mockResource) Path() string {
 	return m.path
 }
 
-func (m *mockResource) Depth() uint16 {
+func (m *mockResource) Depth() int {
 	return m.depth
 }
 
@@ -55,7 +55,7 @@ func (m *mockResource) EnrichResult(result *response.Result) *response.Result {
 	return result
 }
 
-func (m *mockResource) SetDepth(depth uint16) {
+func (m *mockResource) SetDepth(depth int) {
 	m.depth = depth
 }
 
