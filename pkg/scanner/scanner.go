@@ -1,18 +1,23 @@
 package scanner
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/zricethezav/gitleaks/v8/report"
+
 	"github.com/leaktk/leaktk/pkg/config"
-	"github.com/leaktk/leaktk/pkg/fs"
-	"github.com/leaktk/leaktk/pkg/http"
 	"github.com/leaktk/leaktk/pkg/id"
 	"github.com/leaktk/leaktk/pkg/logger"
+	"github.com/leaktk/leaktk/pkg/proto"
 	"github.com/leaktk/leaktk/pkg/queue"
-	"github.com/leaktk/leaktk/pkg/resource"
-	"github.com/leaktk/leaktk/pkg/response"
+	"github.com/leaktk/leaktk/pkg/scanner/gitleaks"
+
+	httpclient "github.com/leaktk/leaktk/pkg/http"
 )
 
 // Set initial queue size. The queue can grow over time if needed
@@ -20,39 +25,32 @@ const queueSize = 1024
 
 // Scanner holds the config and state for the scanner processes
 type Scanner struct {
-	allowLocal          bool
-	backends            []Backend
-	cloneQueue          *queue.PriorityQueue[*Request]
-	cloneTimeout        time.Duration
-	cloneWorkers        uint16
-	includeResponseLogs bool
-	maxScanDepth        uint16
-	resourceDir         string
-	responseQueue       *queue.PriorityQueue[*response.Response]
-	scanQueue           *queue.PriorityQueue[*Request]
-	scanWorkers         uint16
+	allowLocal      bool
+	cloneTimeout    time.Duration
+	clonesDir       string
+	maxArchiveDepth int
+	maxDecodeDepth  int
+	maxScanDepth    int
+	patterns        *Patterns
+	responseQueue   *queue.PriorityQueue[*proto.Response]
+	scanQueue       *queue.PriorityQueue[*proto.Request]
+	scanWorkers     int
 }
 
 // NewScanner returns a initialized and listening scanner instance that should
 // be closed when it's no longer needed.
 func NewScanner(cfg *config.Config) *Scanner {
 	scanner := &Scanner{
-		allowLocal:          cfg.Scanner.AllowLocal,
-		cloneQueue:          queue.NewPriorityQueue[*Request](queueSize),
-		cloneTimeout:        time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
-		cloneWorkers:        cfg.Scanner.CloneWorkers,
-		maxScanDepth:        cfg.Scanner.MaxScanDepth,
-		resourceDir:         filepath.Join(cfg.Scanner.Workdir, "resources"),
-		responseQueue:       queue.NewPriorityQueue[*response.Response](queueSize),
-		scanQueue:           queue.NewPriorityQueue[*Request](queueSize),
-		scanWorkers:         cfg.Scanner.ScanWorkers,
-		includeResponseLogs: cfg.Scanner.IncludeResponseLogs,
-		backends: []Backend{
-			NewGitleaks(
-				cfg.Scanner.MaxDecodeDepth,
-				NewPatterns(&cfg.Scanner.Patterns, http.NewClient()),
-			),
-		},
+		allowLocal:      cfg.Scanner.AllowLocal,
+		cloneTimeout:    time.Duration(cfg.Scanner.CloneTimeout) * time.Second,
+		clonesDir:       filepath.Join(cfg.Scanner.Workdir, "clones"),
+		maxArchiveDepth: int(cfg.Scanner.MaxArchiveDepth),
+		maxDecodeDepth:  int(cfg.Scanner.MaxDecodeDepth),
+		maxScanDepth:    int(cfg.Scanner.MaxScanDepth),
+		patterns:        NewPatterns(&cfg.Scanner.Patterns, httpclient.NewClient()),
+		responseQueue:   queue.NewPriorityQueue[*proto.Response](queueSize),
+		scanQueue:       queue.NewPriorityQueue[*proto.Request](queueSize),
+		scanWorkers:     cfg.Scanner.ScanWorkers,
 	}
 
 	scanner.start()
@@ -60,129 +58,227 @@ func NewScanner(cfg *config.Config) *Scanner {
 }
 
 // Recv sends scan responses to a callback function
-func (s *Scanner) Recv(fn func(*response.Response)) {
-	s.responseQueue.Recv(func(msg *queue.Message[*response.Response]) {
+func (s *Scanner) Recv(fn func(*proto.Response)) {
+	s.responseQueue.Recv(func(msg *queue.Message[*proto.Response]) {
 		fn(msg.Value)
 	})
 }
 
 // Send accepts a request for scanning and puts it in the queues
-func (s *Scanner) Send(request *Request) {
-	logger.Info("queueing clone: request_id=%q resource_id=%q", request.ID, request.Resource.ID())
-	s.cloneQueue.Send(&queue.Message[*Request]{
-		Priority: request.Priority(),
+func (s *Scanner) Send(request *proto.Request) {
+	logger.Info("queueing scan: id=%q", request.ID)
+	s.scanQueue.Send(&queue.Message[*proto.Request]{
+		Priority: request.Opts.Priority,
 		Value:    request,
 	})
 }
 
 // start kicks off the background workers
 func (s *Scanner) start() {
-	// Start clone workers
-	for i := uint16(0); i < s.cloneWorkers; i++ {
-		go s.listenForCloneRequests()
-	}
-	// Start scan workers
-	for i := uint16(0); i < s.scanWorkers; i++ {
-		go s.listenForScanRequests()
+	// Start workers
+	for i := int(0); i < s.scanWorkers; i++ {
+		go s.listen()
 	}
 }
 
-// Watch the clone queue for requests
-func (s *Scanner) listenForCloneRequests() {
-	// This should always send things to the scan queue, even if the clone fails.
-	// This ensures that things waiting on responses can mark them as done
-	s.cloneQueue.Recv(func(msg *queue.Message[*Request]) {
+// Watch the scan queue for requests
+func (s *Scanner) listen() {
+	s.scanQueue.Recv(func(msg *queue.Message[*proto.Request]) {
+		logger.Info("starting scan: id=%q", msg.Value.ID)
+		ctx := context.Background()
 		request := msg.Value
-		reqResource := request.Resource
-		reqResource.IncludeLogs(s.includeResponseLogs)
+		detectorOpts := gitleaks.DetectorOpts{
+			MaxArchiveDepth: s.maxArchiveDepth,
+			MaxDecodeDepth:  s.maxDecodeDepth,
+		}
 
-		if request.Resource.IsLocal() && !s.allowLocal {
-			reqResource.Error(logger.LocalScanDisabled, "local resources not allowed: request_id=%q", request.ID)
-			s.responseQueue.Send(&queue.Message[*response.Response]{
+		var clonePath string
+		var err error
+
+		// if cloneNeeded(request) {
+		// 	cloneCtx := ctx
+		// 	if s.cloneTimeout > 0 {
+		// 		cloneCtx = context.WithTimeout(cloneCtx, s.cloneTimeout)
+		// 	}
+
+		// 	clonePath, err = cloneResource(cloneCtx, s.clonesDir, request)
+		// 	if err != nil {
+		// 		err = fmt.Errorf("clone failed: %w", err)
+		// 	}
+		// } else if isLocalResource(request) && !s.allowLocal {
+		// 	err = errors.New("local scans not allowed")
+		// }
+
+		if err != nil {
+			logger.Critical("scan failed: %v id=%q", err, request.ID)
+			logger.Info("queueing response: id=%q", request.ID)
+			s.responseQueue.Send(&queue.Message[*proto.Response]{
 				Priority: msg.Priority,
-				Value: &response.Response{
-					ID:        id.ID(),
-					Results:   make([]*response.Result, 0),
-					Logs:      reqResource.Logs(),
-					RequestID: request.ID,
+				Value: &proto.Response{
+					ID:    request.ID,
+					Error: &proto.Error{
+						// TODO
+					},
 				},
 			})
 			return
 		}
 
-		if s.cloneTimeout > 0 {
-			logger.Debug("setting clone timeout: request_id=%q resource_id=%q timeout=%v", request.ID, reqResource.ID(), s.cloneTimeout.Seconds())
-			reqResource.SetCloneTimeout(s.cloneTimeout)
+		var scanPath string
+		// TODO:
+		// scanPath := resourceScanPath(request, clonePath)
+		// if len(scanPath) > 0 && fs.PathExists(scanPath) && !fs.FileExists(scanPath) {
+		// 	detectorOpts.SourcePath = scanPath
+		// 	rawAdditionalConfig, err := os.ReadFile(filepath.Join(scanPath, ".gitleaks.toml"))
+		// 	if err == nil {
+		// 		detectorOpts.AdditionalConfig = string(rawAdditionalConfig)
+		// 	}
+		// 	baselinePath := filepath.Join(scanPath, ".gitleaksbaseline")
+		// 	if fs.FileExists(baselinePath) {
+		// 		detectorOpts.BaselinePath = baselinePath
+		// 	}
+		// 	ignorePath := filepath.Join(scanPath, ".gitleaksignore")
+		// 	if fs.FileExists(ignorePath) {
+		// 		detectorOpts.IgnorePath = ignorePath
+		// 	}
+		// }
+
+		cfg, err := s.patterns.Gitleaks()
+		if err != nil {
+			logger.Critical("scan failed: could load gitleaks config: %s id=%q", err, request.ID)
+			logger.Info("queueing response: id=%q", request.ID)
+			// TOOD: make a s.sendErrorResponse(request, &Error{...}) helper function
+			s.responseQueue.Send(&queue.Message[*proto.Response]{
+				Priority: msg.Priority,
+				Value: &proto.Response{
+					ID:    request.ID,
+					Error: &proto.Error{
+						// TODO
+					},
+				},
+			})
+			return
 		}
 
-		if s.maxScanDepth > 0 && reqResource.Depth() > s.maxScanDepth {
-			logger.Warning("reducing scan depth: request_id=%q resource_id=%q old_depth=%v new_depth=%v", request.ID, reqResource.ID(), reqResource.Depth(), s.maxScanDepth)
-			reqResource.SetDepth(s.maxScanDepth)
+		detector, err := gitleaks.NewDetector(*cfg, detectorOpts)
+		if err != nil {
+			logger.Critical("scan failed: could not create detector: %s id=%q", err, request.ID)
+			logger.Info("queueing response: id=%q", request.ID)
+			s.responseQueue.Send(&queue.Message[*proto.Response]{
+				Priority: msg.Priority,
+				Value: &proto.Response{
+					ID:    request.ID,
+					Error: &proto.Error{
+						// TODO
+					},
+				},
+			})
+			return
 		}
 
-		if reqResource.Path() == "" {
-			logger.Info("starting clone: request_id=%q resource_id=%q", request.ID, reqResource.ID())
-			if err := reqResource.Clone(s.resourcePath(reqResource)); err != nil {
-				reqResource.Critical(logger.CloneError, "clone error: request_id=%q error=%q", request.ID, err.Error())
+		var findings []report.Finding
+		switch request.Kind {
+		case proto.GitRepoRequestKind:
+			findings, err = gitleaks.ScanGit(ctx, detector, scanPath, gitleaks.GitScanOpts{
+				Branch:   request.Opts.Branch,
+				Depth:    request.Opts.Depth,
+				Since:    request.Opts.Since,
+				Staged:   request.Opts.Staged,
+				Unstaged: request.Opts.Unstaged,
+			})
+		case proto.URLRequestKind:
+			findings, err = gitleaks.ScanURL(ctx, detector, request.Resource, gitleaks.URLScanOpts{
+				FetchURLPatterns: strings.Split(request.Opts.FetchURLs, ":"),
+			})
+		case proto.JSONDataRequestKind:
+			findings, err = gitleaks.ScanJSON(ctx, detector, request.Resource, gitleaks.JSONScanOpts{
+				FetchURLPatterns: strings.Split(request.Opts.FetchURLs, ":"),
+			})
+		case proto.TextRequestKind:
+			findings, err = gitleaks.ScanReader(ctx, detector, strings.NewReader(request.Resource))
+
+		default:
+			findings, err = gitleaks.ScanFiles(ctx, detector, scanPath)
+		}
+
+		results := make([]*proto.Result, len(findings))
+		for i, finding := range findings {
+			results[i] = findingToResult(request, &finding)
+		}
+
+		if len(clonePath) > 0 {
+			if err := os.RemoveAll(clonePath); err != nil {
+				logger.Error("could not remove clone path: %v path=%q id=%q", err, clonePath, request.ID)
 			}
 		}
 
-		// Now that it's cloned send it on to the scan queue
-		logger.Info("queueing scan: request_id=%q resource_id=%q", request.ID, reqResource.ID())
-		s.scanQueue.Send(msg)
-	})
-}
-
-func (s *Scanner) resourceFilesPath(reqResource resource.Resource) string {
-	return filepath.Join(s.resourceDir, reqResource.ID())
-}
-
-func (s *Scanner) resourcePath(reqResource resource.Resource) string {
-	return filepath.Join(s.resourceFilesPath(reqResource), "clone")
-}
-
-// removeResourceFiles clears out any left over resource files for scan
-func (s *Scanner) removeResourceFiles(reqResource resource.Resource) error {
-	return os.RemoveAll(s.resourceFilesPath(reqResource))
-}
-
-// Watch the scan queue for requests
-func (s *Scanner) listenForScanRequests() {
-	s.scanQueue.Recv(func(msg *queue.Message[*Request]) {
-		request := msg.Value
-		reqResource := request.Resource
-
-		results := make([]*response.Result, 0)
-
-		if fs.PathExists(reqResource.Path()) {
-			for _, backend := range s.backends {
-				logger.Info("starting scan: request_id=%q resource_id=%q scanner_backend=%q", request.ID, reqResource.ID(), backend.Name())
-
-				backendResults, err := backend.Scan(reqResource)
-				if err != nil {
-					reqResource.Critical(logger.ScanError, "scan error: request_id=%q error=%q", request.ID, err.Error())
-				}
-				if backendResults != nil {
-					results = append(results, backendResults...)
-				}
-			}
-			if err := s.removeResourceFiles(reqResource); err != nil {
-				reqResource.Error(logger.ResourceCleanupError, "resource file cleanup error: request_id=%q error=%q", request.ID, err.Error())
-			}
-		} else {
-			reqResource.Critical(logger.ScanError, "skipping scan due to missing path: request_id=%q", request.ID)
-
-		}
-
-		logger.Info("queueing response: request_id=%q resource_id=%q", request.ID, reqResource.ID())
-		s.responseQueue.Send(&queue.Message[*response.Response]{
+		logger.Info("queueing response: id=%q", request.ID)
+		s.responseQueue.Send(&queue.Message[*proto.Response]{
 			Priority: msg.Priority,
-			Value: &response.Response{
+			Value: &proto.Response{
 				ID:        id.ID(),
-				Results:   results,
-				Logs:      reqResource.Logs(),
 				RequestID: request.ID,
+				Results:   results,
 			},
 		})
 	})
+}
+
+func findingToResult(request *proto.Request, finding *report.Finding) *proto.Result {
+	result := &proto.Result{
+		ID: id.ID(
+			request.Resource,
+			finding.Commit,
+			finding.File,
+			strconv.Itoa(finding.StartLine),
+			strconv.Itoa(finding.StartColumn),
+			strconv.Itoa(finding.EndLine),
+			strconv.Itoa(finding.EndColumn),
+			finding.RuleID,
+		),
+		Secret:  finding.Secret,
+		Match:   finding.Match,
+		Context: finding.Line,
+		Entropy: finding.Entropy,
+		Date:    finding.Date,
+		Notes:   map[string]string{},
+		Contact: proto.Contact{
+			Name:  finding.Author,
+			Email: finding.Email,
+		},
+		Rule: proto.Rule{
+			ID:          finding.RuleID,
+			Description: finding.Description,
+			// TODO: pre 1.0 tags should be moved up to result since
+			// tags can be dynamic
+			Tags: finding.Tags,
+		},
+		Location: proto.Location{
+			Version: finding.Commit,
+			Path:    finding.File,
+			Start: proto.Point{
+				Line:   finding.StartLine,
+				Column: finding.StartColumn,
+			},
+			End: proto.Point{
+				Line:   finding.EndLine,
+				Column: finding.EndColumn,
+			},
+		},
+	}
+
+	switch request.Kind {
+	case proto.GitRepoRequestKind:
+		result.Notes["gitleaks_fingerprint"] = finding.Fingerprint
+		result.Notes["message"] = finding.Message
+		result.Kind = proto.GitCommitResultKind
+	// case proto.ContainerImageRequestKind:
+	// case proto.FilesImageRequestKind:
+	// case proto.URLRequestKind:
+	// TODO: add more here and other handlers for the different kinds
+	default:
+		result.Kind = proto.GenericResultKind
+	}
+
+	return result
 }

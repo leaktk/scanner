@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/leaktk/leaktk/pkg/fs"
+	"github.com/leaktk/leaktk/pkg/proto"
 )
 
 func TestScanCommandToRequest(t *testing.T) {
@@ -41,8 +42,8 @@ func TestScanCommandToRequest(t *testing.T) {
 	// ID should default to a random id
 	assert.Equal(t, 11, len(request.ID))
 	// Kind should default to GitRepo
-	assert.Equal(t, request.Resource.Kind(), "GitRepo")
-	assert.Equal(t, request.Resource.String(), "https://github.com/leaktk/fake-leaks.git")
+	assert.Equal(t, request.Kind, proto.GitRepoRequestKind)
+	assert.Equal(t, request.Resource, "https://github.com/leaktk/fake-leaks.git")
 
 	// If resource starts with @ and the thing is a valid path, resource will be loaded from there
 	tmpDir := t.TempDir()
@@ -55,8 +56,8 @@ func TestScanCommandToRequest(t *testing.T) {
 	_ = cmd.Flags().Set("kind", "JSONData")
 	request, err = scanCommandToRequest(cmd, args)
 	assert.NoError(t, err)
-	assert.Equal(t, request.Resource.Kind(), "JSONData")
-	assert.Equal(t, request.Resource.String(), "{\"some\": \"data\"}")
+	assert.Equal(t, request.Kind, proto.JSONDataRequestKind)
+	assert.Equal(t, request.Resource, "{\"some\": \"data\"}")
 
 	// If resource starts with @ and the thing is an invalid path, raise an error
 	_ = cmd.Flags().Set("resource", "@"+dataPath+".invalid")
